@@ -1,14 +1,12 @@
-import BottomMenu from "@/components/bottomMenu/BottomMenu";
-import FeedList from "@/components/feed/FeedList";
+import TypeSelect from "@/components/type/TypeSelect";
 
 export default function Home() {
   return (
     <>
       <div className="content">
         메인
-        <FeedList/>
       </div>
-      <BottomMenu />
+      <TypeSelect/>
     </>
   );
 }

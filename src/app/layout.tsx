@@ -11,13 +11,9 @@ export default function RootLayout({
     <html lang="ko">
       <Head />
       <body>
-        <main className="main">
-          <div className="mobile-view">
-            <div>
-              {children}
-            </div>
-          </div>
-        </main>
+        <div>
+          {children}
+        </div>
       </body>
     </html>
   );
