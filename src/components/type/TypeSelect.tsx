@@ -20,20 +20,22 @@ const TypeSelect = () => {
   console.log('select', select);
 
   return (
-    <div className={s.typeSelect}>
-      {Object.keys(typeChart).map((type, index) => (
-        <div key={index} onClick={() => onClick(type)}
-          className={classNames([s.item], {
-            [s.is_selected]: select.includes(type),
-          })}
-        >{typeTranslation[type]}
-        </div>
-      ))}
+    <>
+      <div className={s.typeSelect}>
+        {Object.keys(typeChart).map((type, index) => (
+          <div key={index} onClick={() => onClick(type)}
+            className={classNames([s.item], {
+              [s.is_selected]: select.includes(type),
+            })}
+          >{typeTranslation[type]}
+          </div>
+        ))}
 
+      </div>
       {select.length > 0 &&
         <TypeResult select={select} />
       }
-    </div>
+    </>
   );
 };
 

@@ -1,8 +1,27 @@
 .typeSelect {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(calc(110px + 16px), 1fr));
 }
 .item {
   border: 1px solid black;
+  cursor: pointer;
 }
 .is_selected {
   color: red;
+}
+
+.type_result {
+  .type_area {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(calc(110px + 16px), 1fr));
+  }
+  span {
+    display: inline-flex;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
 }

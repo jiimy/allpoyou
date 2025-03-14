@@ -6,7 +6,6 @@ export default function Home() {
       <div className="content">
         메인
       </div>
-      <TypeSelect/>
     </>
   );
 }

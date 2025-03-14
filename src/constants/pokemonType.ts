@@ -3,8 +3,29 @@ export type Type =
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' // 5개
   | 'bug' | 'rock' | 'ghost' | 'dragon' | 'dark' | 'steel' | 'fairy' | string; // 7개
 
-  export const typeTranslation: Record<string, string> = {
-  normal: '노멀',
+  export const typeColor: Record<string, string> = {
+    '노말': "#9fa19f",
+    '불꽃': "#c60013",
+    '물': "#0067d2",
+    '전기': "#9a6c00",
+    '풀': "#1c8605",
+    '얼음': "#007ea3",
+    '격투': "#ff8000",
+    '독': "#9141cb",
+    '땅': "#915121",
+    '비행': "#81b9ef",
+    '에스퍼': "#d01960",
+    '벌레': "#6b7d00",
+    '바위': "#afa981",
+    '고스트': "#704170",
+    '드래곤': "#2d48c4",
+    '악': "#392b29",
+    '강철': "#3c7f95",
+    '페어리': "#bd3fbf",
+  };
+
+export const typeTranslation: Record<string, string> = {
+  normal: '노말',
   fire: '불꽃',
   water: '물',
   electric: '전기',
@@ -17,7 +38,7 @@ export type Type =
   psychic: '에스퍼',
   bug: '벌레',
   rock: '바위',
-  ghost: '유령',
+  ghost: '고스트',
   dragon: '드래곤',
   dark: '악',
   steel: '강철',

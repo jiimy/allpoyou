@@ -1,6 +1,8 @@
 import "./globals.css";
 import './layout.scss';
 import Head from "./head";
+import Nav from "@/components/nav/Nav";
+import Search from "@/components/search/Search";
 
 export default function RootLayout({
   children,
@@ -11,9 +13,9 @@ export default function RootLayout({
     <html lang="ko">
       <Head />
       <body>
-        <div>
-          {children}
-        </div>
+        <Search />
+        <Nav />
+        {children}
       </body>
     </html>
   );
