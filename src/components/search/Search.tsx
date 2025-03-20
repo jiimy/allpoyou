@@ -14,6 +14,28 @@ const Search = () => {
     debouncedSearch(e.target.value);
   };
 
+  // 임시
+  const handleSearch = async () => {
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // setResults(data); // 검색 결과를 상태에 저장
+      } else {
+        console.error('Search failed');
+      }
+    } catch (error) {
+      console.error('Error searching:', error);
+    }
+  };
+
   return (
     <div>
       <input type="search" name="" id=""
