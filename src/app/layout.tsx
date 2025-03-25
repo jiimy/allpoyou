@@ -13,8 +13,8 @@ export default function RootLayout({
     <html lang="ko">
       <Head />
       <body>
-        <Search />
         <Nav />
+        <Search />
         {children}
       </body>
     </html>

@@ -1,0 +1,36 @@
+.input {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  &.is_text {
+    input {
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+    }
+    .result {
+      border-color: black;
+    }
+  }
+  input {
+    display: inline-flex;
+    height: 34px;
+    width: 300px;
+    padding: 0 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    &:focus {
+      border-color: black;
+      outline: none;
+    }
+  }
+  .results {
+    position: absolute;
+    top: 100%;
+    width: 300px;
+    padding: 0 8px;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+}
