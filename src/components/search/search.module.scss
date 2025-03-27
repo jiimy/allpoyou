@@ -7,9 +7,12 @@
     input {
       border-bottom: none;
       border-radius: 8px 8px 0 0;
-    }
-    .result {
-      border-color: black;
+      &:focus {
+        + .results {
+          border-color: black;
+        }
+
+      }
     }
   }
   input {
@@ -28,9 +31,23 @@
     position: absolute;
     top: 100%;
     width: 300px;
-    padding: 0 8px;
     border: 1px solid #ccc;
     border-top: none;
     border-radius: 0 0 8px 8px;
+  }
+  .result_item {
+    padding: 4px 8px;
+    cursor: pointer;
+    &:focus {
+      outline: none;
+    }
+    &:focus, &:hover {
+      background: #f0f0f0;
+    }
+    span {
+      display: inline-block;
+      margin-right: 4px;
+      color: #a5a5a5;
+    }
   }
 }

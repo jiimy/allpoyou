@@ -3,6 +3,7 @@ import './layout.scss';
 import Head from "./head";
 import Nav from "@/components/nav/Nav";
 import Search from "@/components/search/Search";
+import QueryProviders from "@/provider/queryProvider";
 
 export default function RootLayout({
   children,
@@ -13,9 +14,12 @@ export default function RootLayout({
     <html lang="ko">
       <Head />
       <body>
-        <Nav />
-        <Search />
-        {children}
+        <QueryProviders>
+          <Nav />
+          <Search />
+          {children}
+        </QueryProviders>
+        <div id="modal" />
       </body>
     </html>
   );

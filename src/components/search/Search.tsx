@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { debounce } from 'lodash';
 import s from './search.module.scss';
 import classNames from 'classnames';
+import { useRouter } from 'next/navigation';
 
 type ResultItem = {
   title: string;
@@ -14,6 +15,7 @@ const Search = () => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const resultItemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   // 검색 결과 항목
   const resultItems: ResultItem[] = [
@@ -34,6 +36,14 @@ const Search = () => {
     setText(e.target.value);
     debouncedSearch(e.target.value);
   };
+
+  const onEnter = (index: number) => {
+    if(index === 0) router.push(`/book/?query=${text}`)
+    if (index === 1) router.push(`/char/?query=${text}`)
+    if (index === 2) router.push(`/skills/?query=${text}`)
+    if (index === 3) router.push(`/itmes/?query=${text}`)
+    if (index === 4) router.push(`/person/?query=${text}`)
+  }
 
   // 키보드 네비게이션 핸들러 (input)
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -68,7 +78,8 @@ const Search = () => {
         );
         break;
       case 'Enter':
-        console.log(`Selected: ${resultItems[index].title}`);
+        console.log(`enter: ${index}`);
+        onEnter(index);
         break;
       case 'Escape':
         inputRef.current?.focus();
@@ -110,11 +121,14 @@ const Search = () => {
                 resultItemsRef.current[index] = el;
               }}
               tabIndex={0}
-              className={classNames('', {
+              className={classNames([s.result_item], {
                 [s.is_focus]: focusedIndex === index
               })}
               onKeyDown={(e) => handleItemKeyDown(e, index)}
-              onClick={() => console.log(`Selected: ${resultItems[index].title}`)}
+              onClick={() => {
+                onEnter(index);
+                console.log(`Selected: ${resultItems[index].title}`)
+              }}
               onFocus={() => setFocusedIndex(index)}
               onMouseUp={() => setFocusedIndex(index)}
             >
