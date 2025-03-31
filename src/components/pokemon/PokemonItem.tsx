@@ -19,7 +19,6 @@ const PokemonItem = ({ pokemons }: pockemonIndexType) => {
 
   return (
     <div>
-      포켓몬 이름 번역111 <br />
       이름: {pokemons?.name} <br />
       URL: {pokemons?.url} <br />
       {/* {getPokemonByKoreanName(pokemons?.name)} */}
