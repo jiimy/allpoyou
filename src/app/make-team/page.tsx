@@ -270,7 +270,13 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 const MakeTeam = () => {
-  const supabase = useMemo(() => createClient(), []);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+
+  const getSupabase = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    supabaseRef.current ??= createClient();
+    return supabaseRef.current;
+  }, []);
 
   const [values, setValues] = useState<string[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => ''),
@@ -302,6 +308,8 @@ const MakeTeam = () => {
     if (activeIndex === null) return;
 
     const keyword = values[activeIndex].trim();
+    const supabase = getSupabase();
+    if (!supabase) return;
 
     const timer = setTimeout(async () => {
       if (!keyword) {
@@ -334,7 +342,7 @@ const MakeTeam = () => {
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [activeIndex, values, supabase]);
+  }, [activeIndex, values, getSupabase]);
 
   // 하이라이트가 바뀌면 보이도록 스크롤
   useEffect(() => {
@@ -345,6 +353,9 @@ const MakeTeam = () => {
   // 마운트 시 전체 포켓몬 목록을 한 번 받아서 추천 필터에 사용
   useEffect(() => {
     let cancelled = false;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
     const fetchAll = async () => {
       const { data, error } = await supabase
         .from('pokemon')
@@ -376,7 +387,7 @@ const MakeTeam = () => {
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [getSupabase]);
 
   const handleChange = (index: number, value: string) => {
     setValues((prev) => {
