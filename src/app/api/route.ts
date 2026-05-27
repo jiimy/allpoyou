@@ -4,9 +4,8 @@ import { cookies } from 'next/headers';
 import { fetchAllPokemonKr, type PokemonKr } from '@/utils/pokeapi';
 import { createClient } from '@/utils/supabase/server';
 
-// 라우트 자체도 1주일 단위로 재검증.
-// 내부 fetch도 동일 주기로 캐시되므로 PokeAPI에는 사실상 1주에 1번만 도달.
-export const revalidate = 60 * 60 * 24 * 7;
+// 1주일(604800초). 값은 정적 리터럴이어야 Next.js 빌드가 통과함.
+export const revalidate = 604800;
 
 /**
  * GET /api
