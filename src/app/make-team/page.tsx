@@ -362,30 +362,39 @@ const MakeTeam = () => {
     if (!supabase) return;
 
     const fetchAll = async () => {
-      const { data, error } = await supabase
-        .from('pokemon')
-        .select('id, number, name, types, H, A, B, C, D, S, total')
-        .order('number', { ascending: true })
-        .limit(2000);
+      const PAGE_SIZE = 1000;
+      const rows: Record<string, unknown>[] = [];
+      let from = 0;
 
-      if (cancelled || error || !data) return;
+      while (!cancelled) {
+        const { data, error } = await supabase
+          .from('pokemon')
+          .select('id, number, name, types, H, A, B, C, D, S, total')
+          .order('number', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
 
-      const normalized: Suggestion[] = data.map((row) => {
-        const r = row as Record<string, unknown>;
-        return {
-          id: r.id as string | number,
-          number: r.number as number,
-          name: r.name as string,
-          types: normalizeTypes(r.types),
-          H: typeof r.H === 'number' ? r.H : undefined,
-          A: typeof r.A === 'number' ? r.A : undefined,
-          B: typeof r.B === 'number' ? r.B : undefined,
-          C: typeof r.C === 'number' ? r.C : undefined,
-          D: typeof r.D === 'number' ? r.D : undefined,
-          S: typeof r.S === 'number' ? r.S : undefined,
-          total: typeof r.total === 'number' ? r.total : undefined,
-        };
-      });
+        if (cancelled || error || !data || data.length === 0) break;
+
+        rows.push(...(data as Record<string, unknown>[]));
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      if (cancelled) return;
+
+      const normalized: Suggestion[] = rows.map((r) => ({
+        id: r.id as string | number,
+        number: typeof r.number === 'number' ? r.number : Number(r.number),
+        name: r.name as string,
+        types: normalizeTypes(r.types),
+        H: typeof r.H === 'number' ? r.H : undefined,
+        A: typeof r.A === 'number' ? r.A : undefined,
+        B: typeof r.B === 'number' ? r.B : undefined,
+        C: typeof r.C === 'number' ? r.C : undefined,
+        D: typeof r.D === 'number' ? r.D : undefined,
+        S: typeof r.S === 'number' ? r.S : undefined,
+        total: typeof r.total === 'number' ? r.total : undefined,
+      }));
       setAllPokemons(normalized);
     };
     fetchAll();
