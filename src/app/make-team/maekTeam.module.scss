@@ -1,0 +1,45 @@
+.resultRow {
+  cursor: pointer;
+
+  &:hover {
+    background: #ccc;
+  }
+}
+
+.inputWrap {
+  position: relative;
+  width: 240px;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 32px 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.clearBtn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #888;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: #eee;
+    color: #333;
+  }
+}

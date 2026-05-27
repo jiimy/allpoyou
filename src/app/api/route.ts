@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
-import { fetchAllPokemonKr } from '@/utils/pokeapi';
+import { fetchAllPokemonKr, type PokemonKr } from '@/utils/pokeapi';
 import { createClient } from '@/utils/supabase/server';
 
 // 라우트 자체도 1주일 단위로 재검증.
@@ -49,6 +49,58 @@ function parsePositiveInt(value: string | null): number | undefined {
   return n;
 }
 
+/** PokeAPI 영문 name 기준으로 -cap(이벤트 모자) 폼은 저장하지 않음 */
+function shouldSkipPokemon(name: string): boolean {
+  return name.includes('-cap');
+}
+
+/** 같은 종(nameKo)끼리는 가장 낮은 id를 전국도감 번호(number)로 사용 */
+function buildMinIdByNameKo(pokemon: PokemonKr[]): Map<string, number> {
+  const minIdByNameKo = new Map<string, number>();
+
+  for (const p of pokemon) {
+    const current = minIdByNameKo.get(p.nameKo);
+    if (current === undefined || p.id < current) {
+      minIdByNameKo.set(p.nameKo, p.id);
+    }
+  }
+
+  return minIdByNameKo;
+}
+
+/**
+ * PokeAPI name / nameKo를 DB 표시용 한글 이름으로 변환.
+ * 폼 접미사 → 메가 X/Y/Z 접미사 → 리전·거다이·메가 접두사 순으로 조합.
+ */
+function buildDisplayName(englishName: string, nameKo: string): string {
+  let baseName = nameKo;
+
+  if (nameKo === '테오키스') {
+    if (englishName.includes('-attack')) baseName = `${nameKo} 공격폼`;
+    else if (englishName.includes('-defense')) baseName = `${nameKo} 방어폼`;
+    else if (englishName.includes('-speed')) baseName = `${nameKo} 스피드폼`;
+    else baseName = `${nameKo} 노말폼`;
+  } else if (nameKo === '메로엣타') {
+    if (englishName.includes('-aria')) baseName = `${nameKo} 보이스폼`;
+    else if (englishName.includes('-pirouette')) baseName = `${nameKo} 스텝폼`;
+  }
+
+  let megaSuffix = '';
+  if (englishName.includes('-mega-x')) megaSuffix = ' X';
+  else if (englishName.includes('-mega-y')) megaSuffix = ' Y';
+  else if (englishName.includes('-mega-z')) megaSuffix = ' Z';
+
+  let prefix = '';
+  if (englishName.includes('-gmax')) prefix = '거다이 ';
+  else if (englishName.includes('-galar')) prefix = '가라르 ';
+  else if (englishName.includes('-paldea')) prefix = '팔데아 ';
+  else if (englishName.includes('-hisui')) prefix = '히스이 ';
+  else if (englishName.includes('-alola')) prefix = '알로라 ';
+  else if (englishName.includes('-mega')) prefix = '메가 ';
+
+  return `${prefix}${baseName}${megaSuffix}`;
+}
+
 /**
  * POST /api
  *
@@ -56,8 +108,8 @@ function parsePositiveInt(value: string | null): number | undefined {
  * 2) PokeAPI 한국어 데이터를 가공해 `pokemon` 테이블에 upsert.
  *
  * 컬럼 매핑:
- *   id            -> number
- *   nameKo        -> name
+ *   minId(nameKo) -> number  (같은 종은 가장 낮은 id 사용)
+ *   buildDisplayName -> name  (폼/리전/메가 등 한글 표시명)
  *   types[].ko    -> types (text[])
  *   stats.hp      -> H
  *   stats.attack  -> A
@@ -90,24 +142,45 @@ export async function POST() {
 
     // 2) PokeAPI에서 한국어 데이터 가져오기
     const all = await fetchAllPokemonKr();
+    const minIdByNameKo = buildMinIdByNameKo(all);
 
-    const rows = all.map((p) => ({
-      number: p.id,
-      name: p.nameKo,
-      types: p.types.map((t) => t.ko),
-      H: p.stats.hp,
-      A: p.stats.attack,
-      B: p.stats.defense,
-      C: p.stats.specialAttack,
-      D: p.stats.specialDefense,
-      S: p.stats.speed,
-      total: p.stats.total,
-    }));
+    const rows = all
+      .filter((p) => !shouldSkipPokemon(p.name))
+      .map((p) => ({
+        sourceId: p.id,
+        number: minIdByNameKo.get(p.nameKo) ?? p.id,
+        name: buildDisplayName(p.name, p.nameKo),
+        types: p.types.map((t) => t.ko),
+        H: p.stats.hp,
+        A: p.stats.attack,
+        B: p.stats.defense,
+        C: p.stats.specialAttack,
+        D: p.stats.specialDefense,
+        S: p.stats.speed,
+        total: p.stats.total,
+      }));
 
-    // 3) upsert (number 컬럼 기준 충돌 시 덮어쓰기)
+    // upsert 배치 내 name 중복 시 Postgres 오류 방지 — 같은 이름이면 id가 낮은 것만 유지
+    const uniqueByName = new Map<
+      string,
+      (typeof rows)[number]
+    >();
+    for (const row of rows) {
+      const existing = uniqueByName.get(row.name);
+      if (!existing || row.sourceId < existing.sourceId) {
+        uniqueByName.set(row.name, row);
+      }
+    }
+    const uniqueRows = [...uniqueByName.values()].map((row) => {
+      const { sourceId, ...rest } = row;
+      void sourceId;
+      return rest;
+    });
+
+    // 3) upsert (name 컬럼 기준 충돌 시 덮어쓰기 — 같은 number를 공유하는 폼이 있음)
     const { error: upsertError } = await supabase
       .from('pokemon')
-      .upsert(rows, { onConflict: 'number' });
+      .upsert(uniqueRows, { onConflict: 'name' });
 
     if (upsertError) {
       return Response.json(
@@ -122,8 +195,9 @@ export async function POST() {
 
     return Response.json({
       ok: true,
-      total: rows.length,
-      sample: rows[0],
+      total: uniqueRows.length,
+      skippedDuplicates: rows.length - uniqueRows.length,
+      sample: uniqueRows[0],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
