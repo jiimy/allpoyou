@@ -38,19 +38,25 @@ const KOREAN_TO_ENGLISH: Record<string, string> = Object.fromEntries(
   Object.entries(typeTranslation).map(([en, ko]) => [ko, en])
 );
 
-// 선택한 포켓몬의 약점을 보완해주는 카운터 타입을 한글 배열로 반환.
-// 조건:
-//   1) 후보 타입이, 선택 포켓몬의 약점 타입 중 하나 이상을 2배 이상으로 공격할 수 있어야 함
-//   2) 후보 타입이, 선택 포켓몬의 약점 타입 중 어느 것으로부터도 2배 이상 데미지를 받지 않아야 함
-//      (받으면 같은 위협에 같이 맞아서 보완이 안됨. 예: 리자몽의 약점인 물에 땅도 2배라 제외)
-export function getRecommendedCounters(koreanTypes: string[]): string[] {
-  const englishTypes = koreanTypes
-    .map((t) => KOREAN_TO_ENGLISH[t])
-    .filter((t): t is Type => Boolean(t && t in typeChart));
+export type WeaknessMatchupGroup = {
+  weakness: string;
+  superEffective: string[];
+  notVeryEffective: string[];
+  noEffect: string[];
+};
 
-  if (englishTypes.length === 0) return [];
+export type CounterDetail = {
+  type: string;
+  product: number;
+  factors: { weakness: string; multiplier: number }[];
+};
 
-  // 선택 포켓몬의 약점 타입(2배 이상 받는 공격 타입들, 영문)
+export type RecommendedCounterResult = {
+  weaknesses: WeaknessMatchupGroup[];
+  counters: CounterDetail[];
+};
+
+function getWeaknessTypes(englishTypes: Type[]): Type[] {
   const weaknessTypes: Type[] = [];
   for (const attacker of Object.keys(typeChart) as Type[]) {
     let multiplier = 1;
@@ -59,23 +65,88 @@ export function getRecommendedCounters(koreanTypes: string[]): string[] {
     }
     if (multiplier >= 2) weaknessTypes.push(attacker);
   }
+  return weaknessTypes;
+}
 
-  if (weaknessTypes.length === 0) return [];
+function buildWeaknessMatchups(weaknessTypes: Type[]): WeaknessMatchupGroup[] {
+  return weaknessTypes.map((weak) => {
+    const superEffective: string[] = [];
+    const notVeryEffective: string[] = [];
+    const noEffect: string[] = [];
 
-  const result: string[] = [];
-  for (const candidate of Object.keys(typeChart) as Type[]) {
-    const canAttack = weaknessTypes.some(
-      (weak) => (typeChart[weak][candidate] ?? 1) >= 2
-    );
-    if (!canAttack) continue;
+    for (const candidate of Object.keys(typeChart) as Type[]) {
+      const mult = typeChart[weak][candidate] ?? 1;
+      const label = typeTranslation[candidate];
+      if (mult >= 2) superEffective.push(label);
+      else if (mult === 0) noEffect.push(label);
+      else if (mult === 0.5) notVeryEffective.push(label);
+    }
 
-    const safeAgainstWeakness = weaknessTypes.every(
-      (weak) => (typeChart[candidate][weak] ?? 1) < 2
-    );
-    if (!safeAgainstWeakness) continue;
+    return {
+      weakness: typeTranslation[weak],
+      superEffective,
+      notVeryEffective,
+      noEffect,
+    };
+  });
+}
 
-    result.push(typeTranslation[candidate]);
+// 선택한 포켓몬의 약점을 보완해주는 카운터 타입을 계산.
+// 각 약점 타입에 대한 공격 배율을 모두 곱해 2배 이상인 타입만 추천.
+export function getRecommendedCounterDetails(
+  koreanTypes: string[],
+): RecommendedCounterResult {
+  const englishTypes = koreanTypes
+    .map((t) => KOREAN_TO_ENGLISH[t])
+    .filter((t): t is Type => Boolean(t && t in typeChart));
+
+  if (englishTypes.length === 0) {
+    return { weaknesses: [], counters: [] };
   }
 
-  return result;
+  const weaknessTypes = getWeaknessTypes(englishTypes);
+  if (weaknessTypes.length === 0) {
+    return { weaknesses: [], counters: [] };
+  }
+
+  const weaknesses = buildWeaknessMatchups(weaknessTypes);
+
+  const counters: CounterDetail[] = [];
+  for (const candidate of Object.keys(typeChart) as Type[]) {
+    const factors = weaknessTypes.map((weak) => ({
+      weakness: typeTranslation[weak],
+      multiplier: typeChart[weak][candidate] ?? 1,
+    }));
+
+    const product = factors.reduce((acc, f) => acc * f.multiplier, 1);
+    if (product < 2) continue;
+
+    counters.push({
+      type: typeTranslation[candidate],
+      product,
+      factors,
+    });
+  }
+
+  counters.sort((a, b) => b.product - a.product);
+
+  return { weaknesses, counters };
+}
+
+export function getRecommendedCounters(koreanTypes: string[]): string[] {
+  return getRecommendedCounterDetails(koreanTypes).counters.map((c) => c.type);
+}
+
+export function formatCounterProduct(detail: CounterDetail): string {
+  const nonNeutral = detail.factors.filter((f) => f.multiplier !== 1);
+  const displayFactors = nonNeutral.length > 0 ? nonNeutral : detail.factors;
+
+  const labels = displayFactors.map((f) => {
+    const multLabel =
+      f.multiplier === 0.5 ? '0.5배' : `${f.multiplier}배`;
+    return `${f.weakness} ${multLabel}`;
+  });
+
+  const formula = displayFactors.map((f) => String(f.multiplier)).join('×');
+  return `${labels.join(', ')} = ${formula} = ${detail.product}`;
 }

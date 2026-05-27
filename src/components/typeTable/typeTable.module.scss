@@ -1,0 +1,90 @@
+.wrap {
+  overflow-x: auto;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.typeCol {
+  width: 64px;
+}
+
+.pokemonCol {
+  width: 88px;
+}
+
+.summaryCol {
+  width: 72px;
+}
+
+.corner,
+.pokemonHead,
+.summaryHead,
+.typeHead,
+.table td {
+  padding: 6px 8px;
+  border: 1px solid #eee;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.corner {
+  background: #fafafa;
+  font-weight: 600;
+  color: #555;
+  text-align: left;
+}
+
+.pokemonHead {
+  background: #fafafa;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summaryHead {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #555;
+  font-size: 11px;
+}
+
+.typeHead {
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  min-width: 56px;
+}
+
+.weak {
+  background: #fff0f0;
+  color: #c62828;
+  font-weight: 700;
+}
+
+.resist {
+  background: #f0f7ff;
+  color: #1565c0;
+  font-weight: 600;
+}
+
+.neutral {
+  color: transparent;
+}
+
+.summaryCell {
+  background: #fafafa;
+  font-weight: 600;
+  color: #333;
+}
+
+.emptyCell {
+  background: #fcfcfc;
+}

@@ -26,9 +26,7 @@ export async function GET(request: NextRequest) {
     const all = await fetchAllPokemonKr();
 
     const sliced =
-      typeof limit === 'number'
-        ? all.slice(offset, offset + limit)
-        : all.slice(offset);
+      typeof limit === 'number' ? all.slice(offset, offset + limit) : all.slice(offset);
 
     return Response.json({
       total: all.length,
@@ -82,6 +80,20 @@ function buildDisplayName(englishName: string, nameKo: string): string {
   } else if (nameKo === '메로엣타') {
     if (englishName.includes('-aria')) baseName = `${nameKo} 보이스폼`;
     else if (englishName.includes('-pirouette')) baseName = `${nameKo} 스텝폼`;
+  } else if (nameKo === '그란돈') {
+    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
+    else baseName = nameKo;
+  } else if (nameKo === '그란돈') {
+    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
+    else baseName = nameKo;
+  } else if (nameKo === '가이오가') {
+    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
+    else baseName = nameKo;
+  } else if (nameKo === '켄타로스') {
+    if (englishName.includes('-combat-breed')) baseName = `${nameKo} 격투종`;
+    else if (englishName.includes('-blaze-breed')) baseName = `${nameKo} 불꽃종`;
+    else if (englishName.includes('-aqua-breed')) baseName = `${nameKo} 물종`;
+    else baseName = nameKo;
   }
 
   let megaSuffix = '';
@@ -160,10 +172,7 @@ export async function POST() {
       }));
 
     // upsert 배치 내 name 중복 시 Postgres 오류 방지 — 같은 이름이면 id가 낮은 것만 유지
-    const uniqueByName = new Map<
-      string,
-      (typeof rows)[number]
-    >();
+    const uniqueByName = new Map<string, (typeof rows)[number]>();
     for (const row of rows) {
       const existing = uniqueByName.get(row.name);
       if (!existing || row.sourceId < existing.sourceId) {

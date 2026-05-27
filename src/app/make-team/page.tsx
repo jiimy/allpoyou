@@ -2,8 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import TypeTable from '@/components/typeTable/TypeTable';
 import { useOutOfClick } from '@/hooks/useOutOfClick';
-import { getRecommendedCounters } from '@/hooks/useType';
+import {
+  formatCounterProduct,
+  getRecommendedCounterDetails,
+} from '@/hooks/useType';
 import { createClient } from '@/utils/supabase/client';
 import s from './maekTeam.module.scss';
 
@@ -291,8 +295,9 @@ const MakeTeam = () => {
   const [allPokemons, setAllPokemons] = useState<Suggestion[]>([]);
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
-    Array.from({ length: TEAM_SIZE }, () => false),
+    Array.from({ length: TEAM_SIZE }, () => true),
   );
+  const [excludeMegaEvolution, setExcludeMegaEvolution] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -493,7 +498,10 @@ const MakeTeam = () => {
 
   return (
     <div>
-      팀만들기
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ margin: '0 0 8px' }}>타입 상성표</h2>
+        <TypeTable pokemons={selectedPokemons} />
+      </div>
       <div ref={wrapperRef}>
         {PLACEHOLDERS.map((placeholder, index) => {
           const isActive = activeIndex === index;
@@ -678,14 +686,17 @@ const MakeTeam = () => {
         )}
         {selectedPokemons.map((pokemon, idx) => {
           if (!pokemon) return null;
-          const recommended = getRecommendedCounters(pokemon.types);
-          if (recommended.length === 0) return null;
+          const counterResult = getRecommendedCounterDetails(pokemon.types);
+          const { weaknesses, counters } = counterResult;
+          if (counters.length === 0) return null;
 
+          const recommended = counters.map((c) => c.type);
           const recSet = new Set(recommended);
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
           const matchingPokemons = allPokemons.filter((p) => {
             const matches = p.types.filter((t) => recSet.has(t));
             if (matches.length < minRecTypeCount) return false;
+            if (excludeMegaEvolution && p.name.includes('메가')) return false;
             if (
               excludeSameTypes &&
               idx === lastSelectedIndex
@@ -736,22 +747,108 @@ const MakeTeam = () => {
                 <span
                   style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}
                 >
-                  {recommended.map((c) => (
+                  {counters.map((c) => (
                     <span
-                      key={c}
+                      key={c.type}
                       style={{
-                        background: TYPE_COLOR[c] ?? '#999',
+                        background: TYPE_COLOR[c.type] ?? '#999',
                         color: '#fff',
                         padding: '2px 10px',
                         borderRadius: 12,
                         fontSize: 12,
                         fontWeight: 600,
                       }}
+                      title={formatCounterProduct(c)}
                     >
-                      {c}
+                      {c.type}
+                      <span style={{ marginLeft: 4, opacity: 0.85 }}>
+                        ×{c.product}
+                      </span>
                     </span>
                   ))}
                 </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 10,
+                  background: '#fafafa',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  lineHeight: 1.7,
+                  display: 'none',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 6, color: '#444' }}>
+                  약점 타입 (2배 이상 피해)
+                </div>
+                {weaknesses.map((w) => (
+                  <div key={w.weakness} style={{ marginBottom: 4 }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        background: TYPE_COLOR[w.weakness] ?? '#999',
+                        color: '#fff',
+                        padding: '1px 8px',
+                        borderRadius: 10,
+                        fontWeight: 600,
+                        marginRight: 6,
+                      }}
+                    >
+                      {w.weakness}
+                    </span>
+                    {w.superEffective.length > 0 && (
+                      <span>
+                        <span style={{ color: '#c22' }}>2배</span>{' '}
+                        {w.superEffective.join(', ')}
+                      </span>
+                    )}
+                    {w.notVeryEffective.length > 0 && (
+                      <span style={{ marginLeft: 8 }}>
+                        <span style={{ color: '#888' }}>0.5배</span>{' '}
+                        {w.notVeryEffective.join(', ')}
+                      </span>
+                    )}
+                    {w.noEffect.length > 0 && (
+                      <span style={{ marginLeft: 8 }}>
+                        <span style={{ color: '#999' }}>0배</span>{' '}
+                        {w.noEffect.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginTop: 10,
+                    marginBottom: 6,
+                    color: '#444',
+                  }}
+                >
+                  추천 타입 (약점 상성 곱 ≥ 2)
+                </div>
+                {counters.map((c) => (
+                  <div key={c.type} style={{ marginBottom: 2 }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        background: TYPE_COLOR[c.type] ?? '#999',
+                        color: '#fff',
+                        padding: '1px 8px',
+                        borderRadius: 10,
+                        fontWeight: 600,
+                        marginRight: 6,
+                      }}
+                    >
+                      {c.type}
+                    </span>
+                    <span style={{ color: '#555' }}>
+                      {formatCounterProduct(c)}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <div style={{ marginTop: 10 }}>
@@ -766,7 +863,7 @@ const MakeTeam = () => {
                 >
                   <span style={{ fontSize: 12, color: '#666' }}>
                     추천 타입을{' '}
-                    {requireTwoRecTypes[idx] ? '두 가지 이상' : '하나 이상'}{' '}
+                    {requireTwoRecTypes[idx] ? '두 가지 이상' : '한 가지 이상'}{' '}
                     가진 포켓몬 ({matchingPokemons.length})
                   </span>
                   <label
@@ -793,6 +890,26 @@ const MakeTeam = () => {
                       }}
                     />
                     추천 타입 2가지 이상만 보기
+                  </label>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      color: '#555',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={excludeMegaEvolution}
+                      onChange={(e) =>
+                        setExcludeMegaEvolution(e.target.checked)
+                      }
+                    />
+                    메가진화 제외
                   </label>
                 </div>
                 {matchingPokemons.length === 0 ? (
