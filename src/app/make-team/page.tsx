@@ -7,33 +7,64 @@ import {
   getRecommendedCounterDetails,
 } from '@/hooks/useType';
 import cn from 'classnames';
-import { createClient } from '@/utils/supabase/client';
+import {
+  POKEMON_LIST,
+  searchPokemonByName,
+  type Pokemon,
+} from '@/store/PokemonStore';
 import { isMegaDisplayName } from '@/utils/pokemonName';
+import abilitiesData from '@/constants/abilities.json';
 import s from './maekTeam.module.scss';
 import Image from 'next/image';
 
-type Suggestion = {
-  id: string | number;
-  number: number;
-  name: string;
-  image?: string | null;
-  ability?: string[];
-  s_ability?: string[];
-  types: string[];
-  H?: number;
-  A?: number;
-  B?: number;
-  C?: number;
-  D?: number;
-  S?: number;
-  total?: number;
-};
+type AbilityEntry = { nameKo: string; summary: string };
+
+const ABILITY_SUMMARY_BY_NAME = Object.values(
+  abilitiesData as Record<string, AbilityEntry>,
+).reduce<Record<string, string>>((acc, entry) => {
+  acc[entry.nameKo] = entry.summary;
+  return acc;
+}, {});
+
+function getAbilitySummary(abilityName: string | null): string | null {
+  if (!abilityName) return null;
+  return ABILITY_SUMMARY_BY_NAME[abilityName] ?? null;
+}
 
 const STAT_FIELD_KEYS = ['H', 'A', 'B', 'C', 'D', 'S', 'total'] as const;
 const STAT_HIGHLIGHT_KEYS = ['H', 'A', 'B', 'C', 'D', 'S'] as const;
 const STAT_KEYS = ['HP', '공격', '방어', '특공', '특방', '스피드', '총합'] as const;
+const STAT_LABEL_BY_KEY: Record<(typeof STAT_HIGHLIGHT_KEYS)[number], string> = {
+  H: '체력',
+  A: '공격',
+  B: '방어',
+  C: '특공',
+  D: '특방',
+  S: '스피드',
+};
 type StatFieldKey = (typeof STAT_FIELD_KEYS)[number];
 type StatHighlightKey = (typeof STAT_HIGHLIGHT_KEYS)[number];
+
+function getRowMaxStatKeys(p: Pokemon): Set<StatHighlightKey> {
+  let max = -Infinity;
+  for (const key of STAT_HIGHLIGHT_KEYS) {
+    const v = p[key];
+    if (typeof v === 'number' && v > max) max = v;
+  }
+  if (max === -Infinity) return new Set();
+
+  const keys = new Set<StatHighlightKey>();
+  for (const key of STAT_HIGHLIGHT_KEYS) {
+    if (p[key] === max) keys.add(key);
+  }
+  return keys;
+}
+
+function getHighestStatLabel(p: Pokemon): string | null {
+  const keys = getRowMaxStatKeys(p);
+  if (keys.size === 0) return null;
+  return [...keys].map((key) => STAT_LABEL_BY_KEY[key]).join(' / ');
+}
 
 const statThStyle: React.CSSProperties = {
   padding: '6px 8px',
@@ -55,8 +86,8 @@ const statTdStyle: React.CSSProperties = {
 type SortDirection = 'asc' | 'desc';
 
 const MatchingPokemonsTable: React.FC<{
-  pokemons: Suggestion[];
-  onSelectPokemon?: (pokemon: Suggestion) => void;
+  pokemons: Pokemon[];
+  onSelectPokemon?: (pokemon: Pokemon) => void;
 }> = ({ pokemons, onSelectPokemon }) => {
   const [sortKey, setSortKey] = useState<StatFieldKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection | null>(null);
@@ -90,21 +121,6 @@ const MatchingPokemonsTable: React.FC<{
       return (an - bn) * dirMult;
     });
   }, [pokemons, sortKey, sortDir]);
-
-  const getRowMaxStatKeys = (p: Suggestion): Set<StatHighlightKey> => {
-    let max = -Infinity;
-    for (const key of STAT_HIGHLIGHT_KEYS) {
-      const v = p[key];
-      if (typeof v === 'number' && v > max) max = v;
-    }
-    if (max === -Infinity) return new Set();
-
-    const keys = new Set<StatHighlightKey>();
-    for (const key of STAT_HIGHLIGHT_KEYS) {
-      if (p[key] === max) keys.add(key);
-    }
-    return keys;
-  };
 
   return (
     <div
@@ -224,41 +240,7 @@ const PLACEHOLDERS = [
   '여섯번째 포켓몬',
 ];
 
-// supabase에서 받은 types 값을 항상 string[]로 정규화.
-// - 배열이면 그대로
-// - PostgreSQL array literal "{불꽃,비행}" 형태 처리
-// - JSON 문자열 처리
-// - 그 외 단일 문자열은 [value]
-function normalizeTypes(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((v): v is string => typeof v === 'string');
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      return trimmed
-        .slice(1, -1)
-        .split(',')
-        .map((s) => s.trim().replace(/^"(.*)"$/, '$1'))
-        .filter(Boolean);
-    }
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((v): v is string => typeof v === 'string');
-      }
-    } catch {
-      // not JSON
-    }
-    return trimmed ? [trimmed] : [];
-  }
-  return [];
-}
-
-/** PostgreSQL text[] / JSON 등을 string[]로 정규화 (types·ability 공용) */
-const normalizeTextArray = normalizeTypes;
-
-function getDefaultAbility(pokemon: Suggestion): string | null {
+function getDefaultAbility(pokemon: Pokemon): string | null {
   return pokemon.ability?.[0] ?? pokemon.s_ability?.[0] ?? null;
 }
 
@@ -285,28 +267,25 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 const MakeTeam = () => {
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-
-  const getSupabase = useCallback(() => {
-    if (typeof window === 'undefined') return null;
-    supabaseRef.current ??= createClient();
-    return supabaseRef.current;
-  }, []);
+  "use no memo";
 
   const [values, setValues] = useState<string[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => ''),
   );
   const [selectedPokemons, setSelectedPokemons] = useState<
-    (Suggestion | null)[]
+    (Pokemon | null)[]
   >(() => Array.from({ length: TEAM_SIZE }, () => null));
   const [selectedAbilities, setSelectedAbilities] = useState<
     (string | null)[]
   >(() => Array.from({ length: TEAM_SIZE }, () => null));
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [abilitySummaries, setAbilitySummaries] = useState<(string | null)[]>(
+    () => Array.from({ length: TEAM_SIZE }, () => null),
+  );
+  const [suggestions, setSuggestions] = useState<Pokemon[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [allPokemons, setAllPokemons] = useState<Suggestion[]>([]);
+  const allPokemons = POKEMON_LIST;
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => true),
@@ -322,51 +301,28 @@ const MakeTeam = () => {
   }, []);
   useOutOfClick(wrapperRef, handleOutsideClick);
 
-  // 활성 input 값이 바뀌면 디바운스해서 supabase 조회
+  // 활성 input 값이 바뀌면 디바운스해서 로컬 스토어에서 검색
   useEffect(() => {
     if (activeIndex === null) return;
 
     const keyword = values[activeIndex].trim();
-    const supabase = getSupabase();
-    if (!supabase) return;
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       if (!keyword) {
         setSuggestions([]);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('pokemon')
-        .select('id, number, name, types, image, ability, s_ability')
-        .ilike('name', `%${keyword}%`)
-        .order('number', { ascending: true })
-        .limit(50);
-
-      if (!error && data) {
-        const normalized: Suggestion[] = data.map((row) => ({
-          id: row.id as string | number,
-          number: row.number as number,
-          name: row.name as string,
-          image: (row as { image?: string | null }).image ?? null,
-          ability: normalizeTextArray((row as { ability?: unknown }).ability),
-          s_ability: normalizeTextArray(
-            (row as { s_ability?: unknown }).s_ability,
-          ),
-          types: normalizeTypes((row as { types: unknown }).types),
-        }));
-        setSuggestions(normalized);
-      } else {
-        setSuggestions([]);
-      }
+      setSuggestions(searchPokemonByName(keyword, 50));
       setHighlightedIndex(0);
       setLoading(false);
     }, 200);
 
+    // if (keyword) setLoading(true);
+
     return () => clearTimeout(timer);
-  }, [activeIndex, values, getSupabase]);
+  }, [activeIndex, values]);
 
   // 검색 결과가 바뀌면 ref 배열 초기화
   useEffect(() => {
@@ -378,59 +334,6 @@ const MakeTeam = () => {
     const el = itemRefs.current[highlightedIndex];
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [highlightedIndex, suggestions]);
-
-  // 마운트 시 전체 포켓몬 목록을 한 번 받아서 추천 필터에 사용
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    const fetchAll = async () => {
-      const PAGE_SIZE = 1000;
-      const rows: Record<string, unknown>[] = [];
-      let from = 0;
-
-      while (!cancelled) {
-        const { data, error } = await supabase
-          .from('pokemon')
-          .select(
-            'id, number, name, types, image, ability, s_ability, H, A, B, C, D, S, total',
-          )
-          .order('number', { ascending: true })
-          .range(from, from + PAGE_SIZE - 1);
-
-        if (cancelled || error || !data || data.length === 0) break;
-
-        rows.push(...(data as Record<string, unknown>[]));
-        if (data.length < PAGE_SIZE) break;
-        from += PAGE_SIZE;
-      }
-
-      if (cancelled) return;
-
-      const normalized: Suggestion[] = rows.map((r) => ({
-        id: r.id as string | number,
-        number: typeof r.number === 'number' ? r.number : Number(r.number),
-        name: r.name as string,
-        image: typeof r.image === 'string' ? r.image : null,
-        ability: normalizeTextArray(r.ability),
-        s_ability: normalizeTextArray(r.s_ability),
-        types: normalizeTypes(r.types),
-        H: typeof r.H === 'number' ? r.H : undefined,
-        A: typeof r.A === 'number' ? r.A : undefined,
-        B: typeof r.B === 'number' ? r.B : undefined,
-        C: typeof r.C === 'number' ? r.C : undefined,
-        D: typeof r.D === 'number' ? r.D : undefined,
-        S: typeof r.S === 'number' ? r.S : undefined,
-        total: typeof r.total === 'number' ? r.total : undefined,
-      }));
-      setAllPokemons(normalized);
-    };
-    fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [getSupabase]);
 
   const handleChange = (index: number, value: string) => {
     setValues((prev) => {
@@ -451,17 +354,31 @@ const MakeTeam = () => {
       next[index] = null;
       return next;
     });
+    setAbilitySummaries((prev) => {
+      if (!prev[index]) return prev;
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
   };
 
   const handleSelectAbility = (index: number, abilityName: string) => {
+    const summary = getAbilitySummary(abilityName);
     setSelectedAbilities((prev) => {
       const next = [...prev];
       next[index] = abilityName;
       return next;
     });
+    setAbilitySummaries((prev) => {
+      const next = [...prev];
+      next[index] = summary;
+      return next;
+    });
   };
 
-  const handleSelect = (index: number, suggestion: Suggestion) => {
+  const handleSelect = (index: number, suggestion: Pokemon) => {
+    const defaultAbility = getDefaultAbility(suggestion);
+
     setValues((prev) => {
       const next = [...prev];
       next[index] = suggestion.name;
@@ -474,14 +391,19 @@ const MakeTeam = () => {
     });
     setSelectedAbilities((prev) => {
       const next = [...prev];
-      next[index] = getDefaultAbility(suggestion);
+      next[index] = defaultAbility;
+      return next;
+    });
+    setAbilitySummaries((prev) => {
+      const next = [...prev];
+      next[index] = getAbilitySummary(defaultAbility);
       return next;
     });
     setSuggestions([]);
     setActiveIndex(null);
   };
 
-  const handleSelectFromRecommendation = (suggestion: Suggestion) => {
+  const handleSelectFromRecommendation = (suggestion: Pokemon) => {
     const emptyIndex = selectedPokemons.findIndex((p) => p === null);
     if (emptyIndex === -1) return;
     handleSelect(emptyIndex, suggestion);
@@ -499,6 +421,11 @@ const MakeTeam = () => {
       return next;
     });
     setSelectedAbilities((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    setAbilitySummaries((prev) => {
       const next = [...prev];
       next[index] = null;
       return next;
@@ -571,6 +498,11 @@ const MakeTeam = () => {
           const hiddenAbilities = selected?.s_ability ?? [];
           const hasAbilities =
             regularAbilities.length > 0 || hiddenAbilities.length > 0;
+          const currentAbility =
+            chosenAbility ?? (selected ? getDefaultAbility(selected) : null);
+          const abilitySummary =
+            abilitySummaries[index] ??
+            (currentAbility ? getAbilitySummary(currentAbility) : null);
 
           return (
             <div key={index}>
@@ -586,6 +518,23 @@ const MakeTeam = () => {
                   />
                 ) : null}
               </div>
+              <span className={s.types}>
+                <div className={s.typesList}>
+                  {selected?.types?.map((t) => (
+                    <span
+                      key={t}
+                      style={{
+                        background: TYPE_COLOR[t] ?? '#999',
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <div>
+                  {selected ? getHighestStatLabel(selected) : null}
+                </div>
+              </span>
               <div className={s.buildArea}>
                 <div className={s.inputWrap}>
                   <input
@@ -670,76 +619,44 @@ const MakeTeam = () => {
                     </ul>
                   )}
                 </div>
-                <span style={{ display: 'inline-flex', gap: 4 }}>
-                  {selected?.types?.map((t) => (
-                    <span
-                      key={t}
-                      style={{
-                        background: TYPE_COLOR[t] ?? '#999',
-                        color: '#fff',
-                        padding: '2px 10px',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </span>
+
 
               </div>
               <div className={s.abilitySection}>
-                {hasAbilities ? (
-                  <div className={s.abilityList}>
-                    {regularAbilities.map((abilityName) => (
-                      <span
-                        key={`ability-${abilityName}`}
-                        role="button"
-                        tabIndex={0}
-                        className={cn(s.abilityChip, {
-                          [s.abilityChipSelected]:
-                            chosenAbility === abilityName,
-                        })}
-                        onClick={() =>
-                          handleSelectAbility(index, abilityName)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleSelectAbility(index, abilityName);
-                          }
-                        }}
-                      >
-                        {abilityName}
-                      </span>
-                    ))}
-                    {hiddenAbilities.map((abilityName) => (
-                      <span
-                        key={`s-ability-${abilityName}`}
-                        role="button"
-                        tabIndex={0}
-                        className={cn(s.abilityChip, s.abilityChipHidden, {
-                          [s.abilityChipSelected]:
-                            chosenAbility === abilityName,
-                        })}
-                        onClick={() =>
-                          handleSelectAbility(index, abilityName)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleSelectAbility(index, abilityName);
-                          }
-                        }}
-                      >
-                        🔓 {abilityName}
-                      </span>
-                    ))}
-                  </div>
+                {hasAbilities && selected && currentAbility ? (
+                  <>
+                    <select
+                      className={s.abilitySelect}
+                      value={currentAbility}
+                      onChange={(e) =>
+                        handleSelectAbility(index, e.target.value)
+                      }
+                      aria-label="특성 선택"
+                    >
+                      {regularAbilities.map((abilityName) => (
+                        <option
+                          key={`ability-${abilityName}`}
+                          value={abilityName}
+                        >
+                          {abilityName}
+                        </option>
+                      ))}
+                      {hiddenAbilities.map((abilityName) => (
+                        <option
+                          key={`s-ability-${abilityName}`}
+                          value={abilityName}
+                        >
+                          🔓 {abilityName}
+                        </option>
+                      ))}
+                    </select>
+                    <p className={s.abilitySummary}>{abilitySummary && abilitySummary}</p>
+                    {/* {abilitySummary ? (
+                      <p className={s.abilitySummary}>{abilitySummary}</p>
+                    ) : null} */}
+                  </>
                 ) : (
-                  <span className={s.abilityEmpty}>—</span>
+                  <span>특성</span>
                 )}
               </div>
               <div>도구</div>
