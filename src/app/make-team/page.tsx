@@ -1,20 +1,24 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-import TypeTable from '@/components/typeTable/TypeTable';
 import { useOutOfClick } from '@/hooks/useOutOfClick';
 import {
   formatCounterProduct,
   getRecommendedCounterDetails,
 } from '@/hooks/useType';
+import cn from 'classnames';
 import { createClient } from '@/utils/supabase/client';
+import { isMegaDisplayName } from '@/utils/pokemonName';
 import s from './maekTeam.module.scss';
+import Image from 'next/image';
 
 type Suggestion = {
   id: string | number;
   number: number;
   name: string;
+  image?: string | null;
+  ability?: string[];
+  s_ability?: string[];
   types: string[];
   H?: number;
   A?: number;
@@ -157,50 +161,50 @@ const MatchingPokemonsTable: React.FC<{
           {sorted.map((p) => {
             const rowMaxKeys = getRowMaxStatKeys(p);
             return (
-            <tr
-              key={p.id}
-              className={s.resultRow}
-              onClick={() => onSelectPokemon?.(p)}
-            >
-              <td style={{ ...statTdStyle, color: '#888' }}>#{p.number}</td>
-              <td style={{ ...statTdStyle, textAlign: 'left' }}>{p.name}</td>
-              <td style={{ ...statTdStyle, textAlign: 'left' }}>
-                <span style={{ display: 'inline-flex', gap: 4 }}>
-                  {p.types.map((t) => (
-                    <span
-                      key={t}
+              <tr
+                key={p.id}
+                className={s.resultRow}
+                onClick={() => onSelectPokemon?.(p)}
+              >
+                <td style={{ ...statTdStyle, color: '#888' }}>#{p.number}</td>
+                <td style={{ ...statTdStyle, textAlign: 'left' }}>{p.name}</td>
+                <td style={{ ...statTdStyle, textAlign: 'left' }}>
+                  <span style={{ display: 'inline-flex', gap: 4 }}>
+                    {p.types.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          background: TYPE_COLOR[t] ?? '#999',
+                          color: '#fff',
+                          padding: '1px 8px',
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </span>
+                </td>
+                {STAT_FIELD_KEYS.map((fieldKey) => {
+                  const v = p[fieldKey];
+                  const isMax =
+                    fieldKey !== 'total' && rowMaxKeys.has(fieldKey);
+                  return (
+                    <td
+                      key={fieldKey}
                       style={{
-                        background: TYPE_COLOR[t] ?? '#999',
-                        color: '#fff',
-                        padding: '1px 8px',
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 600,
+                        ...statTdStyle,
+                        color: isMax ? 'red' : undefined,
+                        fontWeight: isMax ? 700 : 400,
                       }}
                     >
-                      {t}
-                    </span>
-                  ))}
-                </span>
-              </td>
-              {STAT_FIELD_KEYS.map((fieldKey) => {
-                const v = p[fieldKey];
-                const isMax =
-                  fieldKey !== 'total' && rowMaxKeys.has(fieldKey);
-                return (
-                  <td
-                    key={fieldKey}
-                    style={{
-                      ...statTdStyle,
-                      color: isMax ? 'red' : undefined,
-                      fontWeight: isMax ? 700 : 400,
-                    }}
-                  >
-                    {typeof v === 'number' ? v : '-'}
-                  </td>
-                );
-              })}
-            </tr>
+                      {typeof v === 'number' ? v : '-'}
+                    </td>
+                  );
+                })}
+              </tr>
             );
           })}
         </tbody>
@@ -251,6 +255,13 @@ function normalizeTypes(value: unknown): string[] {
   return [];
 }
 
+/** PostgreSQL text[] / JSON 등을 string[]로 정규화 (types·ability 공용) */
+const normalizeTextArray = normalizeTypes;
+
+function getDefaultAbility(pokemon: Suggestion): string | null {
+  return pokemon.ability?.[0] ?? pokemon.s_ability?.[0] ?? null;
+}
+
 // 한글 타입명 → 색상 매핑 (공식 컬러 팔레트)
 const TYPE_COLOR: Record<string, string> = {
   노말: '#A8A77A',
@@ -287,6 +298,9 @@ const MakeTeam = () => {
   );
   const [selectedPokemons, setSelectedPokemons] = useState<
     (Suggestion | null)[]
+  >(() => Array.from({ length: TEAM_SIZE }, () => null));
+  const [selectedAbilities, setSelectedAbilities] = useState<
+    (string | null)[]
   >(() => Array.from({ length: TEAM_SIZE }, () => null));
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -326,16 +340,21 @@ const MakeTeam = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('pokemon')
-        .select('id, number, name, types')
+        .select('id, number, name, types, image, ability, s_ability')
         .ilike('name', `%${keyword}%`)
         .order('number', { ascending: true })
-        .limit(10);
+        .limit(50);
 
       if (!error && data) {
         const normalized: Suggestion[] = data.map((row) => ({
           id: row.id as string | number,
           number: row.number as number,
           name: row.name as string,
+          image: (row as { image?: string | null }).image ?? null,
+          ability: normalizeTextArray((row as { ability?: unknown }).ability),
+          s_ability: normalizeTextArray(
+            (row as { s_ability?: unknown }).s_ability,
+          ),
           types: normalizeTypes((row as { types: unknown }).types),
         }));
         setSuggestions(normalized);
@@ -349,11 +368,16 @@ const MakeTeam = () => {
     return () => clearTimeout(timer);
   }, [activeIndex, values, getSupabase]);
 
+  // 검색 결과가 바뀌면 ref 배열 초기화
+  useEffect(() => {
+    itemRefs.current = [];
+  }, [suggestions]);
+
   // 하이라이트가 바뀌면 보이도록 스크롤
   useEffect(() => {
     const el = itemRefs.current[highlightedIndex];
     if (el) el.scrollIntoView({ block: 'nearest' });
-  }, [highlightedIndex]);
+  }, [highlightedIndex, suggestions]);
 
   // 마운트 시 전체 포켓몬 목록을 한 번 받아서 추천 필터에 사용
   useEffect(() => {
@@ -369,7 +393,9 @@ const MakeTeam = () => {
       while (!cancelled) {
         const { data, error } = await supabase
           .from('pokemon')
-          .select('id, number, name, types, H, A, B, C, D, S, total')
+          .select(
+            'id, number, name, types, image, ability, s_ability, H, A, B, C, D, S, total',
+          )
           .order('number', { ascending: true })
           .range(from, from + PAGE_SIZE - 1);
 
@@ -386,6 +412,9 @@ const MakeTeam = () => {
         id: r.id as string | number,
         number: typeof r.number === 'number' ? r.number : Number(r.number),
         name: r.name as string,
+        image: typeof r.image === 'string' ? r.image : null,
+        ability: normalizeTextArray(r.ability),
+        s_ability: normalizeTextArray(r.s_ability),
         types: normalizeTypes(r.types),
         H: typeof r.H === 'number' ? r.H : undefined,
         A: typeof r.A === 'number' ? r.A : undefined,
@@ -416,6 +445,20 @@ const MakeTeam = () => {
       next[index] = null;
       return next;
     });
+    setSelectedAbilities((prev) => {
+      if (!prev[index]) return prev;
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+  };
+
+  const handleSelectAbility = (index: number, abilityName: string) => {
+    setSelectedAbilities((prev) => {
+      const next = [...prev];
+      next[index] = abilityName;
+      return next;
+    });
   };
 
   const handleSelect = (index: number, suggestion: Suggestion) => {
@@ -427,6 +470,11 @@ const MakeTeam = () => {
     setSelectedPokemons((prev) => {
       const next = [...prev];
       next[index] = suggestion;
+      return next;
+    });
+    setSelectedAbilities((prev) => {
+      const next = [...prev];
+      next[index] = getDefaultAbility(suggestion);
       return next;
     });
     setSuggestions([]);
@@ -446,6 +494,11 @@ const MakeTeam = () => {
       return next;
     });
     setSelectedPokemons((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    setSelectedAbilities((prev) => {
       const next = [...prev];
       next[index] = null;
       return next;
@@ -507,29 +560,33 @@ const MakeTeam = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: '0 0 8px' }}>타입 상성표</h2>
-        <TypeTable pokemons={selectedPokemons} />
-      </div>
-      <div ref={wrapperRef}>
+      <div ref={wrapperRef} className={s.buildWrap}>
         {PLACEHOLDERS.map((placeholder, index) => {
           const isActive = activeIndex === index;
           const showDropdown =
             isActive && values[index].trim().length > 0;
           const selected = selectedPokemons[index];
+          const chosenAbility = selectedAbilities[index];
+          const regularAbilities = selected?.ability ?? [];
+          const hiddenAbilities = selected?.s_ability ?? [];
+          const hasAbilities =
+            regularAbilities.length > 0 || hiddenAbilities.length > 0;
 
           return (
-            <div
-              key={index}
-              style={{ position: 'relative', marginBottom: 8 }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
+            <div key={index}>
+              <div className={s.thumbnail}>
+                {selected?.image ? (
+                  <Image
+                    src={selected.image}
+                    alt={selected.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="!relative !h-auto object-contain"
+                    priority
+                  />
+                ) : null}
+              </div>
+              <div className={s.buildArea}>
                 <div className={s.inputWrap}>
                   <input
                     type="text"
@@ -557,6 +614,61 @@ const MakeTeam = () => {
                   >
                     ×
                   </button>
+                  {showDropdown && (
+                    <ul className={s.dropdown}>
+                      {loading && (
+                        <li>
+                          검색중...
+                        </li>
+                      )}
+                      {!loading && suggestions.length === 0 && (
+                        <li>
+                          검색 결과 없음
+                        </li>
+                      )}
+                      {!loading &&
+                        suggestions.map((item, i) => {
+                          const isHighlighted = i === highlightedIndex;
+                          return (
+                            <li
+                              key={item.id}
+                              className={cn({
+                                [s.dropdownItemHighlighted]: isHighlighted,
+                              })}
+                              ref={(el) => {
+                                itemRefs.current[i] = el;
+                              }}
+                              onMouseDown={(e) => {
+                                // input blur 보다 먼저 동작하도록 mousedown 사용
+                                e.preventDefault();
+                                handleSelect(index, item);
+                              }}
+                              onMouseEnter={() => setHighlightedIndex(i)}
+                            >
+                              {/* <span style={{ color: '#888' }}>#{item.number}</span> */}
+                              <span style={{ flex: 1 }}>{item.name}</span>
+                              <span style={{ display: 'inline-flex', gap: 4 }}>
+                                {item.types?.map((t) => (
+                                  <span
+                                    key={t}
+                                    style={{
+                                      background: TYPE_COLOR[t] ?? '#999',
+                                      color: '#fff',
+                                      padding: '1px 8px',
+                                      borderRadius: 10,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </span>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  )}
                 </div>
                 <span style={{ display: 'inline-flex', gap: 4 }}>
                   {selected?.types?.map((t) => (
@@ -576,85 +688,65 @@ const MakeTeam = () => {
                     </span>
                   ))}
                 </span>
+
               </div>
-              {showDropdown && (
-                <ul
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    width: 240,
-                    margin: 0,
-                    padding: 0,
-                    listStyle: 'none',
-                    border: '1px solid #ddd',
-                    borderRadius: 4,
-                    background: '#fff',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    zIndex: 10,
-                    maxHeight: 240,
-                    overflowY: 'auto',
-                  }}
-                >
-                  {loading && (
-                    <li style={{ padding: '8px 10px', color: '#888' }}>
-                      검색중...
-                    </li>
-                  )}
-                  {!loading && suggestions.length === 0 && (
-                    <li style={{ padding: '8px 10px', color: '#888' }}>
-                      검색 결과 없음
-                    </li>
-                  )}
-                  {!loading &&
-                    suggestions.map((s, i) => {
-                      const isHighlighted = i === highlightedIndex;
-                      return (
-                        <li
-                          key={s.id}
-                          ref={(el) => {
-                            itemRefs.current[i] = el;
-                          }}
-                          onMouseDown={(e) => {
-                            // input blur 보다 먼저 동작하도록 mousedown 사용
+              <div className={s.abilitySection}>
+                {hasAbilities ? (
+                  <div className={s.abilityList}>
+                    {regularAbilities.map((abilityName) => (
+                      <span
+                        key={`ability-${abilityName}`}
+                        role="button"
+                        tabIndex={0}
+                        className={cn(s.abilityChip, {
+                          [s.abilityChipSelected]:
+                            chosenAbility === abilityName,
+                        })}
+                        onClick={() =>
+                          handleSelectAbility(index, abilityName)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            handleSelect(index, s);
-                          }}
-                          onMouseEnter={() => setHighlightedIndex(i)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '8px 10px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            background: isHighlighted ? '#f0f7ff' : '#fff',
-                          }}
-                        >
-                          <span style={{ color: '#888' }}>#{s.number}</span>
-                          <span style={{ flex: 1 }}>{s.name}</span>
-                          <span style={{ display: 'inline-flex', gap: 4 }}>
-                            {s.types?.map((t) => (
-                              <span
-                                key={t}
-                                style={{
-                                  background: TYPE_COLOR[t] ?? '#999',
-                                  color: '#fff',
-                                  padding: '1px 8px',
-                                  borderRadius: 10,
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </span>
-                        </li>
-                      );
-                    })}
-                </ul>
-              )}
+                            handleSelectAbility(index, abilityName);
+                          }
+                        }}
+                      >
+                        {abilityName}
+                      </span>
+                    ))}
+                    {hiddenAbilities.map((abilityName) => (
+                      <span
+                        key={`s-ability-${abilityName}`}
+                        role="button"
+                        tabIndex={0}
+                        className={cn(s.abilityChip, s.abilityChipHidden, {
+                          [s.abilityChipSelected]:
+                            chosenAbility === abilityName,
+                        })}
+                        onClick={() =>
+                          handleSelectAbility(index, abilityName)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectAbility(index, abilityName);
+                          }
+                        }}
+                      >
+                        🔓 {abilityName}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className={s.abilityEmpty}>—</span>
+                )}
+              </div>
+              <div>도구</div>
+              <div>기술1</div>
+              <div>기술2</div>
+              <div>기술3</div>
+              <div>기술4</div>
             </div>
           );
         })}
@@ -705,7 +797,7 @@ const MakeTeam = () => {
           const matchingPokemons = allPokemons.filter((p) => {
             const matches = p.types.filter((t) => recSet.has(t));
             if (matches.length < minRecTypeCount) return false;
-            if (excludeMegaEvolution && p.name.includes('메가')) return false;
+            if (excludeMegaEvolution && isMegaDisplayName(p.name)) return false;
             if (
               excludeSameTypes &&
               idx === lastSelectedIndex

@@ -13,25 +13,21 @@ const DEFAULT_REVALIDATE_SECONDS = 60 * 60 * 24 * 7;
 const ALL_POKEMON_KOREAN_QUERY = /* GraphQL */ `
   query AllPokemonKr {
     pokemon(
-      # 1. 기존 is_default 조건을 지우거나 필요한 만큼 범위를 넓힙니다.
-      # 세대 구분이 필요 없다면 아예 비워두거나, limit을 넉넉히 줍니다.
       order_by: { id: asc }
     ) {
       id
       name
-      is_default # 기본 폼 여부 확인용 (데이터 정제 시 유용)
+      is_default
       
-      # 2. 원본 포켓몬의 한글 본명 (예: 대검귀, 리자몽)
       pokemonspecy {
         pokemonspeciesnames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
           name
         }
       }
       
-      # 3. ★ 핵심: 리전폼/폼체인지 전용 한글 이름 (예: 히스이의 모습, 메가X 등)
       pokemonforms {
         pokemonformnames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
-          name # 폼 이름을 따로 쓰거나 본명 뒤에 붙일 때 사용합니다.
+          name
         }
       }
       
@@ -54,6 +50,20 @@ const ALL_POKEMON_KOREAN_QUERY = /* GraphQL */ `
 
       pokemonsprites {
         sprites
+      }
+
+      # ★ 여기에 특성(Abilities) 데이터를 추가합니다.
+      pokemonabilities {
+        is_hidden # true면 숨겨진 특성(드림특성), false면 일반 특성
+        slot      # 특성 슬롯 (1번 특성, 2번 특성 구분용)
+        ability {
+          id
+          name    # 영문 특성명
+          # 특성의 한글 이름 추출
+          abilitynames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
+            name
+          }
+        }
       }
     }
   }
@@ -85,6 +95,15 @@ type RawPokemon = {
     };
   }[];
   pokemonsprites: { sprites: RawSprites | string }[];
+  pokemonabilities: {
+    is_hidden: boolean;
+    slot: number;
+    ability: {
+      id: number;
+      name: string;
+      abilitynames: { name: string }[];
+    };
+  }[];
 };
 
 type GraphQLResponse<T> = { data: T } | { errors: { message: string }[] };
@@ -105,6 +124,19 @@ export type PokemonStats = {
   speed: number;
   /** 종족값 합계 */
   total: number;
+};
+
+export type PokemonAbility = {
+  /** 특성 ID */
+  id: number;
+  /** 영문 특성명 (예: "overgrow") */
+  en: string;
+  /** 한글 특성명 (예: "심록") */
+  ko: string;
+  /** 숨겨진 특성(드림특성) 여부 */
+  isHidden: boolean;
+  /** 특성 슬롯 (1·2번 일반, 3번 숨겨진) */
+  slot: number;
 };
 
 export type PokemonImages = {
@@ -131,6 +163,8 @@ export type PokemonKr = {
   stats: PokemonStats;
   /** 스프라이트 / 일러스트 URL */
   images: PokemonImages;
+  /** 특성 (일반 1~2개 + 숨겨진 특성) */
+  abilities: PokemonAbility[];
 };
 
 const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
@@ -144,7 +178,7 @@ const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
 
 /**
  * PokeAPI GraphQL에 질의해 모든 기본형 포켓몬의
- * 번호 / 이름(한글) / 타입(한글) / 종족값 / 이미지 URL을 가져옵니다.
+ * 번호 / 이름(한글) / 타입(한글) / 종족값 / 특성(한글) / 이미지 URL을 가져옵니다.
  */
 export async function fetchAllPokemonKr(): Promise<PokemonKr[]> {
   const res = await fetch(POKEAPI_GRAPHQL_ENDPOINT, {
@@ -229,6 +263,16 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
     stats.total += s.base_stat;
   }
 
+  const abilities: PokemonAbility[] = [...(raw.pokemonabilities ?? [])]
+    .sort((a, b) => a.slot - b.slot)
+    .map((entry) => ({
+      id: entry.ability.id,
+      en: entry.ability.name,
+      ko: entry.ability.abilitynames?.[0]?.name ?? entry.ability.name,
+      isHidden: entry.is_hidden,
+      slot: entry.slot,
+    }));
+
   return {
     id: raw.id,
     name: raw.name,
@@ -236,5 +280,6 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
     types,
     stats,
     images: toPokemonImages(raw),
+    abilities,
   };
 }

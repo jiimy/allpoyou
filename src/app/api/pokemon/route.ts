@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
-import { fetchAllPokemonKr, type PokemonKr } from '@/utils/pokeapi';
+import { fetchAllPokemonKr, type PokemonAbility, type PokemonKr } from '@/utils/pokeapi';
+import { isMegaEvolutionEnglishName } from '@/utils/pokemonName';
 import { createClient } from '@/utils/supabase/server';
 
 // 1주일(604800초). 값은 정적 리터럴이어야 Next.js 빌드가 통과함.
@@ -81,18 +82,35 @@ function buildDisplayName(englishName: string, nameKo: string): string {
     if (englishName.includes('-aria')) baseName = `${nameKo} 보이스폼`;
     else if (englishName.includes('-pirouette')) baseName = `${nameKo} 스텝폼`;
   } else if (nameKo === '그란돈') {
-    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
-    else baseName = nameKo;
-  } else if (nameKo === '그란돈') {
-    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
+    if (englishName.includes('-primal')) baseName = `원시 ${nameKo}`;
     else baseName = nameKo;
   } else if (nameKo === '가이오가') {
-    if (englishName.includes('-primal')) baseName = `${nameKo} 원시회귀`;
+    if (englishName.includes('-primal')) baseName = `원시 ${nameKo}`;
     else baseName = nameKo;
   } else if (nameKo === '켄타로스') {
     if (englishName.includes('-combat-breed')) baseName = `${nameKo} 격투종`;
     else if (englishName.includes('-blaze-breed')) baseName = `${nameKo} 불꽃종`;
     else if (englishName.includes('-aqua-breed')) baseName = `${nameKo} 물종`;
+    else baseName = nameKo;
+  } else if (nameKo === '우라오스') {
+    if (englishName.includes('-rapid-strike')) baseName = `${nameKo} 연격의 태세`;
+    else if (englishName.includes('-single-strike')) baseName = `${nameKo} 일격의 태세`;
+    else baseName = nameKo;
+  } else if (nameKo === '로토무') {
+    if (englishName.includes('-heat')) baseName = `히트 ${nameKo}`;
+    else if (englishName.includes('-wash')) baseName = `워시 ${nameKo}`;
+    else if (englishName.includes('-frost')) baseName = `프로스트 ${nameKo}`;
+    else if (englishName.includes('-fan')) baseName = `스핀 ${nameKo}`;
+    else if (englishName.includes('-mow')) baseName = `커트 ${nameKo}`;
+    else baseName = nameKo;
+  } else if (nameKo === '오거폰') {
+    if (englishName.includes('-wellspring-mask')) baseName = `${nameKo} 우물의 가면`;
+    else if (englishName.includes('-hearthflame-mask')) baseName = `${nameKo} 화덕의 가면`;
+    else if (englishName.includes('-cornerstone-mask')) baseName = `${nameKo} 주춧돌의 가면`;
+    else baseName = nameKo;
+  } else if (nameKo === '버드렉스') {
+    if (englishName.includes('-ice')) baseName = `백마 ${nameKo}`;
+    else if (englishName.includes('-shadow')) baseName = `흑마 ${nameKo}`;
     else baseName = nameKo;
   }
 
@@ -107,9 +125,25 @@ function buildDisplayName(englishName: string, nameKo: string): string {
   else if (englishName.includes('-paldea')) prefix = '팔데아 ';
   else if (englishName.includes('-hisui')) prefix = '히스이 ';
   else if (englishName.includes('-alola')) prefix = '알로라 ';
-  else if (englishName.includes('-mega')) prefix = '메가 ';
+  else if (isMegaEvolutionEnglishName(englishName)) prefix = '메가 ';
 
   return `${prefix}${baseName}${megaSuffix}`;
+}
+
+/** isHidden=false → ability, isHidden=true → s_ability (한글명 배열) */
+function splitAbilities(abilities: PokemonAbility[]): {
+  ability: string[];
+  s_ability: string[];
+} {
+  const ability: string[] = [];
+  const s_ability: string[] = [];
+
+  for (const entry of abilities) {
+    if (entry.isHidden) s_ability.push(entry.ko);
+    else ability.push(entry.ko);
+  }
+
+  return { ability, s_ability };
 }
 
 /**
@@ -129,6 +163,9 @@ function buildDisplayName(englishName: string, nameKo: string): string {
  *   stats.specialDefense -> D
  *   stats.speed   -> S
  *   stats.total   -> total
+ *   abilities(isHidden=false)[].ko -> ability (text[])
+ *   abilities(isHidden=true)[].ko  -> s_ability (text[])
+ *   images.official -> image (text, official-artwork URL)
  */
 export async function POST() {
   try {
@@ -157,19 +194,26 @@ export async function POST() {
 
     const rows = all
       .filter((p) => !shouldSkipPokemon(p.name))
-      .map((p) => ({
-        sourceId: p.id,
-        number: minIdByNameKo.get(p.nameKo) ?? p.id,
-        name: buildDisplayName(p.name, p.nameKo),
-        types: p.types.map((t) => t.ko),
-        H: p.stats.hp,
-        A: p.stats.attack,
-        B: p.stats.defense,
-        C: p.stats.specialAttack,
-        D: p.stats.specialDefense,
-        S: p.stats.speed,
-        total: p.stats.total,
-      }));
+      .map((p) => {
+        const { ability, s_ability } = splitAbilities(p.abilities);
+
+        return {
+          sourceId: p.id,
+          number: minIdByNameKo.get(p.nameKo) ?? p.id,
+          name: buildDisplayName(p.name, p.nameKo),
+          image: p.images.official,
+          types: p.types.map((t) => t.ko),
+          ability,
+          s_ability,
+          H: p.stats.hp,
+          A: p.stats.attack,
+          B: p.stats.defense,
+          C: p.stats.specialAttack,
+          D: p.stats.specialDefense,
+          S: p.stats.speed,
+          total: p.stats.total,
+        };
+      });
 
     // upsert 배치 내 name 중복 시 Postgres 오류 방지 — 같은 이름이면 id가 낮은 것만 유지
     const uniqueByName = new Map<string, (typeof rows)[number]>();

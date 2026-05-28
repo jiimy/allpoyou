@@ -51,6 +51,12 @@ function formatMultiplier(value: number): string {
   return String(value);
 }
 
+function formatSummaryMultiplier(value: number): string {
+  if (value === 0) return '0배';
+  if (value === 0.5) return '0.5배';
+  return `${value}배`;
+}
+
 const TypeTable = ({ pokemons }: TypeTableProps) => {
   const slots = useMemo(() => {
     const normalized = [...pokemons];
@@ -96,6 +102,45 @@ const TypeTable = ({ pokemons }: TypeTableProps) => {
       }),
     [slots],
   );
+
+  const teamSummary = useMemo(() => {
+    const weaknesses: string[] = [];
+    const strengths: string[] = [];
+
+    for (const row of matrix) {
+      const activeCells = row.cells.filter((cell) => !cell.empty);
+      if (activeCells.length === 0) continue;
+
+      const maxMultiplier = Math.max(...activeCells.map((cell) => cell.multiplier));
+      const minMultiplier = Math.min(...activeCells.map((cell) => cell.multiplier));
+
+      if (maxMultiplier >= 2) {
+        weaknesses.push(
+          `${formatSummaryMultiplier(maxMultiplier)} ${row.attackLabel}`,
+        );
+      }
+
+      if (minMultiplier <= 0.5) {
+        strengths.push(
+          `${formatSummaryMultiplier(minMultiplier)} ${row.attackLabel}`,
+        );
+      }
+    }
+
+    return { weaknesses, strengths };
+  }, [matrix]);
+
+  const hasPokemon = slots.some(Boolean);
+  const summaryText = hasPokemon
+    ? [
+        teamSummary.weaknesses.length > 0
+          ? `약점 : ${teamSummary.weaknesses.join(', ')}`
+          : '약점 : 없음',
+        teamSummary.strengths.length > 0
+          ? `강점 : ${teamSummary.strengths.join(', ')}`
+          : '강점 : 없음',
+      ].join(' / ')
+    : '';
 
   return (
     <div className={s.wrap}>
@@ -160,6 +205,7 @@ const TypeTable = ({ pokemons }: TypeTableProps) => {
           ))}
         </tbody>
       </table>
+      {summaryText && <p className={s.summaryText}>{summaryText}</p>}
     </div>
   );
 };
