@@ -2,25 +2,80 @@ import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
 import { fetchAllPokemonKr, type PokemonAbility, type PokemonKr } from '@/utils/pokeapi';
-import { isMegaEvolutionEnglishName } from '@/utils/pokemonName';
+import { normalizePokemon } from '@/utils/pokemonNormalize';
+import {
+  getBaseEnglishNameForDex,
+  isGmaxEnglishName,
+  isMegaEvolutionEnglishName,
+} from '@/utils/pokemonName';
 import { createClient } from '@/utils/supabase/server';
 
 // 1주일(604800초). 값은 정적 리터럴이어야 Next.js 빌드가 통과함.
 export const revalidate = 604800;
 
+type DbPokemonRow = {
+  id?: number;
+  number: number;
+  name: string;
+  nameKo: string;
+  images: string[] | null;
+  types: string[];
+  H: number;
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  S: number;
+  total: number;
+  ability: string[] | null;
+  s_ability: string[] | null;
+};
+
 /**
- * GET /api
+ * GET /api/pokemon
  *
  * 쿼리 파라미터:
- *   - limit  (선택) 가져올 개수
- *   - offset (선택) 건너뛸 개수, 기본 0
- *
- * 응답:
- *   { total, count, results: PokemonKr[] }
+ *   - source=db  Supabase `pokemon` 테이블 (프론트엔드용)
+ *   - limit      (PokeAPI 모드) 가져올 개수
+ *   - offset     (PokeAPI 모드) 건너뛸 개수, 기본 0
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
+
+    if (searchParams.get('source') === 'db') {
+      const cookieStore = await cookies();
+      const supabase = createClient(cookieStore);
+
+      const { data, error } = await fetchAllPokemonRowsFromDb(supabase);
+
+      if (error) {
+        return Response.json({ error: error.message }, { status: 500 });
+      }
+
+      const results = ((data ?? []) as DbPokemonRow[]).map((row, index) =>
+        normalizePokemon({
+          id: row.id ?? row.number * 10000 + index,
+          number: row.number,
+          name: row.name,
+          nameKo: row.nameKo,
+          images: row.images,
+          types: row.types,
+          H: row.H,
+          A: row.A,
+          B: row.B,
+          C: row.C,
+          D: row.D,
+          S: row.S,
+          total: row.total,
+          ability: row.ability,
+          s_ability: row.s_ability,
+        }),
+      );
+
+      return Response.json({ total: results.length, results });
+    }
+
     const limit = parsePositiveInt(searchParams.get('limit'));
     const offset = parsePositiveInt(searchParams.get('offset')) ?? 0;
 
@@ -47,23 +102,58 @@ function parsePositiveInt(value: string | null): number | undefined {
   return n;
 }
 
+const DB_POKEMON_SELECT =
+  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability';
+
+/** Supabase 기본 행 제한(1000)을 넘는 전체 목록을 페이지 단위로 조회 */
+async function fetchAllPokemonRowsFromDb(
+  supabase: ReturnType<typeof createClient>,
+): Promise<{ data: DbPokemonRow[] | null; error: { message: string } | null }> {
+  const pageSize = 1000;
+  const all: DbPokemonRow[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('pokemon')
+      .select(DB_POKEMON_SELECT)
+      .order('number', { ascending: true })
+      .order('name', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) return { data: null, error };
+
+    const page = (data ?? []) as DbPokemonRow[];
+    all.push(...page);
+
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}
+
 /** PokeAPI 영문 name 기준으로 -cap(이벤트 모자) 폼은 저장하지 않음 */
 function shouldSkipPokemon(name: string): boolean {
   return name.includes('-cap');
 }
 
-/** 같은 종(nameKo)끼리는 가장 낮은 id를 전국도감 번호(number)로 사용 */
-function buildMinIdByNameKo(pokemon: PokemonKr[]): Map<string, number> {
-  const minIdByNameKo = new Map<string, number>();
+/**
+ * 기준 영문명(메가/거다이 접미사 제거)별 최소 PokeAPI id → 전국도감 number.
+ * 예: venusaur, venusaur-mega, venusaur-gmax → 모두 venusaur의 min id(3).
+ */
+function buildMinIdByBaseEnglish(pokemon: PokemonKr[]): Map<string, number> {
+  const minIdByBase = new Map<string, number>();
 
   for (const p of pokemon) {
-    const current = minIdByNameKo.get(p.nameKo);
+    const base = getBaseEnglishNameForDex(p.name);
+    const current = minIdByBase.get(base);
     if (current === undefined || p.id < current) {
-      minIdByNameKo.set(p.nameKo, p.id);
+      minIdByBase.set(base, p.id);
     }
   }
 
-  return minIdByNameKo;
+  return minIdByBase;
 }
 
 /**
@@ -120,14 +210,29 @@ function buildDisplayName(englishName: string, nameKo: string): string {
   else if (englishName.includes('-mega-z')) megaSuffix = ' Z';
 
   let prefix = '';
-  if (englishName.includes('-gmax')) prefix = '거다이 ';
+  // 거다이/메가는 endsWith 기준 (blastoise-mega 등 -mega로 끝나는 이름 포함)
+  if (isGmaxEnglishName(englishName)) prefix = '거다이 ';
+  else if (isMegaEvolutionEnglishName(englishName)) prefix = '메가 ';
   else if (englishName.includes('-galar')) prefix = '가라르 ';
   else if (englishName.includes('-paldea')) prefix = '팔데아 ';
   else if (englishName.includes('-hisui')) prefix = '히스이 ';
   else if (englishName.includes('-alola')) prefix = '알로라 ';
-  else if (isMegaEvolutionEnglishName(englishName)) prefix = '메가 ';
 
   return `${prefix}${baseName}${megaSuffix}`;
+}
+
+/** 한글 타입명을 ㄱ~ㅎ 오름차순으로 정렬 */
+function sortTypesKo(types: string[]): string[] {
+  return [...types].sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+/** [공식 일러스트, Showdown 애니 GIF] */
+function buildImages(p: PokemonKr): string[] {
+  const official =
+    p.images.official ??
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`;
+  const animated = `https://play.pokemonshowdown.com/sprites/ani/${p.name}.gif`;
+  return [official, animated];
 }
 
 /** isHidden=false → ability, isHidden=true → s_ability (한글명 배열) */
@@ -153,9 +258,10 @@ function splitAbilities(abilities: PokemonAbility[]): {
  * 2) PokeAPI 한국어 데이터를 가공해 `pokemon` 테이블에 upsert.
  *
  * 컬럼 매핑:
- *   minId(nameKo) -> number  (같은 종은 가장 낮은 id 사용)
- *   buildDisplayName -> name  (폼/리전/메가 등 한글 표시명)
- *   types[].ko    -> types (text[])
+ *   minId(baseEnglish) -> number  (메가/거다이는 접미사 제거 후 같은 기준명끼리 min id)
+ *   p.name        -> name  (영문 포켓몬명)
+ *   buildDisplayName -> nameKo  (폼/리전/메가 등 한글 표시명)
+ *   types[].ko (ㄱ~ㅎ 정렬) -> types (text[])
  *   stats.hp      -> H
  *   stats.attack  -> A
  *   stats.defense -> B
@@ -165,7 +271,7 @@ function splitAbilities(abilities: PokemonAbility[]): {
  *   stats.total   -> total
  *   abilities(isHidden=false)[].ko -> ability (text[])
  *   abilities(isHidden=true)[].ko  -> s_ability (text[])
- *   images.official -> image (text, official-artwork URL)
+ *   [official, showdown ani] -> images (text[])
  */
 export async function POST() {
   try {
@@ -190,19 +296,21 @@ export async function POST() {
 
     // 2) PokeAPI에서 한국어 데이터 가져오기
     const all = await fetchAllPokemonKr();
-    const minIdByNameKo = buildMinIdByNameKo(all);
+    const minIdByBaseEnglish = buildMinIdByBaseEnglish(all);
 
     const rows = all
       .filter((p) => !shouldSkipPokemon(p.name))
       .map((p) => {
         const { ability, s_ability } = splitAbilities(p.abilities);
+        const baseEnglish = getBaseEnglishNameForDex(p.name);
 
         return {
           sourceId: p.id,
-          number: minIdByNameKo.get(p.nameKo) ?? p.id,
-          name: buildDisplayName(p.name, p.nameKo),
-          image: p.images.official,
-          types: p.types.map((t) => t.ko),
+          number: minIdByBaseEnglish.get(baseEnglish) ?? p.id,
+          name: p.name,
+          nameKo: buildDisplayName(p.name, p.nameKo),
+          images: buildImages(p),
+          types: sortTypesKo(p.types.map((t) => t.ko)),
           ability,
           s_ability,
           H: p.stats.hp,
@@ -245,11 +353,19 @@ export async function POST() {
       );
     }
 
+    const megaSamples = uniqueRows.filter((r) => r.nameKo.startsWith('메가 ')).slice(0, 3);
+    const gmaxSamples = uniqueRows.filter((r) => r.nameKo.startsWith('거다이 ')).slice(0, 3);
+
     return Response.json({
       ok: true,
       total: uniqueRows.length,
       skippedDuplicates: rows.length - uniqueRows.length,
       sample: uniqueRows[0],
+      megaCount: uniqueRows.filter((r) => isMegaEvolutionEnglishName(r.name)).length,
+      gmaxCount: uniqueRows.filter((r) => isGmaxEnglishName(r.name)).length,
+      megaSamples,
+      gmaxSamples,
+      blastoiseMega: uniqueRows.find((r) => r.name === 'blastoise-mega'),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

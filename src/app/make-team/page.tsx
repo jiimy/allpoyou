@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { useOutOfClick } from '@/hooks/useOutOfClick';
 import {
   formatCounterProduct,
@@ -8,10 +16,16 @@ import {
 } from '@/hooks/useType';
 import cn from 'classnames';
 import {
-  POKEMON_LIST,
+  fetchPokemonList,
   searchPokemonByName,
   type Pokemon,
 } from '@/store/PokemonStore';
+import {
+  getPokemonAnimatedImage,
+  getPokemonStaticImage,
+  hasPokemonImage,
+} from '@/utils/pokemonDisplay';
+import { ensureStringArray, normalizePokemon } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import abilitiesData from '@/constants/abilities.json';
 import s from './maekTeam.module.scss';
@@ -44,6 +58,7 @@ const STAT_LABEL_BY_KEY: Record<(typeof STAT_HIGHLIGHT_KEYS)[number], string> = 
 };
 type StatFieldKey = (typeof STAT_FIELD_KEYS)[number];
 type StatHighlightKey = (typeof STAT_HIGHLIGHT_KEYS)[number];
+type TableSortKey = StatFieldKey | 'name' | 'types';
 
 function getRowMaxStatKeys(p: Pokemon): Set<StatHighlightKey> {
   let max = -Infinity;
@@ -85,15 +100,78 @@ const statTdStyle: React.CSSProperties = {
 
 type SortDirection = 'asc' | 'desc';
 
+const PREVIEW_CURSOR_OFFSET = 14;
+const PREVIEW_IMAGE_SIZE = 120;
+
+type PokemonImagePreviewState = {
+  image: string;
+  name: string;
+  x: number;
+  y: number;
+} | null;
+
+function PokemonImageCursorPreview({
+  preview,
+}: {
+  preview: PokemonImagePreviewState;
+}) {
+  if (!preview || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className={s.pokemonImagePreview}
+      style={{
+        left: preview.x + PREVIEW_CURSOR_OFFSET,
+        top: preview.y + PREVIEW_CURSOR_OFFSET,
+      }}
+      role="tooltip"
+      aria-hidden
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={preview.image}
+        alt=""
+        width={PREVIEW_IMAGE_SIZE}
+        height={PREVIEW_IMAGE_SIZE}
+      />
+      <span className={s.pokemonImagePreviewName}>{preview.name}</span>
+    </div>,
+    document.body,
+  );
+}
+
 const MatchingPokemonsTable: React.FC<{
   pokemons: Pokemon[];
   onSelectPokemon?: (pokemon: Pokemon) => void;
 }> = ({ pokemons, onSelectPokemon }) => {
-  const [sortKey, setSortKey] = useState<StatFieldKey | null>(null);
+  const [sortKey, setSortKey] = useState<TableSortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection | null>(null);
+  const [imagePreview, setImagePreview] =
+    useState<PokemonImagePreviewState>(null);
+
+  const showImagePreview = useCallback((pokemon: Pokemon, e: React.MouseEvent) => {
+    const image =
+      getPokemonAnimatedImage(pokemon.images) ??
+      getPokemonStaticImage(pokemon.images);
+    if (!image) return;
+    setImagePreview({
+      image,
+      name: pokemon.nameKo,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }, []);
+
+  const moveImagePreview = useCallback((e: React.MouseEvent) => {
+    setImagePreview((prev) =>
+      prev ? { ...prev, x: e.clientX, y: e.clientY } : null,
+    );
+  }, []);
+
+  const hideImagePreview = useCallback(() => setImagePreview(null), []);
 
   // 클릭 시: 다른 컬럼이면 desc부터, 같으면 desc → asc → 해제 순환
-  const handleSort = (key: StatFieldKey) => {
+  const handleSort = (key: TableSortKey) => {
     if (sortKey !== key) {
       setSortKey(key);
       setSortDir('desc');
@@ -111,11 +189,23 @@ const MatchingPokemonsTable: React.FC<{
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return pokemons;
-    const key = sortKey;
     const dirMult = sortDir === 'asc' ? 1 : -1;
     return [...pokemons].sort((a, b) => {
-      const av = a[key];
-      const bv = b[key];
+      if (sortKey === 'name') {
+        return a.nameKo.localeCompare(b.nameKo, 'ko') * dirMult;
+      }
+      if (sortKey === 'types') {
+        const at = [...ensureStringArray(a.types)]
+          .sort((x, y) => x.localeCompare(y, 'ko'))
+          .join(',');
+        const bt = [...ensureStringArray(b.types)]
+          .sort((x, y) => x.localeCompare(y, 'ko'))
+          .join(',');
+        return at.localeCompare(bt, 'ko') * dirMult;
+      }
+      const statKey = sortKey as StatFieldKey;
+      const av = a[statKey];
+      const bv = b[statKey];
       const an = typeof av === 'number' ? av : -Infinity;
       const bn = typeof bv === 'number' ? bv : -Infinity;
       return (an - bn) * dirMult;
@@ -123,6 +213,7 @@ const MatchingPokemonsTable: React.FC<{
   }, [pokemons, sortKey, sortDir]);
 
   return (
+    <>
     <div
       style={{
         maxHeight: 260,
@@ -147,8 +238,38 @@ const MatchingPokemonsTable: React.FC<{
         >
           <tr>
             <th style={statThStyle}>#</th>
-            <th style={{ ...statThStyle, textAlign: 'left' }}>이름</th>
-            <th style={{ ...statThStyle, textAlign: 'left' }}>타입</th>
+            <th
+              onClick={() => handleSort('name')}
+              style={{
+                ...statThStyle,
+                textAlign: 'left',
+                cursor: 'pointer',
+                userSelect: 'none',
+                background: sortKey === 'name' ? '#eef5ff' : undefined,
+              }}
+              title="이름 정렬"
+            >
+              이름
+              <span style={{ marginLeft: 2, color: '#888' }}>
+                {sortKey === 'name' ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+              </span>
+            </th>
+            <th
+              onClick={() => handleSort('types')}
+              style={{
+                ...statThStyle,
+                textAlign: 'left',
+                cursor: 'pointer',
+                userSelect: 'none',
+                background: sortKey === 'types' ? '#eef5ff' : undefined,
+              }}
+              title="타입 정렬"
+            >
+              타입
+              <span style={{ marginLeft: 2, color: '#888' }}>
+                {sortKey === 'types' ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+              </span>
+            </th>
             {STAT_FIELD_KEYS.map((fieldKey, i) => {
               const label = STAT_KEYS[i];
               const isActive = sortKey === fieldKey;
@@ -178,15 +299,28 @@ const MatchingPokemonsTable: React.FC<{
             const rowMaxKeys = getRowMaxStatKeys(p);
             return (
               <tr
-                key={p.id}
+                key={p.name}
                 className={s.resultRow}
                 onClick={() => onSelectPokemon?.(p)}
               >
                 <td style={{ ...statTdStyle, color: '#888' }}>#{p.number}</td>
-                <td style={{ ...statTdStyle, textAlign: 'left' }}>{p.name}</td>
+                <td
+                  style={{ ...statTdStyle, textAlign: 'left' }}
+                  onMouseEnter={(e) => showImagePreview(p, e)}
+                  onMouseMove={moveImagePreview}
+                  onMouseLeave={hideImagePreview}
+                >
+                  <span
+                    className={
+                      hasPokemonImage(p.images) ? s.nameWithPreview : undefined
+                    }
+                  >
+                    {p.nameKo}
+                  </span>
+                </td>
                 <td style={{ ...statTdStyle, textAlign: 'left' }}>
                   <span style={{ display: 'inline-flex', gap: 4 }}>
-                    {p.types.map((t) => (
+                    {ensureStringArray(p.types).map((t) => (
                       <span
                         key={t}
                         style={{
@@ -226,10 +360,19 @@ const MatchingPokemonsTable: React.FC<{
         </tbody>
       </table>
     </div>
+    <PokemonImageCursorPreview preview={imagePreview} />
+    </>
   );
 };
 
 const TEAM_SIZE = 6;
+
+const subscribeNoop = () => () => {};
+
+/** SSR/CSR HTML 불일치 방지 — 클라이언트에서만 true */
+function useIsClient() {
+  return useSyncExternalStore(subscribeNoop, () => true, () => false);
+}
 
 const PLACEHOLDERS = [
   '첫번째 포켓몬',
@@ -241,7 +384,9 @@ const PLACEHOLDERS = [
 ];
 
 function getDefaultAbility(pokemon: Pokemon): string | null {
-  return pokemon.ability?.[0] ?? pokemon.s_ability?.[0] ?? null;
+  const ability = ensureStringArray(pokemon.ability);
+  const sAbility = ensureStringArray(pokemon.s_ability);
+  return ability[0] ?? sAbility[0] ?? null;
 }
 
 // 한글 타입명 → 색상 매핑 (공식 컬러 팔레트)
@@ -281,16 +426,44 @@ const MakeTeam = () => {
   const [abilitySummaries, setAbilitySummaries] = useState<(string | null)[]>(
     () => Array.from({ length: TEAM_SIZE }, () => null),
   );
-  const [suggestions, setSuggestions] = useState<Pokemon[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const allPokemons = POKEMON_LIST;
+  const isClient = useIsClient();
+  const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
+  const [pokemonListLoading, setPokemonListLoading] = useState(true);
+  const [pokemonListError, setPokemonListError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isClient) return;
+    let cancelled = false;
+    fetchPokemonList()
+      .then((list) => {
+        if (!cancelled) {
+          setAllPokemons(list);
+          setPokemonListError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setPokemonListError(
+            err instanceof Error ? err.message : '포켓몬 목록을 불러오지 못했습니다.',
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPokemonListLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isClient]);
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => true),
   );
-  const [excludeMegaEvolution, setExcludeMegaEvolution] = useState(false);
+  const [excludeMegaEvolution, setExcludeMegaEvolution] = useState<boolean[]>(
+    () => Array.from({ length: TEAM_SIZE }, () => false),
+  );
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -301,28 +474,19 @@ const MakeTeam = () => {
   }, []);
   useOutOfClick(wrapperRef, handleOutsideClick);
 
-  // 활성 input 값이 바뀌면 디바운스해서 로컬 스토어에서 검색
-  useEffect(() => {
-    if (activeIndex === null) return;
+  const searchKeyword =
+    activeIndex !== null ? values[activeIndex].trim() : '';
 
-    const keyword = values[activeIndex].trim();
+  const suggestions = useMemo(() => {
+    if (!searchKeyword || pokemonListLoading || allPokemons.length === 0) {
+      return [];
+    }
+    return searchPokemonByName(searchKeyword, allPokemons, 50);
+  }, [searchKeyword, allPokemons, pokemonListLoading]);
 
-    const timer = setTimeout(() => {
-      if (!keyword) {
-        setSuggestions([]);
-        setLoading(false);
-        return;
-      }
-
-      setSuggestions(searchPokemonByName(keyword, 50));
-      setHighlightedIndex(0);
-      setLoading(false);
-    }, 200);
-
-    // if (keyword) setLoading(true);
-
-    return () => clearTimeout(timer);
-  }, [activeIndex, values]);
+  const searchLoading =
+    searchKeyword.length > 0 &&
+    (pokemonListLoading || allPokemons.length === 0);
 
   // 검색 결과가 바뀌면 ref 배열 초기화
   useEffect(() => {
@@ -336,6 +500,8 @@ const MakeTeam = () => {
   }, [highlightedIndex, suggestions]);
 
   const handleChange = (index: number, value: string) => {
+    setActiveIndex(index);
+    setHighlightedIndex(0);
     setValues((prev) => {
       const next = [...prev];
       next[index] = value;
@@ -343,7 +509,7 @@ const MakeTeam = () => {
     });
     // 사용자가 직접 텍스트를 바꾸면 그 슬롯의 선택 정보 초기화
     setSelectedPokemons((prev) => {
-      if (!prev[index] || prev[index]?.name === value) return prev;
+      if (!prev[index] || prev[index]?.nameKo === value) return prev;
       const next = [...prev];
       next[index] = null;
       return next;
@@ -377,16 +543,19 @@ const MakeTeam = () => {
   };
 
   const handleSelect = (index: number, suggestion: Pokemon) => {
-    const defaultAbility = getDefaultAbility(suggestion);
+    const pokemon = normalizePokemon(
+      suggestion as unknown as Record<string, unknown>,
+    );
+    const defaultAbility = getDefaultAbility(pokemon);
 
     setValues((prev) => {
       const next = [...prev];
-      next[index] = suggestion.name;
+      next[index] = pokemon.nameKo;
       return next;
     });
     setSelectedPokemons((prev) => {
       const next = [...prev];
-      next[index] = suggestion;
+      next[index] = pokemon;
       return next;
     });
     setSelectedAbilities((prev) => {
@@ -399,14 +568,11 @@ const MakeTeam = () => {
       next[index] = getAbilitySummary(defaultAbility);
       return next;
     });
-    setSuggestions([]);
     setActiveIndex(null);
   };
 
-  const handleSelectFromRecommendation = (suggestion: Pokemon) => {
-    const emptyIndex = selectedPokemons.findIndex((p) => p === null);
-    if (emptyIndex === -1) return;
-    handleSelect(emptyIndex, suggestion);
+  const handleSelectFromRecommendation = (index: number, suggestion: Pokemon) => {
+    handleSelect(index, suggestion);
   };
 
   const handleClear = (index: number) => {
@@ -431,7 +597,6 @@ const MakeTeam = () => {
       return next;
     });
     if (activeIndex === index) {
-      setSuggestions([]);
       setActiveIndex(null);
     }
   };
@@ -443,7 +608,7 @@ const MakeTeam = () => {
     const dropdownOpen =
       activeIndex === index &&
       values[index].trim().length > 0 &&
-      !loading &&
+      !searchLoading &&
       suggestions.length > 0;
 
     if (!dropdownOpen) return;
@@ -466,15 +631,22 @@ const MakeTeam = () => {
     }
   };
 
-  // 인풋에 선택된 모든 포켓몬의 타입 합집합 (마지막 추천 리스트 필터용)
-  const teamSelectedTypes = useMemo(() => {
-    const types = new Set<string>();
-    for (const p of selectedPokemons) {
-      if (!p) continue;
-      for (const t of p.types) types.add(t);
-    }
-    return types;
-  }, [selectedPokemons]);
+  /**
+   * 추천 표 idx 기준 — 그 이전에 선택된 포켓몬 타입만 (기준 포켓몬 제외).
+   * idx=0(2번째 선택)일 때는 빈 집합 → 카운터 목록이 잘리지 않음.
+   */
+  const getTeamTypesBeforeRecommendation = useCallback(
+    (recommendationIdx: number) => {
+      const types = new Set<string>();
+      for (let i = 0; i < recommendationIdx; i++) {
+        const p = selectedPokemons[i];
+        if (!p) continue;
+        for (const t of ensureStringArray(p.types)) types.add(t);
+      }
+      return types;
+    },
+    [selectedPokemons],
+  );
 
   // 선택된 슬롯 중 가장 뒤 인덱스 (추천 결과의 마지막 리스트)
   const lastSelectedIndex = useMemo(() => {
@@ -485,17 +657,29 @@ const MakeTeam = () => {
     return last;
   }, [selectedPokemons]);
 
+  const nextEmptyIndex = useMemo(
+    () => selectedPokemons.findIndex((p) => p === null),
+    [selectedPokemons],
+  );
+
   return (
     <div>
+      {pokemonListError ? (
+        <p style={{ color: '#c00', fontSize: 13, marginBottom: 8 }}>
+          {pokemonListError}
+        </p>
+      ) : null}
       <div ref={wrapperRef} className={s.buildWrap}>
         {PLACEHOLDERS.map((placeholder, index) => {
           const isActive = activeIndex === index;
           const showDropdown =
-            isActive && values[index].trim().length > 0;
+            isClient &&
+            isActive &&
+            values[index].trim().length > 0;
           const selected = selectedPokemons[index];
           const chosenAbility = selectedAbilities[index];
-          const regularAbilities = selected?.ability ?? [];
-          const hiddenAbilities = selected?.s_ability ?? [];
+          const regularAbilities = ensureStringArray(selected?.ability);
+          const hiddenAbilities = ensureStringArray(selected?.s_ability);
           const hasAbilities =
             regularAbilities.length > 0 || hiddenAbilities.length > 0;
           const currentAbility =
@@ -507,11 +691,17 @@ const MakeTeam = () => {
           return (
             <div key={index}>
               <div className={s.thumbnail}>
-                {selected?.image ? (
+                {selected &&
+                (getPokemonAnimatedImage(selected.images) ??
+                  getPokemonStaticImage(selected.images)) ? (
                   <Image
-                    src={selected.image}
-                    alt={selected.name}
+                    src={
+                      getPokemonAnimatedImage(selected.images) ??
+                      getPokemonStaticImage(selected.images)!
+                    }
+                    alt={selected.nameKo}
                     fill
+                    unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="!relative !h-auto object-contain"
                     priority
@@ -520,7 +710,7 @@ const MakeTeam = () => {
               </div>
               <span className={s.types}>
                 <div className={s.typesList}>
-                  {selected?.types?.map((t) => (
+                  {ensureStringArray(selected?.types).map((t) => (
                     <span
                       key={t}
                       style={{
@@ -565,22 +755,23 @@ const MakeTeam = () => {
                   </button>
                   {showDropdown && (
                     <ul className={s.dropdown}>
-                      {loading && (
+                      {searchLoading && (
                         <li>
                           검색중...
                         </li>
                       )}
-                      {!loading && suggestions.length === 0 && (
+                      {!searchLoading &&
+                        suggestions.length === 0 && (
                         <li>
                           검색 결과 없음
                         </li>
                       )}
-                      {!loading &&
+                      {!searchLoading &&
                         suggestions.map((item, i) => {
                           const isHighlighted = i === highlightedIndex;
                           return (
                             <li
-                              key={item.id}
+                              key={item.name}
                               className={cn({
                                 [s.dropdownItemHighlighted]: isHighlighted,
                               })}
@@ -595,9 +786,9 @@ const MakeTeam = () => {
                               onMouseEnter={() => setHighlightedIndex(i)}
                             >
                               {/* <span style={{ color: '#888' }}>#{item.number}</span> */}
-                              <span style={{ flex: 1 }}>{item.name}</span>
+                              <span style={{ flex: 1 }}>{item.nameKo}</span>
                               <span style={{ display: 'inline-flex', gap: 4 }}>
-                                {item.types?.map((t) => (
+                                {ensureStringArray(item.types).map((t) => (
                                   <span
                                     key={t}
                                     style={{
@@ -632,11 +823,13 @@ const MakeTeam = () => {
                         handleSelectAbility(index, e.target.value)
                       }
                       aria-label="특성 선택"
+                      title={abilitySummary ?? ''}
                     >
                       {regularAbilities.map((abilityName) => (
                         <option
                           key={`ability-${abilityName}`}
                           value={abilityName}
+                          title={abilitySummary ?? ''}
                         >
                           {abilityName}
                         </option>
@@ -645,12 +838,13 @@ const MakeTeam = () => {
                         <option
                           key={`s-ability-${abilityName}`}
                           value={abilityName}
+                          title={abilitySummary ?? ''}
                         >
                           🔓 {abilityName}
                         </option>
                       ))}
                     </select>
-                    <p className={s.abilitySummary}>{abilitySummary && abilitySummary}</p>
+                    {/* <p className={s.abilitySummary}>{abilitySummary && abilitySummary}</p> */}
                     {/* {abilitySummary ? (
                       <p className={s.abilitySummary}>{abilitySummary}</p>
                     ) : null} */}
@@ -660,6 +854,7 @@ const MakeTeam = () => {
                 )}
               </div>
               <div>도구</div>
+              <div>성격</div>
               <div>기술1</div>
               <div>기술2</div>
               <div>기술3</div>
@@ -704,7 +899,11 @@ const MakeTeam = () => {
         )}
         {selectedPokemons.map((pokemon, idx) => {
           if (!pokemon) return null;
-          const counterResult = getRecommendedCounterDetails(pokemon.types);
+          // 팀이 가득 찼을 때 마지막 슬롯 기준 '다음(7번째)' 추천 표만 숨김
+          if (nextEmptyIndex === -1 && idx === lastSelectedIndex) return null;
+          const counterResult = getRecommendedCounterDetails(
+            ensureStringArray(pokemon.types),
+          );
           const { weaknesses, counters } = counterResult;
           if (counters.length === 0) return null;
 
@@ -712,22 +911,26 @@ const MakeTeam = () => {
           const recSet = new Set(recommended);
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
           const matchingPokemons = allPokemons.filter((p) => {
-            const matches = p.types.filter((t) => recSet.has(t));
+            const matches = ensureStringArray(p.types).filter((t) =>
+              recSet.has(t),
+            );
             if (matches.length < minRecTypeCount) return false;
-            if (excludeMegaEvolution && isMegaDisplayName(p.name)) return false;
-            if (
-              excludeSameTypes &&
-              idx === lastSelectedIndex
-            ) {
-              const hasTeamType = p.types.some((t) => teamSelectedTypes.has(t));
-              if (hasTeamType) return false;
+            if (excludeMegaEvolution[idx] && isMegaDisplayName(p.nameKo))
+              return false;
+            if (excludeSameTypes) {
+              const teamTypes = getTeamTypesBeforeRecommendation(idx);
+              // 추천 카운터 타입(강철·독·바위 등)과 겹치는 것은 허용
+              const overlapsOutsideRec = ensureStringArray(p.types).some(
+                (t) => teamTypes.has(t) && !recSet.has(t),
+              );
+              if (overlapsOutsideRec) return false;
             }
             return true;
           });
 
           return (
             <div
-              key={`${pokemon.id}-${idx}`}
+              key={`${pokemon.name}-${idx}`}
               style={{
                 marginTop: 12,
                 padding: 12,
@@ -743,9 +946,10 @@ const MakeTeam = () => {
                   flexWrap: 'wrap',
                 }}
               >
-                <strong>{pokemon.name}</strong>
+                ( {`${idx + 2}`} 번째 포켓몬 선택)
+                <strong>{pokemon.nameKo}</strong>
                 <span style={{ display: 'inline-flex', gap: 4 }}>
-                  {pokemon.types.map((t) => (
+                  {ensureStringArray(pokemon.types).map((t) => (
                     <span
                       key={t}
                       style={{
@@ -922,10 +1126,15 @@ const MakeTeam = () => {
                   >
                     <input
                       type="checkbox"
-                      checked={excludeMegaEvolution}
-                      onChange={(e) =>
-                        setExcludeMegaEvolution(e.target.checked)
-                      }
+                      checked={excludeMegaEvolution[idx]}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setExcludeMegaEvolution((prev) => {
+                          const next = [...prev];
+                          next[idx] = checked;
+                          return next;
+                        });
+                      }}
                     />
                     메가진화 제외
                   </label>
@@ -937,7 +1146,9 @@ const MakeTeam = () => {
                 ) : (
                   <MatchingPokemonsTable
                     pokemons={matchingPokemons}
-                    onSelectPokemon={handleSelectFromRecommendation}
+                    onSelectPokemon={(p) =>
+                      handleSelectFromRecommendation(idx + 1, p)
+                    }
                   />
                 )}
               </div>

@@ -6,6 +6,36 @@
   }
 }
 
+.nameWithPreview {
+  cursor: default;
+}
+
+.pokemonImagePreview {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+  img {
+    display: block;
+    object-fit: contain;
+  }
+}
+
+.pokemonImagePreviewName {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .input {
   width: 100%;
   padding: 8px 32px 8px 10px;
@@ -48,6 +78,8 @@
 }
 
 .thumbnail {
+  display: flex;
+  align-items: self-end;
   position: relative;
   flex-shrink: 0;
   width: 150px;

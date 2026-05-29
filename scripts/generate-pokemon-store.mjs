@@ -1,7 +1,10 @@
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const csvPath = '/public/data/pokemon.csv';
-const outPath = '/src/store/PokemonStore.ts';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const csvPath = path.join(__dirname, '../public/data/pokemon.csv');
+const outPath = path.join(__dirname, '../src/store/PokemonStore.ts');
 
 function parseCSVLine(line) {
   const fields = [];
@@ -55,6 +58,7 @@ for (let li = 1; li < lines.length; li++) {
     id,
     number,
     name,
+    nameKo,
     types,
     H,
     A,
@@ -64,7 +68,7 @@ for (let li = 1; li < lines.length; li++) {
     S,
     total,
     form,
-    image,
+    images,
     ability,
     s_ability,
   ] = f;
@@ -72,6 +76,7 @@ for (let li = 1; li < lines.length; li++) {
     id: Number(id),
     number: Number(number),
     name,
+    nameKo,
     types: parseJsonArray(types),
     H: Number(H),
     A: Number(A),
@@ -81,17 +86,18 @@ for (let li = 1; li < lines.length; li++) {
     S: Number(S),
     total: Number(total),
     ...(form ? { form } : {}),
-    ...(image ? { image } : {}),
+    images: parseJsonArray(images),
     ability: parseJsonArray(ability),
     s_ability: parseJsonArray(s_ability),
   });
 }
 
-const ts = `/** 포켓몬 마스터 데이터 (engrit-origin/public/data/pokemon.csv 기준) */
+const ts = `/** 포켓몬 마스터 데이터 (public/data/pokemon.csv 기준) */
 export type Pokemon = {
   id: number;
   number: number;
   name: string;
+  nameKo: string;
   types: string[];
   H: number;
   A: number;
@@ -101,7 +107,7 @@ export type Pokemon = {
   S: number;
   total: number;
   form?: string;
-  image?: string;
+  images: string[];
   ability: string[];
   s_ability: string[];
 };
@@ -109,10 +115,12 @@ export type Pokemon = {
 export const POKEMON_LIST: Pokemon[] = ${JSON.stringify(pokemons, null, 2)};
 
 const byId = new Map<number, Pokemon>();
+const byEnglishName = new Map<string, Pokemon>();
 const byNumber = new Map<number, Pokemon[]>();
 
 for (const p of POKEMON_LIST) {
   byId.set(p.id, p);
+  byEnglishName.set(p.name, p);
   const list = byNumber.get(p.number) ?? [];
   list.push(p);
   byNumber.set(p.number, list);
@@ -120,6 +128,10 @@ for (const p of POKEMON_LIST) {
 
 export function getPokemonById(id: number): Pokemon | undefined {
   return byId.get(id);
+}
+
+export function getPokemonByEnglishName(name: string): Pokemon | undefined {
+  return byEnglishName.get(name);
 }
 
 export function getPokemonsByNumber(number: number): Pokemon[] {
@@ -130,14 +142,17 @@ export function searchPokemonByName(keyword: string, limit = 50): Pokemon[] {
   const q = keyword.trim();
   if (!q) return [];
   const lower = q.toLowerCase();
-  const results: Pokemon[] = [];
-  for (const p of POKEMON_LIST) {
-    if (p.name.includes(q) || p.name.toLowerCase().includes(lower)) {
-      results.push(p);
-      if (results.length >= limit) break;
-    }
-  }
-  return results.sort((a, b) => a.number - b.number);
+  return POKEMON_LIST.filter(
+    (p) =>
+      p.nameKo.includes(q) ||
+      p.name.includes(q) ||
+      p.name.toLowerCase().includes(lower),
+  )
+    .sort(
+      (a, b) =>
+        a.number - b.number || a.nameKo.localeCompare(b.nameKo, 'ko'),
+    )
+    .slice(0, limit);
 }
 `;
 

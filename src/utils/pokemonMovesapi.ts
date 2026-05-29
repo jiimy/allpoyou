@@ -72,10 +72,25 @@ function parseCSVLine(line: string): string[] {
   return fields;
 }
 
-function extractPokeApiIdFromImage(image: string | undefined, fallbackId: number): number {
-  if (!image) return fallbackId;
+function parseJsonArrayField(raw: string | undefined): string[] {
+  const t = (raw ?? '').trim();
+  if (!t || t === '[]') return [];
+  try {
+    return JSON.parse(t) as string[];
+  } catch {
+    return [];
+  }
+}
 
-  const match = image.match(/\/(\d+)\.png(?:\?|$)/);
+function extractPokeApiIdFromImages(
+  imagesJson: string | undefined,
+  fallbackId: number,
+): number {
+  const urls = parseJsonArrayField(imagesJson);
+  const first = urls[0];
+  if (!first) return fallbackId;
+
+  const match = first.match(/\/(\d+)\.png(?:\?|$)/);
   if (!match) return fallbackId;
 
   const pokeapiId = Number(match[1]);
@@ -91,16 +106,16 @@ function parsePokemonCsv(): PokemonCsvEntry[] {
     const fields = parseCSVLine(lines[i]);
     if (fields.length < 3) continue;
 
-    const [id, number, name, , , , , , , , , , image] = fields;
-    if (name.startsWith('메가')) continue;
+    const [id, number, , nameKo, , , , , , , , , , images] = fields;
+    if (nameKo.startsWith('메가 ')) continue;
 
     const csvId = Number(id);
     const dexNumber = Number(number);
     rows.push({
       id: csvId,
       number: dexNumber,
-      name,
-      pokeapiId: extractPokeApiIdFromImage(image, csvId),
+      name: nameKo,
+      pokeapiId: extractPokeApiIdFromImages(images, csvId),
       baseSpeciesId: dexNumber,
     });
   }
