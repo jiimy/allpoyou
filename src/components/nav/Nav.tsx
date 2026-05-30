@@ -7,13 +7,16 @@ const Nav = () => {
     <div className={s.nav}>
       <ul>
         <li>
-          <Link href="/book">도감</Link>
+          <Link href="/">메인</Link>
         </li>
         <li>
-          <Link href="/char">특성</Link>
+          <Link href="/pokedex">도감</Link>
         </li>
         <li>
-          <Link href="/skills">기술</Link>
+          <Link href="/abilities">특성</Link>
+        </li>
+        <li>
+          <Link href="/moves">기술</Link>
         </li>
         <li>
           <Link href="/person">성격</Link>

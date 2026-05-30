@@ -1,8 +1,6 @@
 import { type NextRequest } from 'next/server';
-
 import { fetchAllAbilitiesKr } from '@/utils/abilitiesapi';
 
-// 1주일(604800초). 값은 정적 리터럴이어야 Next.js 빌드가 통과함.
 export const revalidate = 604800;
 
 /**

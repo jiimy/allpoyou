@@ -1,0 +1,1 @@
+export { TYPE_COLOR } from '@/constants/pokemonTypeColor';

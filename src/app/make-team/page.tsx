@@ -20,16 +20,13 @@ import {
   searchPokemonByName,
   type Pokemon,
 } from '@/store/PokemonStore';
-import {
-  getPokemonAnimatedImage,
-  getPokemonStaticImage,
-  hasPokemonImage,
-} from '@/utils/pokemonDisplay';
+import { PokemonSpriteImage } from '@/components/PokemonSpriteImage';
+import { hasPokemonImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray, normalizePokemon } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import abilitiesData from '@/constants/abilities.json';
 import s from './maekTeam.module.scss';
-import Image from 'next/image';
+import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 
 type AbilityEntry = { nameKo: string; summary: string };
 
@@ -104,7 +101,7 @@ const PREVIEW_CURSOR_OFFSET = 14;
 const PREVIEW_IMAGE_SIZE = 120;
 
 type PokemonImagePreviewState = {
-  image: string;
+  images: string[];
   name: string;
   x: number;
   y: number;
@@ -127,9 +124,8 @@ function PokemonImageCursorPreview({
       role="tooltip"
       aria-hidden
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={preview.image}
+      <PokemonSpriteImage
+        images={preview.images}
         alt=""
         width={PREVIEW_IMAGE_SIZE}
         height={PREVIEW_IMAGE_SIZE}
@@ -150,12 +146,9 @@ const MatchingPokemonsTable: React.FC<{
     useState<PokemonImagePreviewState>(null);
 
   const showImagePreview = useCallback((pokemon: Pokemon, e: React.MouseEvent) => {
-    const image =
-      getPokemonAnimatedImage(pokemon.images) ??
-      getPokemonStaticImage(pokemon.images);
-    if (!image) return;
+    if (!hasPokemonImage(pokemon.images)) return;
     setImagePreview({
-      image,
+      images: pokemon.images,
       name: pokemon.nameKo,
       x: e.clientX,
       y: e.clientY,
@@ -388,28 +381,6 @@ function getDefaultAbility(pokemon: Pokemon): string | null {
   const sAbility = ensureStringArray(pokemon.s_ability);
   return ability[0] ?? sAbility[0] ?? null;
 }
-
-// 한글 타입명 → 색상 매핑 (공식 컬러 팔레트)
-const TYPE_COLOR: Record<string, string> = {
-  노말: '#A8A77A',
-  격투: '#C22E28',
-  비행: '#A98FF3',
-  독: '#A33EA1',
-  땅: '#E2BF65',
-  바위: '#B6A136',
-  벌레: '#A6B91A',
-  고스트: '#735797',
-  강철: '#B7B7CE',
-  불꽃: '#EE8130',
-  물: '#6390F0',
-  풀: '#7AC74C',
-  전기: '#F7D02C',
-  에스퍼: '#F95587',
-  얼음: '#96D9D6',
-  드래곤: '#6F35FC',
-  악: '#705746',
-  페어리: '#D685AD',
-};
 
 const MakeTeam = () => {
   "use no memo";
@@ -662,6 +633,14 @@ const MakeTeam = () => {
     [selectedPokemons],
   );
 
+  const selectedPokemonIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const p of selectedPokemons) {
+      if (p) ids.add(p.id);
+    }
+    return ids;
+  }, [selectedPokemons]);
+
   return (
     <div>
       {pokemonListError ? (
@@ -691,17 +670,11 @@ const MakeTeam = () => {
           return (
             <div key={index}>
               <div className={s.thumbnail}>
-                {selected &&
-                (getPokemonAnimatedImage(selected.images) ??
-                  getPokemonStaticImage(selected.images)) ? (
-                  <Image
-                    src={
-                      getPokemonAnimatedImage(selected.images) ??
-                      getPokemonStaticImage(selected.images)!
-                    }
+                {selected && hasPokemonImage(selected.images) ? (
+                  <PokemonSpriteImage
+                    images={selected.images}
                     alt={selected.nameKo}
                     fill
-                    unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="!relative !h-auto object-contain"
                     priority
@@ -911,6 +884,7 @@ const MakeTeam = () => {
           const recSet = new Set(recommended);
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
           const matchingPokemons = allPokemons.filter((p) => {
+            if (selectedPokemonIds.has(p.id)) return false;
             const matches = ensureStringArray(p.types).filter((t) =>
               recSet.has(t),
             );
