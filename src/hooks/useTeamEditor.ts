@@ -90,7 +90,7 @@ export function useTeamEditor() {
 
     const hydrateEditorFromStore = () => {
       if (editorHydratedRef.current) return;
-      if (!usePokemonTeamStore.persist.hasHydrated()) return;
+      if (!usePokemonTeamStore.persist?.hasHydrated()) return;
 
       const { teams, activeTeamId } = usePokemonTeamStore.getState();
       const activeTeam = teams.find((t) => t.teamId === activeTeamId);
@@ -151,7 +151,9 @@ export function useTeamEditor() {
     };
 
     hydrateEditorFromStore();
-    return usePokemonTeamStore.persist.onFinishHydration(hydrateEditorFromStore);
+    const persist = usePokemonTeamStore.persist;
+    if (!persist) return;
+    return persist.onFinishHydration(hydrateEditorFromStore);
   }, [isClient, pokemonListLoading, allPokemons]);
 
   const searchKeyword =
