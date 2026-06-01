@@ -110,8 +110,6 @@ export default function ItemList() {
 
   return (
     <div className={s.page}>
-      <h1 className={s.title}>도구</h1>
-
       <SearchBar
         keyword={keyword}
         onKeywordChange={setKeyword}

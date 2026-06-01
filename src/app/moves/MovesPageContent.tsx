@@ -30,10 +30,13 @@ export type PokemonLearner = {
   nameKo: string;
 };
 
-type LearnablePokemonState = {
-  moveIdsKey: string;
+type LearnableCacheEntry = {
   pokemon: PokemonLearner[];
-  loading: boolean;
+  error: string | null;
+};
+
+type PokemonMovesCacheEntry = {
+  moves: MoveDbEntry[];
   error: string | null;
 };
 
@@ -46,16 +49,21 @@ export default function MovesPageContent() {
     null,
   );
   const [showLearnablePokemon, setShowLearnablePokemon] = useState(false);
-  const [learnablePokemon, setLearnablePokemon] =
-    useState<LearnablePokemonState | null>(null);
+  const [learnableCache, setLearnableCache] = useState<
+    Record<string, LearnableCacheEntry>
+  >({});
+  const [learnableLoadingKey, setLearnableLoadingKey] = useState<string | null>(
+    null,
+  );
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonLearner | null>(
     null,
   );
-  const [pokemonMoves, setPokemonMoves] = useState<MoveDbEntry[]>([]);
-  const [pokemonMovesLoading, setPokemonMovesLoading] = useState(false);
-  const [pokemonMovesError, setPokemonMovesError] = useState<string | null>(
-    null,
-  );
+  const [pokemonMovesCache, setPokemonMovesCache] = useState<
+    Record<number, PokemonMovesCacheEntry>
+  >({});
+  const [pokemonMovesLoadingId, setPokemonMovesLoadingId] = useState<
+    number | null
+  >(null);
 
   const moveIdsByNameMatch = useMemo(() => {
     const q = keyword.trim();
@@ -74,21 +82,36 @@ export default function MovesPageContent() {
 
   const handleKeywordChange = useCallback((value: string) => {
     setKeyword(value);
+    setSelectedPokemon(null);
     if (!value.trim()) {
       setPokemonSearch(null);
-      setLearnablePokemon(null);
       setShowLearnablePokemon(false);
-      setSelectedPokemon(null);
-      setPokemonMoves([]);
-      setPokemonMovesError(null);
+      setPokemonMovesCache({});
+      setPokemonMovesLoadingId(null);
+      setLearnableCache({});
+      setLearnableLoadingKey(null);
     }
   }, []);
 
-  const handleSelectPokemon = useCallback((pokemon: PokemonLearner) => {
-    setSelectedPokemon((prev) =>
-      prev?.id === pokemon.id ? null : pokemon,
-    );
+  const handleShowLearnablePokemonChange = useCallback((checked: boolean) => {
+    setShowLearnablePokemon(checked);
+    setSelectedPokemon(null);
   }, []);
+
+  const handleSelectPokemon = useCallback(
+    (pokemon: PokemonLearner) => {
+      if (selectedPokemon?.id === pokemon.id) {
+        setSelectedPokemon(null);
+        setPokemonMovesLoadingId(null);
+        return;
+      }
+      setSelectedPokemon(pokemon);
+      setPokemonMovesLoadingId(
+        pokemonMovesCache[pokemon.id] ? null : pokemon.id,
+      );
+    },
+    [selectedPokemon, pokemonMovesCache],
+  );
 
   useEffect(() => {
     const q = keyword.trim();
@@ -149,24 +172,16 @@ export default function MovesPageContent() {
   }, [keyword]);
 
   useEffect(() => {
-    if (!showLearnablePokemon || moveIdsByNameMatch.length === 0) {
-      setLearnablePokemon(null);
-      return;
-    }
+    if (moveIdsByNameMatch.length === 0) return;
+    if (learnableCache[moveIdsKey]) return;
 
     let cancelled = false;
     const timer = setTimeout(() => {
-      setLearnablePokemon((prev) => ({
-        moveIdsKey,
-        pokemon: prev?.moveIdsKey === moveIdsKey ? prev.pokemon : [],
-        loading: true,
-        error: null,
-      }));
+      setLearnableLoadingKey(moveIdsKey);
 
-      fetch(
-        `/api/moves?moveIds=${encodeURIComponent(moveIdsKey)}`,
-        { cache: 'no-store' },
-      )
+      fetch(`/api/moves?moveIds=${encodeURIComponent(moveIdsKey)}`, {
+        cache: 'no-store',
+      })
         .then(async (res) => {
           const body = (await res.json()) as {
             pokemon?: PokemonLearner[];
@@ -175,27 +190,27 @@ export default function MovesPageContent() {
           if (!res.ok) {
             throw new Error(body.error ?? `조회 실패 (${res.status})`);
           }
-          if (!cancelled) {
-            setLearnablePokemon({
-              moveIdsKey,
+          if (cancelled) return;
+          setLearnableCache((prev) => ({
+            ...prev,
+            [moveIdsKey]: {
               pokemon: body.pokemon ?? [],
-              loading: false,
               error: null,
-            });
-          }
+            },
+          }));
+          setLearnableLoadingKey((key) => (key === moveIdsKey ? null : key));
         })
         .catch((err: unknown) => {
-          if (!cancelled) {
-            setLearnablePokemon({
-              moveIdsKey,
-              pokemon: [],
-              loading: false,
-              error:
-                err instanceof Error
-                  ? err.message
-                  : '배울 수 있는 포켓몬 조회에 실패했습니다.',
-            });
-          }
+          if (cancelled) return;
+          const message =
+            err instanceof Error
+              ? err.message
+              : '배울 수 있는 포켓몬 조회에 실패했습니다.';
+          setLearnableCache((prev) => ({
+            ...prev,
+            [moveIdsKey]: { pokemon: [], error: message },
+          }));
+          setLearnableLoadingKey((key) => (key === moveIdsKey ? null : key));
         });
     }, 300);
 
@@ -203,21 +218,16 @@ export default function MovesPageContent() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [showLearnablePokemon, moveIdsKey, moveIdsByNameMatch.length]);
+  }, [moveIdsKey, moveIdsByNameMatch.length, learnableCache]);
 
   useEffect(() => {
-    if (!selectedPokemon) {
-      setPokemonMoves([]);
-      setPokemonMovesError(null);
-      setPokemonMovesLoading(false);
-      return;
-    }
+    if (!selectedPokemon) return;
+    const pokemonId = selectedPokemon.id;
+    if (pokemonMovesCache[pokemonId]) return;
 
     let cancelled = false;
-    setPokemonMovesLoading(true);
-    setPokemonMovesError(null);
 
-    fetch(`/api/moves?pokemonId=${selectedPokemon.id}`, { cache: 'no-store' })
+    fetch(`/api/moves?pokemonId=${pokemonId}`, { cache: 'no-store' })
       .then(async (res) => {
         const body = (await res.json()) as {
           moveIds?: number[];
@@ -226,32 +236,35 @@ export default function MovesPageContent() {
         if (!res.ok) {
           throw new Error(body.error ?? `조회 실패 (${res.status})`);
         }
-        if (!cancelled) {
-          setPokemonMoves(getMovesByIds(movesById, body.moveIds ?? []));
-        }
+        if (cancelled) return;
+        setPokemonMovesCache((prev) => ({
+          ...prev,
+          [pokemonId]: {
+            moves: getMovesByIds(movesById, body.moveIds ?? []),
+            error: null,
+          },
+        }));
+        setPokemonMovesLoadingId((id) => (id === pokemonId ? null : id));
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setPokemonMoves([]);
-          setPokemonMovesError(
-            err instanceof Error
-              ? err.message
-              : '포켓몬 기술 목록을 불러오지 못했습니다.',
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setPokemonMovesLoading(false);
+        if (cancelled) return;
+        setPokemonMovesCache((prev) => ({
+          ...prev,
+          [pokemonId]: {
+            moves: [],
+            error:
+              err instanceof Error
+                ? err.message
+                : '포켓몬 기술 목록을 불러오지 못했습니다.',
+          },
+        }));
+        setPokemonMovesLoadingId((id) => (id === pokemonId ? null : id));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [selectedPokemon]);
-
-  useEffect(() => {
-    setSelectedPokemon(null);
-  }, [moveIdsKey, showLearnablePokemon]);
+  }, [selectedPokemon, pokemonMovesCache]);
 
   const filteredMoves = useMemo(() => {
     let list = allMoves;
@@ -294,6 +307,23 @@ export default function MovesPageContent() {
       pokemonSearch.query !== q ||
       pokemonSearch.loading);
 
+  const learnableCacheEntry = learnableCache[moveIdsKey];
+  const selectedPokemonMoves = selectedPokemon
+    ? pokemonMovesCache[selectedPokemon.id]
+    : undefined;
+  const canShowLearnablePanel =
+    showLearnablePokemon && moveIdsByNameMatch.length > 0;
+  const learnablePokemonList = canShowLearnablePanel
+    ? (learnableCacheEntry?.pokemon ?? [])
+    : [];
+  const learnablePokemonLoading =
+    canShowLearnablePanel &&
+    !learnableCacheEntry &&
+    learnableLoadingKey === moveIdsKey;
+  const learnablePokemonError = canShowLearnablePanel
+    ? (learnableCacheEntry?.error ?? null)
+    : null;
+
   return (
     <div className={s.page}>
       <SearchBar
@@ -318,33 +348,22 @@ export default function MovesPageContent() {
         totalCount={allMoves.length}
         pokemonSearchPending={pokemonSearchPending}
         showLearnablePokemon={showLearnablePokemon}
-        onShowLearnablePokemonChange={setShowLearnablePokemon}
+        onShowLearnablePokemonChange={handleShowLearnablePokemonChange}
         canShowLearnablePokemon={moveIdsByNameMatch.length > 0}
         matchedMoveNames={moveIdsByNameMatch
           .map((id) => movesById.get(id)?.koreanName)
           .filter((name): name is string => Boolean(name))}
-        learnablePokemon={
-          learnablePokemon?.moveIdsKey === moveIdsKey
-            ? learnablePokemon.pokemon
-            : []
-        }
-        learnablePokemonLoading={
-          showLearnablePokemon &&
-          moveIdsByNameMatch.length > 0 &&
-          (learnablePokemon === null ||
-            learnablePokemon.moveIdsKey !== moveIdsKey ||
-            learnablePokemon.loading)
-        }
-        learnablePokemonError={
-          learnablePokemon?.moveIdsKey === moveIdsKey
-            ? learnablePokemon.error
-            : null
-        }
+        learnablePokemon={learnablePokemonList}
+        learnablePokemonLoading={learnablePokemonLoading}
+        learnablePokemonError={learnablePokemonError}
         selectedPokemon={selectedPokemon}
         onSelectPokemon={handleSelectPokemon}
-        pokemonMoves={pokemonMoves}
-        pokemonMovesLoading={pokemonMovesLoading}
-        pokemonMovesError={pokemonMovesError}
+        pokemonMoves={selectedPokemonMoves?.moves ?? []}
+        pokemonMovesLoading={
+          selectedPokemon != null &&
+          pokemonMovesLoadingId === selectedPokemon.id
+        }
+        pokemonMovesError={selectedPokemonMoves?.error ?? null}
       />
     </div>
   );
