@@ -65,6 +65,18 @@ type MoveListProps = {
   onDamageClassChange: (value: MoveDamageClassFilter) => void;
   totalCount: number;
   pokemonSearchPending?: boolean;
+  showLearnablePokemon: boolean;
+  onShowLearnablePokemonChange: (checked: boolean) => void;
+  canShowLearnablePokemon: boolean;
+  matchedMoveNames: string[];
+  learnablePokemon: { id: number; number: number; nameKo: string }[];
+  learnablePokemonLoading: boolean;
+  learnablePokemonError: string | null;
+  selectedPokemon: { id: number; number: number; nameKo: string } | null;
+  onSelectPokemon: (pokemon: { id: number; number: number; nameKo: string }) => void;
+  pokemonMoves: MoveDbEntry[];
+  pokemonMovesLoading: boolean;
+  pokemonMovesError: string | null;
 };
 
 export default function MoveList({
@@ -75,9 +87,24 @@ export default function MoveList({
   onDamageClassChange,
   totalCount,
   pokemonSearchPending = false,
+  showLearnablePokemon,
+  onShowLearnablePokemonChange,
+  canShowLearnablePokemon,
+  matchedMoveNames,
+  learnablePokemon,
+  learnablePokemonLoading,
+  learnablePokemonError,
+  selectedPokemon,
+  onSelectPokemon,
+  pokemonMoves,
+  pokemonMovesLoading,
+  pokemonMovesError,
 }: MoveListProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [pokemonMovesVisibleCount, setPokemonMovesVisibleCount] =
+    useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const pokemonMovesSentinelRef = useRef<HTMLDivElement>(null);
 
   const visibleMoves = useMemo(
     () => moves.slice(0, visibleCount),
@@ -85,6 +112,20 @@ export default function MoveList({
   );
 
   const hasMore = visibleCount < moves.length;
+
+  const visiblePokemonMoves = useMemo(
+    () => pokemonMoves.slice(0, pokemonMovesVisibleCount),
+    [pokemonMoves, pokemonMovesVisibleCount],
+  );
+
+  const hasMorePokemonMoves = pokemonMovesVisibleCount < pokemonMoves.length;
+
+  const pokemonKey = selectedPokemon?.id ?? 'none';
+  const [prevPokemonKey, setPrevPokemonKey] = useState(pokemonKey);
+  if (prevPokemonKey !== pokemonKey) {
+    setPrevPokemonKey(pokemonKey);
+    setPokemonMovesVisibleCount(PAGE_SIZE);
+  }
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -102,6 +143,25 @@ export default function MoveList({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [moves.length, hasMore]);
+
+  useEffect(() => {
+    const sentinel = pokemonMovesSentinelRef.current;
+    if (!sentinel || !hasMorePokemonMoves) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setPokemonMovesVisibleCount((prev) =>
+            Math.min(prev + PAGE_SIZE, pokemonMoves.length),
+          );
+        }
+      },
+      { rootMargin: '240px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [pokemonMoves.length, hasMorePokemonMoves]);
 
   return (
     <>
@@ -152,7 +212,56 @@ export default function MoveList({
             ))}
           </div>
         </div>
+        {canShowLearnablePokemon ? (
+          <label className={s.learnableCheck}>
+            <input
+              type="checkbox"
+              checked={showLearnablePokemon}
+              onChange={(e) => onShowLearnablePokemonChange(e.target.checked)}
+            />
+            <span>배울 수 있는 포켓몬</span>
+          </label>
+        ) : null}
       </section>
+
+      {showLearnablePokemon && canShowLearnablePokemon ? (
+        <section className={s.learnableSection}>
+          <h3 className={s.learnableTitle}>
+            배울 수 있는 포켓몬
+            {matchedMoveNames.length > 0
+              ? ` · ${matchedMoveNames.join(', ')}`
+              : ''}
+          </h3>
+          {learnablePokemonLoading ? (
+            <p className={s.learnableEmpty}>포켓몬 목록을 불러오는 중…</p>
+          ) : learnablePokemonError ? (
+            <p className={s.learnableError}>{learnablePokemonError}</p>
+          ) : learnablePokemon.length === 0 ? (
+            <p className={s.learnableEmpty}>
+              이 기술을 배울 수 있는 포켓몬이 없습니다.
+            </p>
+          ) : (
+            <>
+              <p className={s.learnableCount}>
+                {learnablePokemon.length.toLocaleString()}마리
+              </p>
+              <ul className={s.learnableList}>
+                {learnablePokemon.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className={`${s.learnableItem} ${selectedPokemon?.id === p.id ? s.learnableItemActive : ''}`}
+                      onClick={() => onSelectPokemon(p)}
+                    >
+                      {p.nameKo}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      ) : null}
 
       <p className={s.resultCount}>
         {moves.length.toLocaleString()}개 / {totalCount.toLocaleString()}개
@@ -170,6 +279,39 @@ export default function MoveList({
         </ul>
       )}
       {hasMore ? <div ref={sentinelRef} className={s.sentinel} aria-hidden /> : null}
+
+      {selectedPokemon ? (
+        <section className={s.pokemonMovesSection}>
+          <h3 className={s.pokemonMovesTitle}>
+            {selectedPokemon.nameKo} · 배울 수 있는 기술
+          </h3>
+          {pokemonMovesLoading ? (
+            <p className={s.empty}>기술 목록을 불러오는 중…</p>
+          ) : pokemonMovesError ? (
+            <p className={s.learnableError}>{pokemonMovesError}</p>
+          ) : pokemonMoves.length === 0 ? (
+            <p className={s.empty}>배울 수 있는 기술이 없습니다.</p>
+          ) : (
+            <>
+              <p className={s.resultCount}>
+                {pokemonMoves.length.toLocaleString()}개
+              </p>
+              <ul className={s.list}>
+                {visiblePokemonMoves.map((move) => (
+                  <MoveRow key={move.id} move={move} />
+                ))}
+              </ul>
+              {hasMorePokemonMoves ? (
+                <div
+                  ref={pokemonMovesSentinelRef}
+                  className={s.sentinel}
+                  aria-hidden
+                />
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
     </>
   );
 }

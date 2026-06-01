@@ -84,7 +84,8 @@
   flex-shrink: 0;
   width: 150px;
   min-height: 150px;
-  height: fit-content;
+  // height: fit-content;
+  height: 150px;
   margin: 0 auto;
 }
 
@@ -96,6 +97,7 @@
 
 .inputWrap {
   position: relative;
+  height:100%;
 }
 
 .types {
@@ -121,14 +123,17 @@
 .abilitySection {
   display: flex;
   flex-direction: column;
+  height: 45px;
   gap: 4px;
   border: 1px solid #eee;
   border-top: none;
-  padding: 10px 0;
-  &~div {
+  justify-content: center;
+  ~ div {
+    display: flex;
+    align-items: center;
     border: 1px solid #eee;
     border-top: none;
-    padding: 10px 0;
+    height: 45px;
   }
 }
 
@@ -138,12 +143,30 @@
   font-weight: 600;
 }
 
+.fieldInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+  padding: 0 28px 0 4px;
+  font-size: inherit;
+}
+
+.itemDropdownDesc {
+  flex: 1 1 100%;
+  font-size: 11px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .abilitySelect {
   width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #ddd;
+  height: 100%;
   border-radius: 4px;
-  font-size: 12px;
   background: #fff;
   cursor: pointer;
   box-sizing: border-box;
@@ -209,11 +232,13 @@
   max-height: 360px;
   overflow-y: auto;
   li {
+    display: flex;
     padding: 8px 10px;
     color: #888;
-    display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: space-between;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
     background: #fff;

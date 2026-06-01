@@ -1,120 +1,185 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { ensureStringArray } from '@/utils/pokemonNormalize';
 
 export const TEAM_SLOT_COUNT = 6;
+export const MAX_TEAMS = 5;
 
-export type PokemonEvs = Partial<
-  Record<'hp' | 'atk' | 'def' | 'spa' | 'spd' | 'spe', number>
->;
-
-export type PokemonTeamMember = {
-  pokemon_id: number;
-  pokemon_name: string;
-  item_id?: number;
-  item_name?: string;
-  move_ids?: number[];
-  move_names?: string[];
-  evs?: PokemonEvs; //"evs": { "h": 4, "a": 252, "b": 252 }
+export type TeamPokemonEvs = {
+  H: number;
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  S: number;
+  total: number;
 };
 
-/** 최대 6마리까지 배열로 구성된 팀 */
-export type PokemonTeam = PokemonTeamMember[];
-
-type PokemonTeamMeta = {
-  user_id: string;
-  title?: string;
-  game_name?: string;
-  likes_count?: string;
-  bookmarks_count?: string;
+export type TeamPokemonSlot = {
+  /** pokemon.csv row id */
+  pokemonId: number;
+  nameKo: string;
+  nameEn: string;
+  types: string[];
+  form?: string;
+  abilityId: number | null;
+  itemId: number | null;
+  nature: string | null;
+  teraType: string | null;
+  moves: number[];
+  evs: TeamPokemonEvs | null;
 };
 
-type PokemonTeamStoreState = PokemonTeamMeta & {
-  /** 현재 편집 중인 6슬롯 (null = 빈 슬롯) */
-  slots: (PokemonTeamMember | null)[];
-  /** 저장된 팀 목록 */
-  teams: PokemonTeam[];
-  isLoading: boolean;
-  error: string | null;
-  setMeta: (meta: Partial<PokemonTeamMeta>) => void;
-  setSlots: (slots: (PokemonTeamMember | null)[]) => void;
-  setSlot: (index: number, member: PokemonTeamMember | null) => void;
-  updateSlot: (index: number, patch: Partial<PokemonTeamMember>) => void;
-  clearSlot: (index: number) => void;
-  clearSlots: () => void;
-  setTeams: (teams: PokemonTeam[]) => void;
-  addTeam: (team: PokemonTeam) => void;
-  updateTeam: (index: number, team: PokemonTeam) => void;
-  removeTeam: (index: number) => void;
-  buildTeamFromSlots: () => PokemonTeam;
-  loadSlotsFromTeam: (team: PokemonTeam) => void;
-  reset: () => void;
+export type SavedTeam = {
+  teamId: number;
+  teamName: string;
+  pokemons: (TeamPokemonSlot | null)[];
 };
 
-const emptySlots = (): (PokemonTeamMember | null)[] =>
-  Array.from({ length: TEAM_SLOT_COUNT }, () => null);
-
-const initialState = {
-  user_id: '',
-  title: undefined,
-  game_name: undefined,
-  likes_count: undefined,
-  bookmarks_count: undefined,
-  slots: emptySlots(),
-  teams: [] as PokemonTeam[],
-  isLoading: false,
-  error: null as string | null,
+type PokemonTeamStoreState = {
+  teams: SavedTeam[];
+  activeTeamId: number;
+  setActiveTeamId: (teamId: number) => void;
+  setTeamName: (teamId: number, teamName: string) => void;
+  syncActiveTeamPokemons: (pokemons: (TeamPokemonSlot | null)[]) => void;
+  updateActiveSlot: (
+    index: number,
+    patch: Partial<TeamPokemonSlot>,
+  ) => void;
+  getActiveTeam: () => SavedTeam | undefined;
+  resetActiveTeam: () => void;
 };
 
-export const usePokemonTeamStore = create<PokemonTeamStoreState>((set, get) => ({
-  ...initialState,
-  setMeta: (meta) => set(meta),
-  setSlots: (slots) =>
-    set({
-      slots: Array.from({ length: TEAM_SLOT_COUNT }, (_, i) => slots[i] ?? null),
+export const POKEMON_TEAM_PERSIST_KEY = 'allpoyou-pokemon-teams';
+
+function emptyPokemons(): (TeamPokemonSlot | null)[] {
+  return Array.from({ length: TEAM_SLOT_COUNT }, () => null);
+}
+
+export function createDefaultTeams(): SavedTeam[] {
+  return Array.from({ length: MAX_TEAMS }, (_, i) => ({
+    teamId: i + 1,
+    teamName: '',
+    pokemons: emptyPokemons(),
+  }));
+}
+
+function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
+  const defaults = createDefaultTeams();
+  if (!teams?.length) return defaults;
+
+  return defaults.map((defaultTeam) => {
+    const saved = teams.find((t) => t.teamId === defaultTeam.teamId);
+    if (!saved) return defaultTeam;
+
+    const pokemons = Array.from({ length: TEAM_SLOT_COUNT }, (_, i) => {
+      const slot = saved.pokemons?.[i];
+      if (!slot?.pokemonId) return null;
+      return {
+        pokemonId: slot.pokemonId,
+        nameKo: slot.nameKo ?? '',
+        nameEn: slot.nameEn ?? '',
+        types: ensureStringArray(slot.types),
+        form: slot.form,
+        abilityId: slot.abilityId ?? null,
+        itemId: slot.itemId ?? null,
+        nature: slot.nature ?? null,
+        teraType: slot.teraType ?? null,
+        moves: Array.isArray(slot.moves) ? slot.moves : [],
+        evs: slot.evs ?? null,
+      } satisfies TeamPokemonSlot;
+    });
+
+    return {
+      teamId: defaultTeam.teamId,
+      teamName: saved.teamName ?? '',
+      pokemons,
+    };
+  });
+}
+
+export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
+  persist(
+    (set, get) => ({
+      teams: createDefaultTeams(),
+      activeTeamId: 1,
+
+      setActiveTeamId: (teamId) => {
+        if (teamId < 1 || teamId > MAX_TEAMS) return;
+        set({ activeTeamId: teamId });
+      },
+
+      setTeamName: (teamId, teamName) =>
+        set((state) => ({
+          teams: state.teams.map((team) =>
+            team.teamId === teamId ? { ...team, teamName } : team,
+          ),
+        })),
+
+      syncActiveTeamPokemons: (pokemons) =>
+        set((state) => {
+          const normalized = Array.from(
+            { length: TEAM_SLOT_COUNT },
+            (_, i) => pokemons[i] ?? null,
+          );
+          return {
+            teams: state.teams.map((team) =>
+              team.teamId === state.activeTeamId
+                ? { ...team, pokemons: normalized }
+                : team,
+            ),
+          };
+        }),
+
+      updateActiveSlot: (index, patch) =>
+        set((state) => {
+          if (index < 0 || index >= TEAM_SLOT_COUNT) return state;
+          return {
+            teams: state.teams.map((team) => {
+              if (team.teamId !== state.activeTeamId) return team;
+              const current = team.pokemons[index];
+              if (!current) return team;
+              const next = [...team.pokemons];
+              next[index] = { ...current, ...patch };
+              return { ...team, pokemons: next };
+            }),
+          };
+        }),
+
+      getActiveTeam: () => {
+        const { teams, activeTeamId } = get();
+        return teams.find((t) => t.teamId === activeTeamId);
+      },
+
+      resetActiveTeam: () =>
+        set((state) => ({
+          teams: state.teams.map((team) =>
+            team.teamId === state.activeTeamId
+              ? { ...team, pokemons: emptyPokemons() }
+              : team,
+          ),
+        })),
     }),
-  setSlot: (index, member) =>
-    set((state) => {
-      if (index < 0 || index >= TEAM_SLOT_COUNT) return state;
-      const next = [...state.slots];
-      next[index] = member;
-      return { slots: next };
-    }),
-  updateSlot: (index, patch) =>
-    set((state) => {
-      if (index < 0 || index >= TEAM_SLOT_COUNT) return state;
-      const current = state.slots[index];
-      if (!current) return state;
-      const next = [...state.slots];
-      next[index] = { ...current, ...patch };
-      return { slots: next };
-    }),
-  clearSlot: (index) =>
-    set((state) => {
-      if (index < 0 || index >= TEAM_SLOT_COUNT) return state;
-      const next = [...state.slots];
-      next[index] = null;
-      return { slots: next };
-    }),
-  clearSlots: () => set({ slots: emptySlots() }),
-  setTeams: (teams) => set({ teams }),
-  addTeam: (team) =>
-    set((state) => ({
-      teams: [...state.teams, team.slice(0, TEAM_SLOT_COUNT)],
-    })),
-  updateTeam: (index, team) =>
-    set((state) => ({
-      teams: state.teams.map((t, i) =>
-        i === index ? team.slice(0, TEAM_SLOT_COUNT) : t,
-      ),
-    })),
-  removeTeam: (index) =>
-    set((state) => ({
-      teams: state.teams.filter((_, i) => i !== index),
-    })),
-  buildTeamFromSlots: () =>
-    get().slots.filter((member): member is PokemonTeamMember => member !== null),
-  loadSlotsFromTeam: (team) =>
-    set({
-      slots: Array.from({ length: TEAM_SLOT_COUNT }, (_, i) => team[i] ?? null),
-    }),
-  reset: () => set({ ...initialState, slots: emptySlots() }),
-}));
+    {
+      name: POKEMON_TEAM_PERSIST_KEY,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        teams: state.teams,
+        activeTeamId: state.activeTeamId,
+      }),
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<PokemonTeamStoreState> | undefined;
+        return {
+          ...current,
+          teams: normalizeTeams(saved?.teams),
+          activeTeamId:
+            saved?.activeTeamId != null &&
+            saved.activeTeamId >= 1 &&
+            saved.activeTeamId <= MAX_TEAMS
+              ? saved.activeTeamId
+              : current.activeTeamId,
+        };
+      },
+    },
+  ),
+);

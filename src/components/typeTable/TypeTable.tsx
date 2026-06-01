@@ -8,6 +8,7 @@ import {
   typeColor,
   typeTranslation,
 } from '@/constants/pokemonType';
+import classnames from 'classnames';  
 
 import s from './typeTable.module.scss';
 
@@ -131,16 +132,16 @@ const TypeTable = ({ pokemons }: TypeTableProps) => {
   }, [matrix]);
 
   const hasPokemon = slots.some(Boolean);
-  const summaryText = hasPokemon
+  const summaryTextWeaknesses = hasPokemon
     ? [
         teamSummary.weaknesses.length > 0
           ? `약점 : ${teamSummary.weaknesses.join(', ')}`
           : '약점 : 없음',
-        teamSummary.strengths.length > 0
-          ? `강점 : ${teamSummary.strengths.join(', ')}`
-          : '강점 : 없음',
       ].join(' / ')
     : '';
+  const summaryTextStrengths = teamSummary.strengths.length > 0
+    ? `강점 : ${teamSummary.strengths.join(', ')}`
+    : '강점 : 없음';
 
   return (
     <div className={s.wrap}>
@@ -205,7 +206,8 @@ const TypeTable = ({ pokemons }: TypeTableProps) => {
           ))}
         </tbody>
       </table>
-      {summaryText && <p className={s.summaryText}>{summaryText}</p>}
+      {summaryTextWeaknesses && <p className={classnames(s.summaryText, s.weakness)}>{summaryTextWeaknesses}</p>}
+      {summaryTextStrengths && <p className={classnames(s.summaryText, s.strength)}>{summaryTextStrengths}</p>}
     </div>
   );
 };

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import SearchBar from '@/components/searchBar/SearchBar';
 import {
   getItemSpriteUrl,
   ITEM_GROUPS,
@@ -45,6 +46,7 @@ function ItemCard({ item }: { item: ItemKr }) {
 }
 
 export default function ItemList() {
+  const [keyword, setKeyword] = useState('');
   const [activeGroup, setActiveGroup] = useState<ItemGroupId>('all');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -53,10 +55,22 @@ export default function ItemList() {
     const activeCategories =
       ITEM_GROUPS.find((group) => group.id === activeGroup)?.categories ?? null;
 
-    if (activeGroup === 'all') return items;
+    const byCategory =
+      activeGroup === 'all'
+        ? items
+        : items.filter((item) => activeCategories?.includes(item.categoryKo));
 
-    return items.filter((item) => activeCategories?.includes(item.categoryKo));
-  }, [activeGroup]);
+    const q = keyword.trim();
+    if (!q) return byCategory;
+
+    const qLower = q.toLowerCase();
+    return byCategory.filter(
+      (item) =>
+        item.nameKo.includes(q) ||
+        item.description.includes(q) ||
+        item.name.toLowerCase().includes(qLower),
+    );
+  }, [activeGroup, keyword]);
 
   const visibleItems = useMemo(
     () => filteredItems.slice(0, visibleCount),
@@ -66,8 +80,13 @@ export default function ItemList() {
   const hasMore = visibleCount < filteredItems.length;
 
   const [prevGroup, setPrevGroup] = useState(activeGroup);
+  const [prevKeyword, setPrevKeyword] = useState(keyword);
   if (prevGroup !== activeGroup) {
     setPrevGroup(activeGroup);
+    setVisibleCount(PAGE_SIZE);
+  }
+  if (prevKeyword !== keyword) {
+    setPrevKeyword(keyword);
     setVisibleCount(PAGE_SIZE);
   }
 
@@ -92,6 +111,12 @@ export default function ItemList() {
   return (
     <div className={s.page}>
       <h1 className={s.title}>도구</h1>
+
+      <SearchBar
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        placeholderType="item"
+      />
 
       <div className={s.filters}>
         {ITEM_GROUPS.map((group) => (
