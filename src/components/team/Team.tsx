@@ -104,6 +104,8 @@ export type TeamProps = {
   onActiveItemIndexChange: (index: number | null) => void;
   onItemHighlightedIndexChange: (index: number) => void;
   onItemKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, index: number) => void;
+  pendingItemPick?: ItemKr | null;
+  onItemSectionActivate: (index: number) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -135,6 +137,8 @@ const Team: React.FC<TeamProps> = ({
   onActiveItemIndexChange,
   onItemHighlightedIndexChange,
   onItemKeyDown,
+  pendingItemPick = null,
+  onItemSectionActivate,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -349,7 +353,18 @@ const Team: React.FC<TeamProps> = ({
                 <span>특성</span>
               )}
             </div>
-            <div className={s.itemSection}>
+            <div
+              className={cn(s.itemSection, {
+                [s.itemSectionPickable]:
+                  pendingItemPick != null && selected != null,
+              })}
+              onClick={(e) => {
+                if (!pendingItemPick || !selected) return;
+                const target = e.target as HTMLElement;
+                if (target.closest('button, li')) return;
+                onItemSectionActivate(index);
+              }}
+            >
               {selected ? (
                 <div className={s.inputWrap}>
                   <input
@@ -359,11 +374,7 @@ const Team: React.FC<TeamProps> = ({
                     value={itemSearchValues[index]}
                     onChange={(e) => onItemSearchChange(index, e.target.value)}
                     title={itemSuggestions.find((item) => item.nameKo === itemSearchValues[index])?.description ?? ''}
-                    onFocus={() => {
-                      onActiveIndexChange(null);
-                      onActiveItemIndexChange(index);
-                      onItemHighlightedIndexChange(0);
-                    }}
+                    onFocus={() => onItemSectionActivate(index)}
                     onKeyDown={(e) => onItemKeyDown(e, index)}
                     autoComplete="off"
                     data-1p-ignore

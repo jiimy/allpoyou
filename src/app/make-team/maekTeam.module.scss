@@ -143,6 +143,15 @@
   font-weight: 600;
 }
 
+.itemSectionPickable {
+  cursor: pointer;
+  background: #f8fbff;
+
+  &:hover {
+    background: #eef6ff;
+  }
+}
+
 .fieldInput {
   width: 100%;
   height: 100%;

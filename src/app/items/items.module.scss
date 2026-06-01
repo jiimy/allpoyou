@@ -67,6 +67,25 @@
   background: #fff;
 }
 
+.cardSelectable {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+
+  &:hover {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6390f0;
+    outline-offset: 2px;
+  }
+}
+
 .imageWrap {
   display: flex;
   align-items: center;

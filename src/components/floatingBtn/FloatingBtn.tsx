@@ -9,7 +9,11 @@ import { fetchPokemonList, getCachedPokemonList } from '@/store/PokemonStore';
 import TypeTableModal, {
   useTypeTableModalShortcut,
 } from '@/components/portalModal/typeTableModal/TypeTableModal';
-import TeamModal from '@/components/portalModal/teamModal/TeamModal';
+import TeamModal, {
+  useTeamModalShortcut,
+} from '@/components/portalModal/teamModal/TeamModal';
+import { useItemPickStore } from '@/store/ItemPickStore';
+import { useTeamModalStore } from '@/store/TeamModalStore';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
 
@@ -52,10 +56,26 @@ const FloatingBtn = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [typeTableModalOpen, setTypeTableModalOpen] = useState(false);
-  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const teamModalOpen = useTeamModalStore((state) => state.isOpen);
+  const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const handleTeamModalOpenChange: React.Dispatch<
+    React.SetStateAction<boolean>
+  > = useCallback(
+    (value) => {
+      setTeamModalOpen((prev) => {
+        const next = typeof value === 'function' ? value(prev) : value;
+        if (!next) clearPendingItem();
+        return next;
+      });
+    },
+    [setTeamModalOpen, clearPendingItem],
+  );
+
   useTypeTableModalShortcut(setTypeTableModalOpen);
+  useTeamModalShortcut(handleTeamModalOpenChange);
 
   const handleOutOfClick = useCallback(() => {
     setIsOpen(false);
@@ -68,7 +88,7 @@ const FloatingBtn = () => {
       setTypeTableModalOpen(true);
     }
     if (item.id === 'team') {
-      setTeamModalOpen(true);
+      handleTeamModalOpenChange(true);
     }
     item.onClick?.();
     setIsOpen(false);
@@ -80,7 +100,7 @@ const FloatingBtn = () => {
         <TypeTableModal setOnModal={setTypeTableModalOpen} dimClick />
       )}
       {teamModalOpen && (
-        <TeamModal setOnModal={setTeamModalOpen} dimClick />
+        <TeamModal setOnModal={handleTeamModalOpenChange} dimClick />
       )}
       <div ref={containerRef} className={s.container}>
         <ul className={`${s.menuList} ${isOpen ? s.menuListOpen : ''}`}>
@@ -106,6 +126,7 @@ const FloatingBtn = () => {
                 >
                   {item.label}
                   {item.id === 'type-table' && <Command command="Shift+F" />}
+                  {item.id === 'team' && <Command command="Shift+D" />}
                 </button>
               )}
             </li>
