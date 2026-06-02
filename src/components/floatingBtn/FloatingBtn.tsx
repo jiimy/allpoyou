@@ -13,6 +13,7 @@ import TeamModal, {
   useTeamModalShortcut,
 } from '@/components/portalModal/teamModal/TeamModal';
 import { useItemPickStore } from '@/store/ItemPickStore';
+import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
@@ -59,6 +60,7 @@ const FloatingBtn = () => {
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
+  const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTeamModalOpenChange: React.Dispatch<
@@ -67,11 +69,14 @@ const FloatingBtn = () => {
     (value) => {
       setTeamModalOpen((prev) => {
         const next = typeof value === 'function' ? value(prev) : value;
-        if (!next) clearPendingItem();
+        if (!next) {
+          clearPendingItem();
+          clearPendingPokemon();
+        }
         return next;
       });
     },
-    [setTeamModalOpen, clearPendingItem],
+    [setTeamModalOpen, clearPendingItem, clearPendingPokemon],
   );
 
   useTypeTableModalShortcut(setTypeTableModalOpen);

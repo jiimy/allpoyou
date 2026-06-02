@@ -105,7 +105,9 @@ export type TeamProps = {
   onItemHighlightedIndexChange: (index: number) => void;
   onItemKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, index: number) => void;
   pendingItemPick?: ItemKr | null;
+  pendingPokemonPick?: Pokemon | null;
   onItemSectionActivate: (index: number) => void;
+  onThumbnailActivate: (index: number) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -138,7 +140,9 @@ const Team: React.FC<TeamProps> = ({
   onItemHighlightedIndexChange,
   onItemKeyDown,
   pendingItemPick = null,
+  pendingPokemonPick = null,
   onItemSectionActivate,
+  onThumbnailActivate,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -216,7 +220,15 @@ const Team: React.FC<TeamProps> = ({
 
         return (
           <div key={index}>
-            <div className={s.thumbnail}>
+            <div
+              className={cn(s.thumbnail, {
+                [s.thumbnailPickable]: pendingPokemonPick != null,
+              })}
+              onClick={() => {
+                if (!pendingPokemonPick) return;
+                onThumbnailActivate(index);
+              }}
+            >
               {selected && hasPokemonImage(selected.images) ? (
                 <PokemonSpriteImage
                   images={selected.images}

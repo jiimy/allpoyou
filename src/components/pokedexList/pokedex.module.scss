@@ -1,0 +1,177 @@
+
+.resultCount {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.status,
+.error {
+  margin: 40px 0;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+.error {
+  color: #c22e28;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cardSelectable {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+
+  &:hover {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6390f0;
+    outline-offset: 2px;
+  }
+}
+
+.imageWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 96px;
+}
+
+.image {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.imageFallback {
+  color: #bbb;
+  font-size: 12px;
+}
+
+.name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.typeBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stats {
+  grid-area: stats;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.statRow {
+  display: grid;
+  gap: 0.25rem 0.5rem;
+  grid-template-columns: max-content 4ch 1fr;
+  height: min-content;
+  .statCount {
+    text-align: right;
+  }
+}
+
+.statTotal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #e0e0e0;
+
+  dt {
+    margin: 0;
+    color: #888;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+.abilities {
+  display: flex;
+  gap: 4px;
+}
+
+.abilityLine {
+  margin: 0;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.abilityLabel {
+  display: inline-block;
+  min-width: 28px;
+  margin-right: 4px;
+  color: #888;
+  font-weight: 600;
+}
+
+.sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  margin: 40px 0;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -358,6 +358,20 @@ const MakeTeam = () => {
     return types;
   }, [selectedPokemons]);
 
+  /** 추천 기준 포켓몬(idx)까지 선택된 타입만 — 이미 채운 슬롯 추천표 유지용 */
+  const getTeamTypesUpToIndex = useCallback(
+    (maxIndex: number) => {
+      const types = new Set<string>();
+      for (let i = 0; i <= maxIndex; i++) {
+        const p = selectedPokemons[i];
+        if (!p) continue;
+        for (const t of ensureStringArray(p.types)) types.add(t);
+      }
+      return types;
+    },
+    [selectedPokemons],
+  );
+
   // 선택된 슬롯 중 가장 뒤 인덱스 (추천 결과의 마지막 리스트)
   const lastSelectedIndex = useMemo(() => {
     let last = -1;
@@ -436,11 +450,17 @@ const MakeTeam = () => {
             ensureStringArray(pokemon.types),
           );
           const { weaknesses, counters } = counterResult;
-          const teamTypes = excludeSameTypes ? getSelectedTeamTypes() : null;
+          const targetSlotIndex = idx + 1;
+          const isTargetSlotFilled =
+            selectedPokemons[targetSlotIndex] != null;
+          const teamTypes = excludeSameTypes
+            ? isTargetSlotFilled
+              ? getTeamTypesUpToIndex(idx)
+              : getSelectedTeamTypes()
+            : null;
           const visibleCounters = teamTypes
             ? counters.filter((c) => !teamTypes.has(c.type))
             : counters;
-          if (visibleCounters.length === 0) return null;
 
           const recSet = new Set(visibleCounters.map((c) => c.type));
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;

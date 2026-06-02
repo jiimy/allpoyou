@@ -21,6 +21,7 @@ import {
 import { getAbilityNameById } from '@/store/pokemonTeamMappers';
 import { TEAM_SLOT_COUNT, usePokemonTeamStore } from '@/store/PokemonTeamStore';
 import { useItemPickStore } from '@/store/ItemPickStore';
+import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { getItemNameKoById, searchHeldItems } from '@/utils/itemSearch';
 import { normalizePokemon } from '@/utils/pokemonNormalize';
 import type { ItemKr } from '@/types/item';
@@ -62,6 +63,8 @@ export function useTeamEditor() {
   const editorHydratedRef = useRef(false);
   const pendingItem = useItemPickStore((state) => state.pendingItem);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
+  const pendingPokemon = usePokemonPickStore((state) => state.pendingPokemon);
+  const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
 
   useEffect(() => {
     if (!isClient) return;
@@ -343,6 +346,23 @@ export function useTeamEditor() {
     setActiveIndex(null);
   }, []);
 
+  const applyPendingPokemonToSlot = useCallback(
+    (index: number) => {
+      if (!pendingPokemon) return false;
+      handleSelect(index, pendingPokemon);
+      clearPendingPokemon();
+      return true;
+    },
+    [pendingPokemon, handleSelect, clearPendingPokemon],
+  );
+
+  const handleThumbnailActivate = useCallback(
+    (index: number) => {
+      applyPendingPokemonToSlot(index);
+    },
+    [applyPendingPokemonToSlot],
+  );
+
   const handleClear = useCallback((index: number) => {
     setValues((prev) => {
       const next = [...prev];
@@ -479,7 +499,9 @@ export function useTeamEditor() {
     onItemHighlightedIndexChange: setItemHighlightedIndex,
     onItemKeyDown: handleItemKeyDown,
     pendingItemPick: pendingItem,
+    pendingPokemonPick: pendingPokemon,
     onItemSectionActivate: handleItemSectionActivate,
+    onThumbnailActivate: handleThumbnailActivate,
   };
 
   return {

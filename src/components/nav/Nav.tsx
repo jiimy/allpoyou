@@ -16,13 +16,13 @@ const Nav = () => {
           <Link href="/abilities">특성</Link>
         </li>
         <li>
-          <Link href="/moves">기술</Link>
+          <Link href="/items">도구</Link>
         </li>
         <li>
           <Link href="/person">성격</Link>
         </li>
         <li>
-          <Link href="/items">도구</Link>
+          <Link href="/moves">기술</Link>
         </li>
         <li>
           <Link href="/make-team">팀만들기</Link>

@@ -1,3 +1,4 @@
+import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { parsePokemonCsv } from '@/utils/pokemonCsv';
 
 export type Pokemon = {
@@ -71,6 +72,34 @@ export function getPokemonByEnglishName(name: string): Pokemon | undefined {
 
 export function getPokemonsByNumber(number: number): Pokemon[] {
   return byNumber.get(number) ?? [];
+}
+
+function sortPokemonList(list: Pokemon[]): Pokemon[] {
+  return [...list].sort(
+    (a, b) => a.number - b.number || a.nameKo.localeCompare(b.nameKo, 'ko'),
+  );
+}
+
+/** 이름 또는 타입(공백 구분 AND)으로 포켓몬 목록을 필터링합니다. */
+export function filterPokemonList(list: Pokemon[], keyword: string): Pokemon[] {
+  const q = keyword.trim();
+  if (!q) return sortPokemonList(list);
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const isTypeSearch = tokens.every((token) => token in TYPE_COLOR);
+
+  const filtered = isTypeSearch
+    ? list.filter((p) => tokens.every((type) => p.types.includes(type)))
+    : list.filter((p) => {
+        const lower = q.toLowerCase();
+        return (
+          p.nameKo.includes(q) ||
+          p.name.includes(q) ||
+          p.name.toLowerCase().includes(lower)
+        );
+      });
+
+  return sortPokemonList(filtered);
 }
 
 export function searchPokemonByName(
