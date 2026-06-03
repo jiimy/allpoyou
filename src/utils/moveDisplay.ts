@@ -9,7 +9,7 @@ export function getDamageClassLabel(damageClass: string): string {
     case 'special':
       return '특수기';
     case 'status':
-      return '변화가';
+      return '변화기';
     case 'physical':
       return '물리기';
     default:

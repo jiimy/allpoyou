@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type Dispatch,
+  type SetStateAction,
 } from 'react';
 import {
   getAbilitySummary,
@@ -18,18 +20,129 @@ import {
   searchPokemonByName,
   type Pokemon,
 } from '@/store/PokemonStore';
-import { getAbilityNameById } from '@/store/pokemonTeamMappers';
-import { TEAM_SLOT_COUNT, usePokemonTeamStore } from '@/store/PokemonTeamStore';
+import {
+  buildPokemonsFromEditor,
+  getAbilityNameById,
+} from '@/store/pokemonTeamMappers';
+import {
+  MAX_TEAMS,
+  TEAM_SLOT_COUNT,
+  type SavedTeam,
+  usePokemonTeamStore,
+} from '@/store/PokemonTeamStore';
 import { useItemPickStore } from '@/store/ItemPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
+import { useMovePickStore } from '@/store/MovePickStore';
 import { getItemNameKoById, searchHeldItems } from '@/utils/itemSearch';
+import { getMovesByIds, searchLearnableMoves } from '@/utils/movesDb';
+import { MOVES_BY_ID, getMoveById } from '@/utils/movesIndex';
 import { normalizePokemon } from '@/utils/pokemonNormalize';
 import type { ItemKr } from '@/types/item';
+import type { MoveDbEntry } from '@/types/move';
+
+export const MOVE_SLOT_COUNT = 4;
+
+export type ActiveMoveSlot = { pokemon: number; move: number } | null;
+
+function createEmptyMoveSlots<T>(value: T): T[] {
+  return Array.from({ length: MOVE_SLOT_COUNT }, () => value);
+}
 
 const subscribeNoop = () => () => {};
 
 function useIsClient() {
   return useSyncExternalStore(subscribeNoop, () => true, () => false);
+}
+
+function createEmptyEditorState() {
+  return {
+    values: Array.from({ length: TEAM_SLOT_COUNT }, () => ''),
+    selectedPokemons: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => null,
+    ) as (Pokemon | null)[],
+    selectedAbilities: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => null,
+    ) as (string | null)[],
+    abilitySummaries: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => null,
+    ) as (string | null)[],
+    selectedItemIds: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => null,
+    ) as (number | null)[],
+    itemSearchValues: Array.from({ length: TEAM_SLOT_COUNT }, () => ''),
+    selectedMoveIds: Array.from({ length: TEAM_SLOT_COUNT }, () =>
+      createEmptyMoveSlots<number | null>(null),
+    ) as (number | null)[][],
+    moveSearchValues: Array.from({ length: TEAM_SLOT_COUNT }, () =>
+      createEmptyMoveSlots<string>(''),
+    ) as string[][],
+  };
+}
+
+function editorStateFromTeam(
+  activeTeam: SavedTeam | undefined,
+  allPokemons: Pokemon[],
+) {
+  const state = createEmptyEditorState();
+
+  if (!activeTeam) return state;
+
+  activeTeam.pokemons.forEach((slot, index) => {
+    if (!slot?.pokemonId) return;
+
+    const pokemon = allPokemons.find((entry) => entry.id === slot.pokemonId);
+    if (!pokemon) return;
+
+    const abilityName =
+      getAbilityNameById(slot.abilityId) ?? getDefaultAbility(pokemon);
+    const itemName = getItemNameKoById(slot.itemId);
+
+    state.values[index] = pokemon.nameKo;
+    state.selectedPokemons[index] = pokemon;
+    state.selectedAbilities[index] = abilityName;
+    state.abilitySummaries[index] = getAbilitySummary(abilityName);
+    state.selectedItemIds[index] = slot.itemId ?? null;
+    state.itemSearchValues[index] = itemName ?? '';
+
+    const savedMoves = Array.isArray(slot.moves) ? slot.moves : [];
+    const moveIds = createEmptyMoveSlots<number | null>(null);
+    const moveSearches = createEmptyMoveSlots<string>('');
+    savedMoves.slice(0, MOVE_SLOT_COUNT).forEach((moveId, moveIndex) => {
+      moveIds[moveIndex] = moveId;
+      moveSearches[moveIndex] = getMoveById(moveId)?.koreanName ?? '';
+    });
+    state.selectedMoveIds[index] = moveIds;
+    state.moveSearchValues[index] = moveSearches;
+  });
+
+  return state;
+}
+
+function applyEditorState(
+  state: ReturnType<typeof createEmptyEditorState>,
+  setters: {
+    setValues: Dispatch<SetStateAction<string[]>>;
+    setSelectedPokemons: Dispatch<SetStateAction<(Pokemon | null)[]>>;
+    setSelectedAbilities: Dispatch<SetStateAction<(string | null)[]>>;
+    setAbilitySummaries: Dispatch<SetStateAction<(string | null)[]>>;
+    setSelectedItemIds: Dispatch<SetStateAction<(number | null)[]>>;
+    setItemSearchValues: Dispatch<SetStateAction<string[]>>;
+    setSelectedMoveIds: Dispatch<SetStateAction<(number | null)[][]>>;
+    setMoveSearchValues: Dispatch<SetStateAction<string[][]>>;
+  },
+) {
+  setters.setValues(state.values);
+  setters.setSelectedPokemons(state.selectedPokemons);
+  setters.setSelectedAbilities(state.selectedAbilities);
+  setters.setAbilitySummaries(state.abilitySummaries);
+  setters.setSelectedItemIds(state.selectedItemIds);
+  setters.setItemSearchValues(state.itemSearchValues);
+  setters.setSelectedMoveIds(state.selectedMoveIds);
+  setters.setMoveSearchValues(state.moveSearchValues);
 }
 
 export function useTeamEditor() {
@@ -51,6 +164,22 @@ export function useTeamEditor() {
   const [itemSearchValues, setItemSearchValues] = useState<string[]>(() =>
     Array.from({ length: TEAM_SLOT_COUNT }, () => ''),
   );
+  const [selectedMoveIds, setSelectedMoveIds] = useState<(number | null)[][]>(
+    () =>
+      Array.from({ length: TEAM_SLOT_COUNT }, () =>
+        createEmptyMoveSlots<number | null>(null),
+      ),
+  );
+  const [moveSearchValues, setMoveSearchValues] = useState<string[][]>(() =>
+    Array.from({ length: TEAM_SLOT_COUNT }, () =>
+      createEmptyMoveSlots<string>(''),
+    ),
+  );
+  const [activeMoveSlot, setActiveMoveSlot] = useState<ActiveMoveSlot>(null);
+  const [moveHighlightedIndex, setMoveHighlightedIndex] = useState(0);
+  const [pokemonMovesCache, setPokemonMovesCache] = useState<
+    Record<number, MoveDbEntry[]>
+  >({});
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -60,11 +189,44 @@ export function useTeamEditor() {
   const [pokemonListLoading, setPokemonListLoading] = useState(true);
   const [pokemonListError, setPokemonListError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
-  const editorHydratedRef = useRef(false);
   const pendingItem = useItemPickStore((state) => state.pendingItem);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const pendingPokemon = usePokemonPickStore((state) => state.pendingPokemon);
   const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
+  const pendingMove = useMovePickStore((state) => state.pendingMove);
+  const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
+  const activeTeamId = usePokemonTeamStore((state) => state.activeTeamId);
+  const setActiveTeamId = usePokemonTeamStore((state) => state.setActiveTeamId);
+  const syncActiveTeamPokemons = usePokemonTeamStore(
+    (state) => state.syncActiveTeamPokemons,
+  );
+  const moveFetchInFlight = useRef<Set<number>>(new Set());
+
+  const editorSetters = useMemo(
+    () => ({
+      setValues,
+      setSelectedPokemons,
+      setSelectedAbilities,
+      setAbilitySummaries,
+      setSelectedItemIds,
+      setItemSearchValues,
+      setSelectedMoveIds,
+      setMoveSearchValues,
+    }),
+    [],
+  );
+
+  const loadTeamIntoEditor = useCallback(
+    (teamId: number) => {
+      const { teams } = usePokemonTeamStore.getState();
+      const team = teams.find((entry) => entry.teamId === teamId);
+      applyEditorState(
+        editorStateFromTeam(team, allPokemons),
+        editorSetters,
+      );
+    },
+    [allPokemons, editorSetters],
+  );
 
   useEffect(() => {
     if (!isClient) return;
@@ -92,67 +254,13 @@ export function useTeamEditor() {
   }, [isClient]);
 
   useEffect(() => {
-    if (!isClient || pokemonListLoading || editorHydratedRef.current) return;
+    if (!isClient || pokemonListLoading) return;
 
     const hydrateEditorFromStore = () => {
-      if (editorHydratedRef.current) return;
       if (!usePokemonTeamStore.persist?.hasHydrated()) return;
 
-      const { teams, activeTeamId } = usePokemonTeamStore.getState();
-      const activeTeam = teams.find((t) => t.teamId === activeTeamId);
-
-      if (!activeTeam || allPokemons.length === 0) {
-        editorHydratedRef.current = true;
-        setEditorReady(true);
-        return;
-      }
-
-      const nextValues = Array.from({ length: TEAM_SLOT_COUNT }, () => '');
-      const nextSelected: (Pokemon | null)[] = Array.from(
-        { length: TEAM_SLOT_COUNT },
-        () => null,
-      );
-      const nextAbilities: (string | null)[] = Array.from(
-        { length: TEAM_SLOT_COUNT },
-        () => null,
-      );
-      const nextSummaries: (string | null)[] = Array.from(
-        { length: TEAM_SLOT_COUNT },
-        () => null,
-      );
-      const nextItemIds: (number | null)[] = Array.from(
-        { length: TEAM_SLOT_COUNT },
-        () => null,
-      );
-      const nextItemSearchValues = Array.from(
-        { length: TEAM_SLOT_COUNT },
-        () => '',
-      );
-
-      activeTeam.pokemons.forEach((slot, index) => {
-        if (!slot?.pokemonId) return;
-        const pokemon = allPokemons.find((p) => p.id === slot.pokemonId);
-        if (!pokemon) return;
-
-        const abilityName =
-          getAbilityNameById(slot.abilityId) ?? getDefaultAbility(pokemon);
-        const itemName = getItemNameKoById(slot.itemId);
-
-        nextValues[index] = pokemon.nameKo;
-        nextSelected[index] = pokemon;
-        nextAbilities[index] = abilityName;
-        nextSummaries[index] = getAbilitySummary(abilityName);
-        nextItemIds[index] = slot.itemId ?? null;
-        nextItemSearchValues[index] = itemName ?? '';
-      });
-
-      setValues(nextValues);
-      setSelectedPokemons(nextSelected);
-      setSelectedAbilities(nextAbilities);
-      setAbilitySummaries(nextSummaries);
-      setSelectedItemIds(nextItemIds);
-      setItemSearchValues(nextItemSearchValues);
-      editorHydratedRef.current = true;
+      const { activeTeamId: currentTeamId } = usePokemonTeamStore.getState();
+      loadTeamIntoEditor(currentTeamId);
       setEditorReady(true);
     };
 
@@ -160,7 +268,70 @@ export function useTeamEditor() {
     const persist = usePokemonTeamStore.persist;
     if (!persist) return;
     return persist.onFinishHydration(hydrateEditorFromStore);
-  }, [isClient, pokemonListLoading, allPokemons]);
+  }, [isClient, pokemonListLoading, allPokemons, loadTeamIntoEditor]);
+
+  // 선택된 포켓몬별 '배울 수 있는 기술' 목록을 불러와 캐시합니다.
+  useEffect(() => {
+    if (!isClient) return;
+    selectedPokemons.forEach((pokemon) => {
+      if (!pokemon) return;
+      const pokemonId = pokemon.id;
+      if (pokemonMovesCache[pokemonId] || moveFetchInFlight.current.has(pokemonId)) {
+        return;
+      }
+      moveFetchInFlight.current.add(pokemonId);
+
+      fetch(`/api/moves?pokemonId=${pokemonId}`, { cache: 'no-store' })
+        .then(async (res) => {
+          const body = (await res.json()) as {
+            moveIds?: number[];
+            error?: string;
+          };
+          if (!res.ok) throw new Error(body.error ?? `조회 실패 (${res.status})`);
+          setPokemonMovesCache((prev) => ({
+            ...prev,
+            [pokemonId]: getMovesByIds(MOVES_BY_ID, body.moveIds ?? []),
+          }));
+        })
+        .catch(() => {
+          setPokemonMovesCache((prev) => ({ ...prev, [pokemonId]: [] }));
+        })
+        .finally(() => {
+          moveFetchInFlight.current.delete(pokemonId);
+        });
+    });
+  }, [isClient, selectedPokemons, pokemonMovesCache]);
+
+  /** 포켓몬 id별로 배울 수 있는 기술 id 집합 (pickable 판정용) */
+  const pokemonMoveIdSets = useMemo(() => {
+    const result: Record<number, Set<number>> = {};
+    for (const [id, moves] of Object.entries(pokemonMovesCache)) {
+      result[Number(id)] = new Set(moves.map((move) => move.id));
+    }
+    return result;
+  }, [pokemonMovesCache]);
+
+  const moveSuggestions: MoveDbEntry[] = useMemo(() => {
+    if (!activeMoveSlot) return [];
+    const pokemon = selectedPokemons[activeMoveSlot.pokemon];
+    if (!pokemon) return [];
+    const learnable = pokemonMovesCache[pokemon.id];
+    if (!learnable) return [];
+
+    const keyword = moveSearchValues[activeMoveSlot.pokemon]?.[activeMoveSlot.move] ?? '';
+    const exclude = new Set<number>();
+    selectedMoveIds[activeMoveSlot.pokemon]?.forEach((moveId, moveIndex) => {
+      if (moveId != null && moveIndex !== activeMoveSlot.move) exclude.add(moveId);
+    });
+
+    return searchLearnableMoves(learnable, keyword, exclude, 50);
+  }, [
+    activeMoveSlot,
+    selectedPokemons,
+    pokemonMovesCache,
+    moveSearchValues,
+    selectedMoveIds,
+  ]);
 
   const searchKeyword =
     activeIndex !== null ? values[activeIndex].trim() : '';
@@ -223,6 +394,21 @@ export function useTeamEditor() {
       next[index] = '';
       return next;
     });
+    setSelectedMoveIds((prev) => {
+      if (prev[index].every((id) => id == null)) return prev;
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<number | null>(null);
+      return next;
+    });
+    setMoveSearchValues((prev) => {
+      if (prev[index].every((v) => v === '')) return prev;
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<string>('');
+      return next;
+    });
+    setActiveMoveSlot((current) =>
+      current?.pokemon === index ? null : current,
+    );
   }, []);
 
   const handleSelectAbility = useCallback(
@@ -307,6 +493,140 @@ export function useTeamEditor() {
     setActiveItemIndex((current) => (current === index ? null : current));
   }, []);
 
+  const handleSelectMove = useCallback(
+    (pokemonIndex: number, moveIndex: number, move: MoveDbEntry) => {
+      setSelectedMoveIds((prev) => {
+        // 이미 다른 슬롯에 배운 기술이면 추가하지 않습니다.
+        if (
+          prev[pokemonIndex].some(
+            (id, i) => i !== moveIndex && id === move.id,
+          )
+        ) {
+          return prev;
+        }
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = move.id;
+        return next;
+      });
+      setMoveSearchValues((prev) => {
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = move.koreanName;
+        return next;
+      });
+      setActiveMoveSlot(null);
+    },
+    [],
+  );
+
+  const applyPendingMoveToSlot = useCallback(
+    (pokemonIndex: number, moveIndex: number) => {
+      const pokemon = selectedPokemons[pokemonIndex];
+      if (!pendingMove || !pokemon) return false;
+      const learnable = pokemonMoveIdSets[pokemon.id];
+      if (!learnable?.has(pendingMove.id)) return false;
+      // 이미 배운(적용된) 기술은 다시 배울 수 없습니다.
+      if (selectedMoveIds[pokemonIndex].includes(pendingMove.id)) return false;
+
+      handleSelectMove(pokemonIndex, moveIndex, pendingMove);
+      clearPendingMove();
+      return true;
+    },
+    [
+      pendingMove,
+      selectedPokemons,
+      pokemonMoveIdSets,
+      selectedMoveIds,
+      handleSelectMove,
+      clearPendingMove,
+    ],
+  );
+
+  const handleMoveSlotActivate = useCallback(
+    (pokemonIndex: number, moveIndex: number) => {
+      if (applyPendingMoveToSlot(pokemonIndex, moveIndex)) return;
+      setActiveIndex(null);
+      setActiveItemIndex(null);
+      setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
+      setMoveHighlightedIndex(0);
+    },
+    [applyPendingMoveToSlot],
+  );
+
+  const handleMoveSearchChange = useCallback(
+    (pokemonIndex: number, moveIndex: number, value: string) => {
+      setActiveIndex(null);
+      setActiveItemIndex(null);
+      setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
+      setMoveHighlightedIndex(0);
+      setMoveSearchValues((prev) => {
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = value;
+        return next;
+      });
+      setSelectedMoveIds((prev) => {
+        if (prev[pokemonIndex][moveIndex] == null) return prev;
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = null;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleClearMove = useCallback(
+    (pokemonIndex: number, moveIndex: number) => {
+      setSelectedMoveIds((prev) => {
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = null;
+        return next;
+      });
+      setMoveSearchValues((prev) => {
+        const next = prev.map((slots) => [...slots]);
+        next[pokemonIndex][moveIndex] = '';
+        return next;
+      });
+      setActiveMoveSlot((current) =>
+        current?.pokemon === pokemonIndex && current.move === moveIndex
+          ? null
+          : current,
+      );
+    },
+    [],
+  );
+
+  const handleMoveKeyDown = useCallback(
+    (
+      e: React.KeyboardEvent<HTMLInputElement>,
+      pokemonIndex: number,
+      moveIndex: number,
+    ) => {
+      const dropdownOpen =
+        activeMoveSlot?.pokemon === pokemonIndex &&
+        activeMoveSlot.move === moveIndex &&
+        moveSuggestions.length > 0;
+
+      if (!dropdownOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMoveHighlightedIndex((prev) => (prev + 1) % moveSuggestions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMoveHighlightedIndex(
+          (prev) => (prev - 1 + moveSuggestions.length) % moveSuggestions.length,
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const picked = moveSuggestions[moveHighlightedIndex];
+        if (picked) handleSelectMove(pokemonIndex, moveIndex, picked);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setActiveMoveSlot(null);
+      }
+    },
+    [activeMoveSlot, moveSuggestions, moveHighlightedIndex, handleSelectMove],
+  );
+
   const handleSelect = useCallback((index: number, suggestion: Pokemon) => {
     const pokemon = normalizePokemon(
       suggestion as unknown as Record<string, unknown>,
@@ -343,6 +663,16 @@ export function useTeamEditor() {
       next[index] = '';
       return next;
     });
+    setSelectedMoveIds((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<number | null>(null);
+      return next;
+    });
+    setMoveSearchValues((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<string>('');
+      return next;
+    });
     setActiveIndex(null);
   }, []);
 
@@ -361,6 +691,43 @@ export function useTeamEditor() {
       applyPendingPokemonToSlot(index);
     },
     [applyPendingPokemonToSlot],
+  );
+
+  const switchActiveTeam = useCallback(
+    (teamId: number) => {
+      if (teamId === activeTeamId) return;
+      if (teamId < 1 || teamId > MAX_TEAMS) return;
+
+      if (editorReady) {
+        const existing =
+          usePokemonTeamStore.getState().getActiveTeam()?.pokemons ?? [];
+        const pokemons = buildPokemonsFromEditor(
+          selectedPokemons,
+          selectedAbilities,
+          selectedItemIds,
+          existing,
+          selectedMoveIds,
+        );
+        syncActiveTeamPokemons(pokemons);
+      }
+
+      setActiveTeamId(teamId);
+      loadTeamIntoEditor(teamId);
+      setActiveIndex(null);
+      setActiveItemIndex(null);
+      setActiveMoveSlot(null);
+    },
+    [
+      activeTeamId,
+      editorReady,
+      selectedPokemons,
+      selectedAbilities,
+      selectedItemIds,
+      selectedMoveIds,
+      syncActiveTeamPokemons,
+      setActiveTeamId,
+      loadTeamIntoEditor,
+    ],
   );
 
   const handleClear = useCallback((index: number) => {
@@ -394,7 +761,20 @@ export function useTeamEditor() {
       next[index] = '';
       return next;
     });
+    setSelectedMoveIds((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<number | null>(null);
+      return next;
+    });
+    setMoveSearchValues((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyMoveSlots<string>('');
+      return next;
+    });
     setActiveIndex((current) => (current === index ? null : current));
+    setActiveMoveSlot((current) =>
+      current?.pokemon === index ? null : current,
+    );
   }, []);
 
   const handleKeyDown = useCallback(
@@ -502,6 +882,20 @@ export function useTeamEditor() {
     pendingPokemonPick: pendingPokemon,
     onItemSectionActivate: handleItemSectionActivate,
     onThumbnailActivate: handleThumbnailActivate,
+    selectedMoveIds,
+    moveSearchValues,
+    activeMoveSlot,
+    moveSuggestions,
+    moveHighlightedIndex,
+    pokemonMoveIdSets,
+    pendingMovePick: pendingMove,
+    onMoveSearchChange: handleMoveSearchChange,
+    onSelectMove: handleSelectMove,
+    onClearMove: handleClearMove,
+    onMoveSlotActivate: handleMoveSlotActivate,
+    onActiveMoveSlotChange: setActiveMoveSlot,
+    onMoveHighlightedIndexChange: setMoveHighlightedIndex,
+    onMoveKeyDown: handleMoveKeyDown,
   };
 
   return {
@@ -510,5 +904,7 @@ export function useTeamEditor() {
     selectedPokemons,
     allPokemons,
     handleSelect,
+    switchActiveTeam,
+    activeTeamId,
   };
 }

@@ -23,3 +23,33 @@ export function getMovesByIds(
   }
   return result.sort((a, b) => a.id - b.id);
 }
+
+/**
+ * 포켓몬이 배울 수 있는 기술 목록을 키워드로 검색합니다.
+ * - 이미 적용된 기술(excludeIds)은 제외합니다.
+ */
+export function searchLearnableMoves(
+  moves: MoveDbEntry[],
+  keyword: string,
+  excludeIds: Set<number>,
+  limit = 50,
+): MoveDbEntry[] {
+  const q = keyword.trim();
+  const qLower = q.toLowerCase();
+  const result: MoveDbEntry[] = [];
+
+  for (const move of moves) {
+    if (excludeIds.has(move.id)) continue;
+    if (
+      q &&
+      !move.koreanName.includes(q) &&
+      !move.englishName.toLowerCase().includes(qLower)
+    ) {
+      continue;
+    }
+    result.push(move);
+    if (result.length >= limit) break;
+  }
+
+  return result;
+}

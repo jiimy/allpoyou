@@ -19,11 +19,33 @@ import s from './moves.module.scss';
 
 const PAGE_SIZE = 30;
 
-function MoveRow({ move }: { move: MoveDbEntry }) {
+function MoveRow({
+  move,
+  onMoveClick,
+}: {
+  move: MoveDbEntry;
+  onMoveClick?: (move: MoveDbEntry) => void;
+}) {
   const typeKo = getMoveTypeKo(move.type);
+  const clickable = onMoveClick != null;
 
   return (
-    <li className={s.item}>
+    <li
+      className={`${s.item} ${clickable ? s.itemClickable : ''}`}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? () => onMoveClick?.(move) : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onMoveClick?.(move);
+              }
+            }
+          : undefined
+      }
+    >
       <h3 className={s.name}>{move.koreanName}</h3>
       <p className={s.description}>{move.description}</p>
       <p className={s.meta}>
@@ -77,6 +99,7 @@ type MoveListProps = {
   pokemonMoves: MoveDbEntry[];
   pokemonMovesLoading: boolean;
   pokemonMovesError: string | null;
+  onMoveClick?: (move: MoveDbEntry) => void;
 };
 
 export default function MoveList({
@@ -99,6 +122,7 @@ export default function MoveList({
   pokemonMoves,
   pokemonMovesLoading,
   pokemonMovesError,
+  onMoveClick,
 }: MoveListProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [pokemonMovesVisibleCount, setPokemonMovesVisibleCount] =
@@ -274,7 +298,7 @@ export default function MoveList({
       ) : (
         <ul className={s.list}>
           {visibleMoves.map((move) => (
-            <MoveRow key={move.id} move={move} />
+            <MoveRow key={move.id} move={move} onMoveClick={onMoveClick} />
           ))}
         </ul>
       )}
@@ -298,7 +322,7 @@ export default function MoveList({
               </p>
               <ul className={s.list}>
                 {visiblePokemonMoves.map((move) => (
-                  <MoveRow key={move.id} move={move} />
+                  <MoveRow key={move.id} move={move} onMoveClick={onMoveClick} />
                 ))}
               </ul>
               {hasMorePokemonMoves ? (

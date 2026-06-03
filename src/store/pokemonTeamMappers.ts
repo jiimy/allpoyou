@@ -39,26 +39,27 @@ export function buildTeamPokemonSlot(
   pokemon: Pokemon,
   abilityName: string | null,
   itemId: number | null,
+  moves: number[] | null,
   existing?: TeamPokemonSlot | null,
 ): TeamPokemonSlot {
   const resolvedAbility = abilityName ?? getDefaultAbilityName(pokemon);
   const abilityId = getAbilityIdByNameKo(resolvedAbility);
+  const sameAsExisting = existing?.pokemonId === pokemon.id;
+  const resolvedMoves =
+    moves ?? (sameAsExisting ? (existing?.moves ?? []) : []);
 
   return {
     pokemonId: pokemon.id,
     nameKo: pokemon.nameKo,
     nameEn: pokemon.name,
     types: ensureStringArray(pokemon.types),
-    form: existing?.pokemonId === pokemon.id ? existing.form : undefined,
+    form: sameAsExisting ? existing?.form : undefined,
     abilityId,
     itemId,
-    nature:
-      existing?.pokemonId === pokemon.id ? (existing.nature ?? null) : null,
-    teraType:
-      existing?.pokemonId === pokemon.id ? (existing.teraType ?? null) : null,
-    moves:
-      existing?.pokemonId === pokemon.id ? (existing.moves ?? []) : [],
-    evs: existing?.pokemonId === pokemon.id ? (existing.evs ?? null) : null,
+    nature: sameAsExisting ? (existing?.nature ?? null) : null,
+    teraType: sameAsExisting ? (existing?.teraType ?? null) : null,
+    moves: resolvedMoves,
+    evs: sameAsExisting ? (existing?.evs ?? null) : null,
   };
 }
 
@@ -67,15 +68,20 @@ export function buildPokemonsFromEditor(
   selectedAbilities: (string | null)[],
   selectedItemIds: (number | null)[],
   existingSlots: (TeamPokemonSlot | null)[],
+  selectedMoveIds?: (number | null)[][],
 ): (TeamPokemonSlot | null)[] {
   return selectedPokemons.map((pokemon, index) => {
     if (!pokemon) return null;
     const abilityName =
       selectedAbilities[index] ?? getDefaultAbilityName(pokemon);
+    const moves = selectedMoveIds
+      ? selectedMoveIds[index].filter((id): id is number => id != null)
+      : null;
     return buildTeamPokemonSlot(
       pokemon,
       abilityName,
       selectedItemIds[index] ?? null,
+      moves,
       existingSlots[index] ?? null,
     );
   });

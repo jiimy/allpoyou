@@ -12,7 +12,12 @@ import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { buildPokemonsFromEditor } from '@/store/pokemonTeamMappers';
 import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
 import type { ItemKr } from '@/types/item';
+import type { MoveDbEntry } from '@/types/move';
+import type { ActiveMoveSlot } from '@/hooks/useTeamEditor';
+import { getMoveTypeKo } from '@/utils/moveDisplay';
 import s from '@/app/make-team/maekTeam.module.scss';
+
+const MOVE_SLOT_PLACEHOLDERS = ['기술1', '기술2', '기술3', '기술4'] as const;
 
 type AbilityEntry = { nameKo: string; summary: string };
 
@@ -108,6 +113,32 @@ export type TeamProps = {
   pendingPokemonPick?: Pokemon | null;
   onItemSectionActivate: (index: number) => void;
   onThumbnailActivate: (index: number) => void;
+  selectedMoveIds: (number | null)[][];
+  moveSearchValues: string[][];
+  activeMoveSlot: ActiveMoveSlot;
+  moveSuggestions: MoveDbEntry[];
+  moveHighlightedIndex: number;
+  pokemonMoveIdSets: Record<number, Set<number>>;
+  pendingMovePick?: MoveDbEntry | null;
+  onMoveSearchChange: (
+    pokemonIndex: number,
+    moveIndex: number,
+    value: string,
+  ) => void;
+  onSelectMove: (
+    pokemonIndex: number,
+    moveIndex: number,
+    move: MoveDbEntry,
+  ) => void;
+  onClearMove: (pokemonIndex: number, moveIndex: number) => void;
+  onMoveSlotActivate: (pokemonIndex: number, moveIndex: number) => void;
+  onActiveMoveSlotChange: (slot: ActiveMoveSlot) => void;
+  onMoveHighlightedIndexChange: (index: number) => void;
+  onMoveKeyDown: (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    pokemonIndex: number,
+    moveIndex: number,
+  ) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -143,6 +174,20 @@ const Team: React.FC<TeamProps> = ({
   pendingPokemonPick = null,
   onItemSectionActivate,
   onThumbnailActivate,
+  selectedMoveIds,
+  moveSearchValues,
+  activeMoveSlot,
+  moveSuggestions,
+  moveHighlightedIndex,
+  pokemonMoveIdSets,
+  pendingMovePick = null,
+  onMoveSearchChange,
+  onSelectMove,
+  onClearMove,
+  onMoveSlotActivate,
+  onActiveMoveSlotChange,
+  onMoveHighlightedIndexChange,
+  onMoveKeyDown,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -151,6 +196,7 @@ const Team: React.FC<TeamProps> = ({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const itemDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {
     if (!editorReady) return;
@@ -161,6 +207,7 @@ const Team: React.FC<TeamProps> = ({
       selectedAbilities,
       selectedItemIds,
       existing,
+      selectedMoveIds,
     );
     syncActiveTeamPokemons(pokemons);
   }, [
@@ -168,13 +215,15 @@ const Team: React.FC<TeamProps> = ({
     selectedPokemons,
     selectedAbilities,
     selectedItemIds,
+    selectedMoveIds,
     syncActiveTeamPokemons,
   ]);
 
   const handleOutsideClick = useCallback(() => {
     onActiveIndexChange(null);
     onActiveItemIndexChange(null);
-  }, [onActiveIndexChange, onActiveItemIndexChange]);
+    onActiveMoveSlotChange(null);
+  }, [onActiveIndexChange, onActiveItemIndexChange, onActiveMoveSlotChange]);
 
   useOutOfClick(wrapperRef, handleOutsideClick);
 
@@ -195,6 +244,15 @@ const Team: React.FC<TeamProps> = ({
     const el = itemDropdownRefs.current[itemHighlightedIndex];
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [itemHighlightedIndex, itemSuggestions]);
+
+  useEffect(() => {
+    moveDropdownRefs.current = [];
+  }, [moveSuggestions]);
+
+  useEffect(() => {
+    const el = moveDropdownRefs.current[moveHighlightedIndex];
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, [moveHighlightedIndex, moveSuggestions]);
 
   return (
     <div ref={wrapperRef} className={s.buildWrap}>
@@ -217,12 +275,18 @@ const Team: React.FC<TeamProps> = ({
         const showItemDropdown =
           isClient && isItemActive && selected != null;
         const hasSelectedItem = selectedItemIds[index] != null;
+        const pendingMoveLearnable =
+          pendingMovePick != null &&
+          selected != null &&
+          (pokemonMoveIdSets[selected.id]?.has(pendingMovePick.id) ?? false) &&
+          !selectedMoveIds[index].includes(pendingMovePick.id);
 
         return (
           <div key={index}>
             <div
               className={cn(s.thumbnail, {
                 [s.thumbnailPickable]: pendingPokemonPick != null,
+                [s.thumbnailMoveLearnable]: pendingMoveLearnable,
               })}
               onClick={() => {
                 if (!pendingPokemonPick) return;
@@ -238,6 +302,11 @@ const Team: React.FC<TeamProps> = ({
                   className="!relative !h-auto object-contain max-h-full"
                   priority
                 />
+              ) : null}
+              {pendingMoveLearnable && pendingMovePick ? (
+                <span className={s.moveLearnableBadge}>
+                  + {pendingMovePick.koreanName}
+                </span>
               ) : null}
             </div>
             <span className={s.types}>
@@ -446,10 +515,113 @@ const Team: React.FC<TeamProps> = ({
               )}
             </div>
             <div>성격</div>
-            <div>기술1</div>
-            <div>기술2</div>
-            <div>기술3</div>
-            <div>기술4</div>
+            {MOVE_SLOT_PLACEHOLDERS.map((movePlaceholder, moveIndex) => {
+              const isMoveActive =
+                activeMoveSlot?.pokemon === index &&
+                activeMoveSlot.move === moveIndex;
+              const showMoveDropdown =
+                isClient && isMoveActive && selected != null;
+              const moveValue = moveSearchValues[index][moveIndex];
+              const moveListLoading =
+                selected != null && !(selected.id in pokemonMoveIdSets);
+
+              return (
+                <div
+                  key={`move-${moveIndex}`}
+                  className={cn(s.moveSection, {
+                    [s.moveSectionPickable]: pendingMoveLearnable,
+                  })}
+                  onClick={(e) => {
+                    if (!pendingMoveLearnable || !selected) return;
+                    const target = e.target as HTMLElement;
+                    if (target.closest('button, li')) return;
+                    onMoveSlotActivate(index, moveIndex);
+                  }}
+                >
+                  {selected ? (
+                    <div className={s.inputWrap}>
+                      <input
+                        type="text"
+                        className={s.fieldInput}
+                        placeholder={movePlaceholder}
+                        value={moveValue}
+                        onChange={(e) =>
+                          onMoveSearchChange(index, moveIndex, e.target.value)
+                        }
+                        onFocus={() => onMoveSlotActivate(index, moveIndex)}
+                        onKeyDown={(e) => onMoveKeyDown(e, index, moveIndex)}
+                        autoComplete="off"
+                        data-1p-ignore
+                        data-lpignore="true"
+                        data-form-type="other"
+                        aria-label={`${movePlaceholder} 선택`}
+                        suppressHydrationWarning
+                      />
+                      {moveValue ? (
+                        <button
+                          type="button"
+                          className={s.clearBtn}
+                          onClick={() => onClearMove(index, moveIndex)}
+                          aria-label={`${movePlaceholder} 선택 초기화`}
+                          tabIndex={-1}
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                      {showMoveDropdown && (
+                        <ul className={s.dropdown}>
+                          {moveListLoading && <li>기술 목록 불러오는 중…</li>}
+                          {!moveListLoading &&
+                            moveSuggestions.length === 0 && (
+                              <li>검색 결과 없음</li>
+                            )}
+                          {moveSuggestions.map((move, i) => {
+                            const isHighlighted = i === moveHighlightedIndex;
+                            const moveTypeKo = getMoveTypeKo(move.type);
+                            return (
+                              <li
+                                key={move.id}
+                                title={move.description ?? ''}
+                                className={cn({
+                                  [s.dropdownItemHighlighted]: isHighlighted,
+                                })}
+                                ref={(el) => {
+                                  moveDropdownRefs.current[i] = el;
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  onSelectMove(index, moveIndex, move);
+                                }}
+                                onMouseEnter={() =>
+                                  onMoveHighlightedIndexChange(i)
+                                }
+                              >
+                                <span>{move.koreanName}</span>
+                                <span
+                                  style={{
+                                    background:
+                                      TYPE_COLOR[moveTypeKo] ?? '#999',
+                                    color: '#fff',
+                                    padding: '1px 8px',
+                                    borderRadius: 10,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {moveTypeKo}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <span>{movePlaceholder}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         );
       })}

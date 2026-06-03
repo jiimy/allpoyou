@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Team from '@/components/team/Team';
+import TeamSelector from '@/components/team/TeamSelector';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
 
 const TeamEditor = () => {
-  const { teamProps, pokemonListError } = useTeamEditor();
+  const { teamProps, pokemonListError, switchActiveTeam } = useTeamEditor();
 
   return (
     <>
@@ -14,6 +15,7 @@ const TeamEditor = () => {
           {pokemonListError}
         </p>
       ) : null}
+      <TeamSelector onSwitchTeam={switchActiveTeam} />
       <Team {...teamProps} />
     </>
   );

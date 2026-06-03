@@ -16,6 +16,7 @@ import { hasPokemonImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import Team from '@/components/team/Team';
+import TeamSelector from '@/components/team/TeamSelector';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
 import { TEAM_SLOT_COUNT } from '@/store/PokemonTeamStore';
 import s from './maekTeam.module.scss';
@@ -334,6 +335,7 @@ const MakeTeam = () => {
     selectedPokemons,
     allPokemons,
     handleSelect,
+    switchActiveTeam,
   } = useTeamEditor();
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
@@ -401,6 +403,7 @@ const MakeTeam = () => {
           {pokemonListError}
         </p>
       ) : null}
+      <TeamSelector onSwitchTeam={switchActiveTeam} />
       <Team {...teamProps} />
       <div>
         <div
@@ -431,10 +434,6 @@ const MakeTeam = () => {
               />
               선택한 포켓몬과 다른 타입만 보기
             </label>
-          </div>
-          <div>
-            <div>1 2 3 4 5</div>
-            <div>팀 이름</div>
           </div>
         </div>
         {selectedPokemons.every((p) => p === null) && (

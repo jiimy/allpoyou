@@ -36,6 +36,76 @@
   white-space: nowrap;
 }
 
+.teamSelector {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.teamTabs {
+  display: flex;
+  gap: 6px;
+}
+
+.teamTab {
+  min-width: 36px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: #999;
+    background: #f5f5f5;
+  }
+}
+
+.teamTabActive {
+  border-color: #333;
+  background: #333;
+  color: #fff;
+
+  &:hover {
+    border-color: #333;
+    background: #333;
+    color: #fff;
+  }
+}
+
+.teamNameField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teamNameLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.teamNameInput {
+  width: min(240px, 100%);
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: #888;
+  }
+}
+
 .input {
   width: 100%;
   padding: 8px 32px 8px 10px;
@@ -101,6 +171,33 @@
   }
 }
 
+.thumbnailMoveLearnable {
+  border-radius: 8px;
+  background: #f1fbf3;
+  outline: 2px solid #4caf7d;
+  outline-offset: 2px;
+}
+
+.moveLearnableBadge {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #4caf7d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
 .buildArea {
   display: flex;
   flex-direction: column;
@@ -161,6 +258,21 @@
 
   &:hover {
     background: #eef6ff;
+  }
+}
+
+.moveSection {
+  position: relative;
+}
+
+.moveSectionPickable {
+  cursor: pointer;
+  background: #f8fbff;
+
+  &:hover {
+    background: #eef6ff;
+    outline: 2px dashed #6390f0;
+    outline-offset: -2px;
   }
 }
 

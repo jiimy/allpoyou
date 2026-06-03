@@ -6,6 +6,8 @@ import SearchBar from '@/components/searchBar/SearchBar';
 import type { MoveDamageClassFilter } from '@/constants/moveFilters';
 import type { MoveDbEntry } from '@/types/move';
 import { buildMovesIndex, getMovesByIds } from '@/utils/movesDb';
+import { useMovePickStore } from '@/store/MovePickStore';
+import { useTeamModalStore } from '@/store/TeamModalStore';
 import movesData from '../../../public/data/moves-db.json';
 
 import MoveList from './MoveList';
@@ -64,6 +66,16 @@ export default function MovesPageContent() {
   const [pokemonMovesLoadingId, setPokemonMovesLoadingId] = useState<
     number | null
   >(null);
+  const setPendingMove = useMovePickStore((state) => state.setPendingMove);
+  const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+
+  const handleMoveClick = useCallback(
+    (move: MoveDbEntry) => {
+      setPendingMove(move);
+      setTeamModalOpen(true);
+    },
+    [setPendingMove, setTeamModalOpen],
+  );
 
   const moveIdsByNameMatch = useMemo(() => {
     const q = keyword.trim();
@@ -364,6 +376,7 @@ export default function MovesPageContent() {
           pokemonMovesLoadingId === selectedPokemon.id
         }
         pokemonMovesError={selectedPokemonMoves?.error ?? null}
+        onMoveClick={handleMoveClick}
       />
     </div>
   );

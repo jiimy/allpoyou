@@ -19,7 +19,7 @@ const Nav = () => {
           <Link href="/items">도구</Link>
         </li>
         <li>
-          <Link href="/person">성격</Link>
+          <Link href="/nature">성격</Link>
         </li>
         <li>
           <Link href="/moves">기술</Link>
@@ -28,6 +28,7 @@ const Nav = () => {
           <Link href="/make-team">팀만들기</Link>
         </li>
       </ul>
+      <div>내정보</div>
     </div>
   );
 };
