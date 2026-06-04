@@ -127,6 +127,11 @@ export default function MoveList({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [pokemonMovesVisibleCount, setPokemonMovesVisibleCount] =
     useState(PAGE_SIZE);
+  const [pokemonMovesType, setPokemonMovesType] = useState<string | 'all'>(
+    'all',
+  );
+  const [pokemonMovesDamageClass, setPokemonMovesDamageClass] =
+    useState<MoveDamageClassFilter>('all');
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pokemonMovesSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -137,19 +142,51 @@ export default function MoveList({
 
   const hasMore = visibleCount < moves.length;
 
-  const visiblePokemonMoves = useMemo(
-    () => pokemonMoves.slice(0, pokemonMovesVisibleCount),
-    [pokemonMoves, pokemonMovesVisibleCount],
+  const filteredPokemonMoves = useMemo(
+    () =>
+      pokemonMoves.filter((move) => {
+        if (pokemonMovesType !== 'all' && move.type !== pokemonMovesType) {
+          return false;
+        }
+        if (
+          pokemonMovesDamageClass !== 'all' &&
+          move.damage_class !== pokemonMovesDamageClass
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    [pokemonMoves, pokemonMovesType, pokemonMovesDamageClass],
   );
 
-  const hasMorePokemonMoves = pokemonMovesVisibleCount < pokemonMoves.length;
+  const visiblePokemonMoves = useMemo(
+    () => filteredPokemonMoves.slice(0, pokemonMovesVisibleCount),
+    [filteredPokemonMoves, pokemonMovesVisibleCount],
+  );
+
+  const hasMorePokemonMoves =
+    pokemonMovesVisibleCount < filteredPokemonMoves.length;
 
   const pokemonKey = selectedPokemon?.id ?? 'none';
   const [prevPokemonKey, setPrevPokemonKey] = useState(pokemonKey);
   if (prevPokemonKey !== pokemonKey) {
     setPrevPokemonKey(pokemonKey);
     setPokemonMovesVisibleCount(PAGE_SIZE);
+    setPokemonMovesType('all');
+    setPokemonMovesDamageClass('all');
   }
+
+  const handlePokemonMovesTypeChange = (type: string | 'all') => {
+    setPokemonMovesType(type);
+    setPokemonMovesVisibleCount(PAGE_SIZE);
+  };
+
+  const handlePokemonMovesDamageClassChange = (
+    value: MoveDamageClassFilter,
+  ) => {
+    setPokemonMovesDamageClass(value);
+    setPokemonMovesVisibleCount(PAGE_SIZE);
+  };
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -176,7 +213,7 @@ export default function MoveList({
       (entries) => {
         if (entries[0]?.isIntersecting) {
           setPokemonMovesVisibleCount((prev) =>
-            Math.min(prev + PAGE_SIZE, pokemonMoves.length),
+            Math.min(prev + PAGE_SIZE, filteredPokemonMoves.length),
           );
         }
       },
@@ -185,7 +222,7 @@ export default function MoveList({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [pokemonMoves.length, hasMorePokemonMoves]);
+  }, [filteredPokemonMoves.length, hasMorePokemonMoves]);
 
   return (
     <>
@@ -317,14 +354,74 @@ export default function MoveList({
             <p className={s.empty}>배울 수 있는 기술이 없습니다.</p>
           ) : (
             <>
+              <div className={s.filters}>
+                <div className={s.filterGroup}>
+                  <span className={s.filterLabel}>타입</span>
+                  <div className={s.filterRow}>
+                    <button
+                      type="button"
+                      className={`${s.filterBtn} ${pokemonMovesType === 'all' ? s.filterBtnActive : ''}`}
+                      onClick={() => handlePokemonMovesTypeChange('all')}
+                    >
+                      전체
+                    </button>
+                    {MOVE_TYPE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${s.filterBtn} ${pokemonMovesType === opt.value ? s.filterBtnActive : ''}`}
+                        style={
+                          pokemonMovesType === opt.value
+                            ? {
+                                background: TYPE_COLOR[opt.label] ?? '#999',
+                                borderColor: TYPE_COLOR[opt.label] ?? '#999',
+                                color: '#fff',
+                              }
+                            : undefined
+                        }
+                        onClick={() => handlePokemonMovesTypeChange(opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={s.filterGroup}>
+                  <span className={s.filterLabel}>분류</span>
+                  <div className={s.filterRow}>
+                    {MOVE_DAMAGE_CLASS_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${s.filterBtn} ${pokemonMovesDamageClass === opt.value ? s.filterBtnActive : ''}`}
+                        onClick={() =>
+                          handlePokemonMovesDamageClassChange(opt.value)
+                        }
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <br/>
               <p className={s.resultCount}>
+                {filteredPokemonMoves.length.toLocaleString()}개 /{' '}
                 {pokemonMoves.length.toLocaleString()}개
               </p>
-              <ul className={s.list}>
-                {visiblePokemonMoves.map((move) => (
-                  <MoveRow key={move.id} move={move} onMoveClick={onMoveClick} />
-                ))}
-              </ul>
+              {filteredPokemonMoves.length === 0 ? (
+                <p className={s.empty}>조건에 맞는 기술이 없습니다.</p>
+              ) : (
+                <ul className={s.list}>
+                  {visiblePokemonMoves.map((move) => (
+                    <MoveRow
+                      key={move.id}
+                      move={move}
+                      onMoveClick={onMoveClick}
+                    />
+                  ))}
+                </ul>
+              )}
               {hasMorePokemonMoves ? (
                 <div
                   ref={pokemonMovesSentinelRef}

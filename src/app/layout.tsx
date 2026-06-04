@@ -4,6 +4,7 @@ import "./globals.css";
 import Nav from "@/components/nav/Nav";
 import FloatingBtn from "@/components/floatingBtn/FloatingBtn";
 import s from './main.module.scss'
+import Footer from "@/components/footer/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           {children}
           <FloatingBtn />
         </div>
+        <Footer />
         <div id="modal" />
       </body>
     </html>
