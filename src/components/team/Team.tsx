@@ -15,6 +15,7 @@ import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
 import type { ActiveMoveSlot } from '@/hooks/useTeamEditor';
 import { getMoveTypeKo } from '@/utils/moveDisplay';
+import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
 import s from '@/app/make-team/maekTeam.module.scss';
 
 const MOVE_SLOT_PLACEHOLDERS = ['기술1', '기술2', '기술3', '기술4'] as const;
@@ -113,6 +114,22 @@ export type TeamProps = {
   pendingPokemonPick?: Pokemon | null;
   onItemSectionActivate: (index: number) => void;
   onThumbnailActivate: (index: number) => void;
+  selectedNatures: (string | null)[];
+  natureSearchValues: string[];
+  activeNatureIndex: number | null;
+  natureSuggestions: NatureEntry[];
+  natureHighlightedIndex: number;
+  pendingNaturePick?: string | null;
+  onNatureSearchChange: (index: number, value: string) => void;
+  onSelectNature: (index: number, nature: string) => void;
+  onClearNature: (index: number) => void;
+  onActiveNatureIndexChange: (index: number | null) => void;
+  onNatureHighlightedIndexChange: (index: number) => void;
+  onNatureSectionActivate: (index: number) => void;
+  onNatureKeyDown: (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => void;
   selectedMoveIds: (number | null)[][];
   moveSearchValues: string[][];
   activeMoveSlot: ActiveMoveSlot;
@@ -174,6 +191,19 @@ const Team: React.FC<TeamProps> = ({
   pendingPokemonPick = null,
   onItemSectionActivate,
   onThumbnailActivate,
+  selectedNatures,
+  natureSearchValues,
+  activeNatureIndex,
+  natureSuggestions,
+  natureHighlightedIndex,
+  pendingNaturePick = null,
+  onNatureSearchChange,
+  onSelectNature,
+  onClearNature,
+  onActiveNatureIndexChange,
+  onNatureHighlightedIndexChange,
+  onNatureSectionActivate,
+  onNatureKeyDown,
   selectedMoveIds,
   moveSearchValues,
   activeMoveSlot,
@@ -196,6 +226,7 @@ const Team: React.FC<TeamProps> = ({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const itemDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const natureDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {
@@ -208,6 +239,7 @@ const Team: React.FC<TeamProps> = ({
       selectedItemIds,
       existing,
       selectedMoveIds,
+      selectedNatures,
     );
     syncActiveTeamPokemons(pokemons);
   }, [
@@ -216,14 +248,21 @@ const Team: React.FC<TeamProps> = ({
     selectedAbilities,
     selectedItemIds,
     selectedMoveIds,
+    selectedNatures,
     syncActiveTeamPokemons,
   ]);
 
   const handleOutsideClick = useCallback(() => {
     onActiveIndexChange(null);
     onActiveItemIndexChange(null);
+    onActiveNatureIndexChange(null);
     onActiveMoveSlotChange(null);
-  }, [onActiveIndexChange, onActiveItemIndexChange, onActiveMoveSlotChange]);
+  }, [
+    onActiveIndexChange,
+    onActiveItemIndexChange,
+    onActiveNatureIndexChange,
+    onActiveMoveSlotChange,
+  ]);
 
   useOutOfClick(wrapperRef, handleOutsideClick);
 
@@ -244,6 +283,15 @@ const Team: React.FC<TeamProps> = ({
     const el = itemDropdownRefs.current[itemHighlightedIndex];
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [itemHighlightedIndex, itemSuggestions]);
+
+  useEffect(() => {
+    natureDropdownRefs.current = [];
+  }, [natureSuggestions]);
+
+  useEffect(() => {
+    const el = natureDropdownRefs.current[natureHighlightedIndex];
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, [natureHighlightedIndex, natureSuggestions]);
 
   useEffect(() => {
     moveDropdownRefs.current = [];
@@ -275,6 +323,17 @@ const Team: React.FC<TeamProps> = ({
         const showItemDropdown =
           isClient && isItemActive && selected != null;
         const hasSelectedItem = selectedItemIds[index] != null;
+        const isNatureActive = activeNatureIndex === index;
+        const showNatureDropdown =
+          isClient && isNatureActive && selected != null;
+        const hasSelectedNature = selectedNatures[index] != null;
+        const highestStatLabels = selected
+          ? new Set(
+              [...getRowMaxStatKeys(selected)].map(
+                (key) => STAT_LABEL_BY_KEY[key],
+              ),
+            )
+          : new Set<string>();
         const pendingMoveLearnable =
           pendingMovePick != null &&
           selected != null &&
@@ -514,7 +573,99 @@ const Team: React.FC<TeamProps> = ({
                 <span>도구</span>
               )}
             </div>
-            <div>성격</div>
+            <div
+              className={cn(s.itemSection, {
+                [s.itemSectionPickable]:
+                  pendingNaturePick != null && selected != null,
+              })}
+              onClick={(e) => {
+                if (!pendingNaturePick || !selected) return;
+                const target = e.target as HTMLElement;
+                if (target.closest('button, li')) return;
+                onNatureSectionActivate(index);
+              }}
+            >
+              {selected ? (
+                <div className={s.inputWrap}>
+                  <input
+                    type="text"
+                    className={s.fieldInput}
+                    placeholder="성격 검색"
+                    value={natureSearchValues[index]}
+                    onChange={(e) =>
+                      onNatureSearchChange(index, e.target.value)
+                    }
+                    onFocus={() => onNatureSectionActivate(index)}
+                    onKeyDown={(e) => onNatureKeyDown(e, index)}
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-form-type="other"
+                    aria-label="성격 선택"
+                    suppressHydrationWarning
+                  />
+                  {hasSelectedNature || natureSearchValues[index] ? (
+                    <button
+                      type="button"
+                      className={s.clearBtn}
+                      onClick={() => onClearNature(index)}
+                      aria-label="성격 선택 초기화"
+                      tabIndex={-1}
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                  {showNatureDropdown && (
+                    <ul className={s.dropdown}>
+                      {natureSuggestions.length === 0 && (
+                        <li>검색 결과 없음</li>
+                      )}
+                      {natureSuggestions.map((nature, i) => {
+                        const isHighlighted = i === natureHighlightedIndex;
+                        return (
+                          <li
+                            key={nature.name}
+                            title={getNatureEffectLabel(nature)}
+                            className={cn({
+                              [s.dropdownItemHighlighted]: isHighlighted,
+                            })}
+                            ref={(el) => {
+                              natureDropdownRefs.current[i] = el;
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              onSelectNature(index, nature.name);
+                            }}
+                            onMouseEnter={() =>
+                              onNatureHighlightedIndexChange(i)
+                            }
+                          >
+                            <span>{nature.name}</span>
+                            <span className={s.itemDropdownDesc}>
+                              {nature.up ? (
+                                <span
+                                  style={
+                                    highestStatLabels.has(nature.up)
+                                      ? { color: '#e53935', fontWeight: 700 }
+                                      : undefined
+                                  }
+                                >
+                                  {nature.up}↑
+                                </span>
+                              ) : null}
+                              {nature.down ? <span> {nature.down}↓</span> : null}
+                              {!nature.up && !nature.down ? '보정 없음' : null}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ) : (
+                <span>성격</span>
+              )}
+            </div>
             {MOVE_SLOT_PLACEHOLDERS.map((movePlaceholder, moveIndex) => {
               const isMoveActive =
                 activeMoveSlot?.pokemon === index &&

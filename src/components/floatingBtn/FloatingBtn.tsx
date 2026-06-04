@@ -12,9 +12,13 @@ import TypeTableModal, {
 import TeamModal, {
   useTeamModalShortcut,
 } from '@/components/portalModal/teamModal/TeamModal';
+import NatureTableModal, {
+  useNatureTableModalShortcut,
+} from '@/components/portalModal/natureTableModal/NatureTableModal';
 import { useItemPickStore } from '@/store/ItemPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useMovePickStore } from '@/store/MovePickStore';
+import { useNaturePickStore } from '@/store/NaturePickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
@@ -36,6 +40,11 @@ const TEAM_ITEM: FloatingMenuItem = {
   label: '팀',
 };
 
+const NATURE_ITEM: FloatingMenuItem = {
+  id: 'nature',
+  label: '성격',
+};
+
 function isMakeTeamPath(pathname: string): boolean {
   return pathname === '/make-team' || pathname.startsWith('/make-team/');
 }
@@ -52,17 +61,19 @@ const FloatingBtn = () => {
   const isMakeTeamPage = isMakeTeamPath(pathname ?? '');
 
   const menuItems = useMemo(
-    () => (isMakeTeamPage ? [TYPE_TABLE_ITEM] : [TYPE_TABLE_ITEM, TEAM_ITEM]),
+    () => (isMakeTeamPage ? [TYPE_TABLE_ITEM] : [TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM]),
     [isMakeTeamPage],
   );
 
   const [isOpen, setIsOpen] = useState(false);
   const [typeTableModalOpen, setTypeTableModalOpen] = useState(false);
+  const [natureTableModalOpen, setNatureTableModalOpen] = useState(false);
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
+  const clearPendingNature = useNaturePickStore((state) => state.clearPendingNature);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTeamModalOpenChange: React.Dispatch<
@@ -75,15 +86,23 @@ const FloatingBtn = () => {
           clearPendingItem();
           clearPendingPokemon();
           clearPendingMove();
+          clearPendingNature();
         }
         return next;
       });
     },
-    [setTeamModalOpen, clearPendingItem, clearPendingPokemon, clearPendingMove],
+    [
+      setTeamModalOpen,
+      clearPendingItem,
+      clearPendingPokemon,
+      clearPendingMove,
+      clearPendingNature,
+    ],
   );
 
   useTypeTableModalShortcut(setTypeTableModalOpen);
   useTeamModalShortcut(handleTeamModalOpenChange);
+  useNatureTableModalShortcut(setNatureTableModalOpen);
 
   const handleOutOfClick = useCallback(() => {
     setIsOpen(false);
@@ -98,6 +117,9 @@ const FloatingBtn = () => {
     if (item.id === 'team') {
       handleTeamModalOpenChange(true);
     }
+    if (item.id === 'nature') {
+      setNatureTableModalOpen(true);
+    }
     item.onClick?.();
     setIsOpen(false);
   };
@@ -109,6 +131,13 @@ const FloatingBtn = () => {
       )}
       {teamModalOpen && (
         <TeamModal setOnModal={handleTeamModalOpenChange} dimClick />
+      )}
+      {natureTableModalOpen && (
+        <NatureTableModal
+          setOnModal={setNatureTableModalOpen}
+          dimClick
+          onPick={() => setNatureTableModalOpen(false)}
+        />
       )}
       <div ref={containerRef} className={s.container}>
         <ul className={`${s.menuList} ${isOpen ? s.menuListOpen : ''}`}>
@@ -135,6 +164,7 @@ const FloatingBtn = () => {
                   {item.label}
                   {item.id === 'type-table' && <Command command="Shift+F" />}
                   {item.id === 'team' && <Command command="Shift+D" />}
+                  {item.id === 'nature' && <Command command="Shift+C" />}
                 </button>
               )}
             </li>

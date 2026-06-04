@@ -18,9 +18,9 @@ const Nav = () => {
         <li>
           <Link href="/items">도구</Link>
         </li>
-        <li>
+        {/* <li>
           <Link href="/nature">성격</Link>
-        </li>
+        </li> */}
         <li>
           <Link href="/moves">기술</Link>
         </li>

@@ -41,12 +41,19 @@ export function buildTeamPokemonSlot(
   itemId: number | null,
   moves: number[] | null,
   existing?: TeamPokemonSlot | null,
+  nature?: string | null,
 ): TeamPokemonSlot {
   const resolvedAbility = abilityName ?? getDefaultAbilityName(pokemon);
   const abilityId = getAbilityIdByNameKo(resolvedAbility);
   const sameAsExisting = existing?.pokemonId === pokemon.id;
   const resolvedMoves =
     moves ?? (sameAsExisting ? (existing?.moves ?? []) : []);
+  const resolvedNature =
+    nature !== undefined
+      ? nature
+      : sameAsExisting
+        ? (existing?.nature ?? null)
+        : null;
 
   return {
     pokemonId: pokemon.id,
@@ -56,7 +63,7 @@ export function buildTeamPokemonSlot(
     form: sameAsExisting ? existing?.form : undefined,
     abilityId,
     itemId,
-    nature: sameAsExisting ? (existing?.nature ?? null) : null,
+    nature: resolvedNature,
     teraType: sameAsExisting ? (existing?.teraType ?? null) : null,
     moves: resolvedMoves,
     evs: sameAsExisting ? (existing?.evs ?? null) : null,
@@ -69,6 +76,7 @@ export function buildPokemonsFromEditor(
   selectedItemIds: (number | null)[],
   existingSlots: (TeamPokemonSlot | null)[],
   selectedMoveIds?: (number | null)[][],
+  selectedNatures?: (string | null)[],
 ): (TeamPokemonSlot | null)[] {
   return selectedPokemons.map((pokemon, index) => {
     if (!pokemon) return null;
@@ -83,6 +91,7 @@ export function buildPokemonsFromEditor(
       selectedItemIds[index] ?? null,
       moves,
       existingSlots[index] ?? null,
+      selectedNatures ? (selectedNatures[index] ?? null) : undefined,
     );
   });
 }

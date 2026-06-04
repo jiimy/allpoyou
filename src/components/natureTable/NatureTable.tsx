@@ -1,12 +1,30 @@
+'use client';
+
 import {
   NATURE_GRID,
   STAT_LABELS,
   STAT_THEME,
 } from './natureData';
+import { useNaturePickStore } from '@/store/NaturePickStore';
+import { useTeamModalStore } from '@/store/TeamModalStore';
 
 import s from './natureTable.module.scss';
 
-const NatureTable = () => {
+type NatureTableProps = {
+  /** 성격 셀을 클릭한 직후 호출됩니다. (예: 성격 모달 닫기) */
+  onPick?: (nature: string) => void;
+};
+
+const NatureTable = ({ onPick }: NatureTableProps) => {
+  const setPendingNature = useNaturePickStore((state) => state.setPendingNature);
+  const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+
+  const handleNatureClick = (nature: string) => {
+    setPendingNature(nature);
+    setTeamModalOpen(true);
+    onPick?.(nature);
+  };
+
   return (
     <div className={s.wrap}>
       <header className={s.header}>
@@ -74,6 +92,21 @@ const NatureTable = () => {
                           isNeutral
                             ? { background: STAT_THEME[increaseStat].soft }
                             : undefined
+                        }
+                        role={isNeutral ? undefined : 'button'}
+                        tabIndex={isNeutral ? undefined : 0}
+                        onClick={
+                          isNeutral ? undefined : () => handleNatureClick(nature)
+                        }
+                        onKeyDown={
+                          isNeutral
+                            ? undefined
+                            : (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleNatureClick(nature);
+                                }
+                              }
                         }
                       >
                         {nature}
