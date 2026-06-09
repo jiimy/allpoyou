@@ -43,26 +43,42 @@ export function useDebouncedTeamDbSync({
   const pendingTeamIdRef = useRef<number | null>(null);
   const guestTeamsRef = useRef<SavedTeam[] | null>(null);
 
+  const applyDbTeamsToStore = useCallback(
+    (result: Awaited<ReturnType<typeof loadUserTeamsFromDb>>) => {
+      if (result == null) {
+        usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+        return;
+      }
+
+      if ('error' in result) {
+        setSaveStatus('error');
+        usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+        return;
+      }
+
+      if (result.hasDbRows) {
+        usePokemonTeamStore.getState().hydrateTeamsFromServer(result.teams);
+      } else {
+        usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+      }
+    },
+    [],
+  );
+
   const loadDbTeamsIntoStore = useCallback(async () => {
     const result = await loadUserTeamsFromDb();
+    applyDbTeamsToStore(result);
+  }, [applyDbTeamsToStore]);
 
-    if (result == null) {
-      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
-      return;
-    }
-
-    if ('error' in result) {
-      setSaveStatus('error');
-      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
-      return;
-    }
-
-    if (result.hasDbRows) {
-      usePokemonTeamStore.getState().hydrateTeamsFromServer(result.teams);
-    } else {
-      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
-    }
-  }, []);
+  const dbHasTeamData = useCallback(
+    (result: Awaited<ReturnType<typeof loadUserTeamsFromDb>>) => {
+      if (result == null || 'error' in result || !result.hasDbRows) {
+        return false;
+      }
+      return result.teams.some(hasTeamPokemonData);
+    },
+    [],
+  );
 
   const finishLoggedInBootstrap = useCallback(() => {
     dbLoadedRef.current = true;
@@ -211,18 +227,23 @@ export function useDebouncedTeamDbSync({
     pausePokemonTeamPersist();
 
     (async () => {
-      const guestTeams = readGuestTeamsFromLocalStorage();
-
+      const dbResult = await loadUserTeamsFromDb();
       if (cancelled) return;
 
+      if (dbHasTeamData(dbResult)) {
+        applyDbTeamsToStore(dbResult);
+        finishLoggedInBootstrap();
+        return;
+      }
+
+      const guestTeams = readGuestTeamsFromLocalStorage();
       if (guestTeams) {
         guestTeamsRef.current = guestTeams;
         setLinkPromptOpen(true);
         return;
       }
 
-      await loadDbTeamsIntoStore();
-      if (cancelled) return;
+      applyDbTeamsToStore(dbResult);
       finishLoggedInBootstrap();
     })();
 
@@ -234,7 +255,8 @@ export function useDebouncedTeamDbSync({
     loggedInUserId,
     hydrated,
     finishLoggedInBootstrap,
-    loadDbTeamsIntoStore,
+    applyDbTeamsToStore,
+    dbHasTeamData,
   ]);
 
   useEffect(() => {
