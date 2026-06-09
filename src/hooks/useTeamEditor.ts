@@ -25,9 +25,14 @@ import {
   getAbilityNameById,
 } from '@/store/pokemonTeamMappers';
 import {
+  EV_STAT_MAX,
+  EV_TOTAL_MAX,
   MAX_TEAMS,
   TEAM_SLOT_COUNT,
+  createEmptyEvs,
+  type EvStatKey,
   type SavedTeam,
+  type TeamPokemonEvs,
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
 import { useItemPickStore } from '@/store/ItemPickStore';
@@ -45,6 +50,9 @@ import type { MoveDbEntry } from '@/types/move';
 export const MOVE_SLOT_COUNT = 4;
 
 export type ActiveMoveSlot = { pokemon: number; move: number } | null;
+
+/** 노력치 조절 동작: +1 / -1 / 최대로 / 0으로 */
+export type EvAdjustAction = 'inc' | 'dec' | 'max' | 'min';
 
 function createEmptyMoveSlots<T>(value: T): T[] {
   return Array.from({ length: MOVE_SLOT_COUNT }, () => value);
@@ -87,6 +95,10 @@ function createEmptyEditorState() {
     moveSearchValues: Array.from({ length: TEAM_SLOT_COUNT }, () =>
       createEmptyMoveSlots<string>(''),
     ) as string[][],
+    selectedEvs: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => createEmptyEvs(),
+    ) as TeamPokemonEvs[],
   };
 }
 
@@ -126,6 +138,7 @@ function editorStateFromTeam(
     });
     state.selectedMoveIds[index] = moveIds;
     state.moveSearchValues[index] = moveSearches;
+    state.selectedEvs[index] = slot.evs ?? createEmptyEvs();
   });
 
   return state;
@@ -144,6 +157,7 @@ function applyEditorState(
     setNatureSearchValues: Dispatch<SetStateAction<string[]>>;
     setSelectedMoveIds: Dispatch<SetStateAction<(number | null)[][]>>;
     setMoveSearchValues: Dispatch<SetStateAction<string[][]>>;
+    setSelectedEvs: Dispatch<SetStateAction<TeamPokemonEvs[]>>;
   },
 ) {
   setters.setValues(state.values);
@@ -156,6 +170,7 @@ function applyEditorState(
   setters.setNatureSearchValues(state.natureSearchValues);
   setters.setSelectedMoveIds(state.selectedMoveIds);
   setters.setMoveSearchValues(state.moveSearchValues);
+  setters.setSelectedEvs(state.selectedEvs);
 }
 
 export function useTeamEditor() {
@@ -197,6 +212,9 @@ export function useTeamEditor() {
     Array.from({ length: TEAM_SLOT_COUNT }, () =>
       createEmptyMoveSlots<string>(''),
     ),
+  );
+  const [selectedEvs, setSelectedEvs] = useState<TeamPokemonEvs[]>(() =>
+    Array.from({ length: TEAM_SLOT_COUNT }, () => createEmptyEvs()),
   );
   const [activeMoveSlot, setActiveMoveSlot] = useState<ActiveMoveSlot>(null);
   const [moveHighlightedIndex, setMoveHighlightedIndex] = useState(0);
@@ -241,6 +259,7 @@ export function useTeamEditor() {
       setNatureSearchValues,
       setSelectedMoveIds,
       setMoveSearchValues,
+      setSelectedEvs,
     }),
     [],
   );
@@ -455,6 +474,12 @@ export function useTeamEditor() {
       next[index] = createEmptyMoveSlots<string>('');
       return next;
     });
+    setSelectedEvs((prev) => {
+      if (prev[index].total === 0) return prev;
+      const next = [...prev];
+      next[index] = createEmptyEvs();
+      return next;
+    });
     setActiveMoveSlot((current) =>
       current?.pokemon === index ? null : current,
     );
@@ -471,6 +496,35 @@ export function useTeamEditor() {
       setAbilitySummaries((prev) => {
         const next = [...prev];
         next[index] = summary;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleAdjustEv = useCallback(
+    (pokemonIndex: number, statKey: EvStatKey, action: EvAdjustAction) => {
+      setSelectedEvs((prev) => {
+        const current = prev[pokemonIndex] ?? createEmptyEvs();
+        const value = current[statKey];
+        const usedByOthers = current.total - value;
+        // 이 항목이 가질 수 있는 최대치: 항목 상한과 남은 총 포인트 중 작은 값
+        const maxForStat = Math.min(EV_STAT_MAX, EV_TOTAL_MAX - usedByOthers);
+
+        let nextValue = value;
+        if (action === 'inc') nextValue = Math.min(value + 1, maxForStat);
+        else if (action === 'dec') nextValue = Math.max(value - 1, 0);
+        else if (action === 'max') nextValue = maxForStat;
+        else if (action === 'min') nextValue = 0;
+
+        if (nextValue === value) return prev;
+
+        const next = [...prev];
+        next[pokemonIndex] = {
+          ...current,
+          [statKey]: nextValue,
+          total: usedByOthers + nextValue,
+        };
         return next;
       });
     },
@@ -842,6 +896,11 @@ export function useTeamEditor() {
       next[index] = createEmptyMoveSlots<string>('');
       return next;
     });
+    setSelectedEvs((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyEvs();
+      return next;
+    });
     setActiveIndex(null);
   }, []);
 
@@ -877,6 +936,7 @@ export function useTeamEditor() {
           existing,
           selectedMoveIds,
           selectedNatures,
+          selectedEvs,
         );
         syncActiveTeamPokemons(pokemons);
       }
@@ -896,6 +956,7 @@ export function useTeamEditor() {
       selectedItemIds,
       selectedMoveIds,
       selectedNatures,
+      selectedEvs,
       syncActiveTeamPokemons,
       setActiveTeamId,
       loadTeamIntoEditor,
@@ -951,6 +1012,11 @@ export function useTeamEditor() {
     setMoveSearchValues((prev) => {
       const next = [...prev];
       next[index] = createEmptyMoveSlots<string>('');
+      return next;
+    });
+    setSelectedEvs((prev) => {
+      const next = [...prev];
+      next[index] = createEmptyEvs();
       return next;
     });
     setActiveIndex((current) => (current === index ? null : current));
@@ -1092,6 +1158,8 @@ export function useTeamEditor() {
     onActiveMoveSlotChange: setActiveMoveSlot,
     onMoveHighlightedIndexChange: setMoveHighlightedIndex,
     onMoveKeyDown: handleMoveKeyDown,
+    selectedEvs,
+    onAdjustEv: handleAdjustEv,
   };
 
   return {

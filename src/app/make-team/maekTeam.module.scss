@@ -242,7 +242,7 @@
     align-items: center;
     border: 1px solid #eee;
     border-top: none;
-    height: 45px;
+    min-height: 45px;
   }
 }
 
@@ -347,6 +347,99 @@
 .abilityEmpty {
   font-size: 12px;
   color: #bbb;
+}
+
+.evSection {
+  // .abilitySection ~ div 규칙(가운데 정렬)을 위/세로 정렬로 덮어씁니다.
+  align-items: stretch !important;
+  flex-direction: column;
+  padding: 6px 8px;
+}
+
+.evWrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.evHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.evTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+}
+
+.evTotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+}
+
+.evTotalFull {
+  color: #e53935;
+}
+
+.evRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.evLabel {
+  flex-shrink: 0;
+  width: 32px;
+  font-size: 14px;
+  color: #555;
+  white-space: pre;
+}
+
+.evControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.evBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover:not(:disabled) {
+    border-color: #6390f0;
+    background: #f0f7ff;
+  }
+
+  &:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+}
+
+.evValue {
+  width: 24px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
 }
 
 .dropdown {

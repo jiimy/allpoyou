@@ -15,6 +15,17 @@ export type TeamPokemonEvs = {
   total: number;
 };
 
+/** 한 포켓몬에게 줄 수 있는 노력치 총합 */
+export const EV_TOTAL_MAX = 66;
+/** 한 항목에 줄 수 있는 노력치 최대치 */
+export const EV_STAT_MAX = 32;
+export const EV_STAT_KEYS = ['H', 'A', 'B', 'C', 'D', 'S'] as const;
+export type EvStatKey = (typeof EV_STAT_KEYS)[number];
+
+export function createEmptyEvs(): TeamPokemonEvs {
+  return { H: 0, A: 0, B: 0, C: 0, D: 0, S: 0, total: 0 };
+}
+
 export type TeamPokemonSlot = {
   /** pokemon.csv row id */
   pokemonId: number;

@@ -1,6 +1,9 @@
 import type { Pokemon } from '@/store/PokemonStore';
 import abilitiesData from '@/constants/abilities.json';
-import type { TeamPokemonSlot } from '@/store/PokemonTeamStore';
+import type {
+  TeamPokemonEvs,
+  TeamPokemonSlot,
+} from '@/store/PokemonTeamStore';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
 
 type AbilityEntry = { nameKo: string; summary: string };
@@ -42,6 +45,7 @@ export function buildTeamPokemonSlot(
   moves: number[] | null,
   existing?: TeamPokemonSlot | null,
   nature?: string | null,
+  evs?: TeamPokemonEvs | null,
 ): TeamPokemonSlot {
   const resolvedAbility = abilityName ?? getDefaultAbilityName(pokemon);
   const abilityId = getAbilityIdByNameKo(resolvedAbility);
@@ -53,6 +57,12 @@ export function buildTeamPokemonSlot(
       ? nature
       : sameAsExisting
         ? (existing?.nature ?? null)
+        : null;
+  const resolvedEvs =
+    evs !== undefined
+      ? evs
+      : sameAsExisting
+        ? (existing?.evs ?? null)
         : null;
 
   return {
@@ -66,7 +76,7 @@ export function buildTeamPokemonSlot(
     nature: resolvedNature,
     teraType: sameAsExisting ? (existing?.teraType ?? null) : null,
     moves: resolvedMoves,
-    evs: sameAsExisting ? (existing?.evs ?? null) : null,
+    evs: resolvedEvs,
   };
 }
 
@@ -77,6 +87,7 @@ export function buildPokemonsFromEditor(
   existingSlots: (TeamPokemonSlot | null)[],
   selectedMoveIds?: (number | null)[][],
   selectedNatures?: (string | null)[],
+  selectedEvs?: (TeamPokemonEvs | null)[],
 ): (TeamPokemonSlot | null)[] {
   return selectedPokemons.map((pokemon, index) => {
     if (!pokemon) return null;
@@ -92,6 +103,7 @@ export function buildPokemonsFromEditor(
       moves,
       existingSlots[index] ?? null,
       selectedNatures ? (selectedNatures[index] ?? null) : undefined,
+      selectedEvs ? (selectedEvs[index] ?? null) : undefined,
     );
   });
 }

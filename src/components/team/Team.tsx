@@ -10,10 +10,17 @@ import { ensureStringArray } from '@/utils/pokemonNormalize';
 import abilitiesData from '@/constants/abilities.json';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { buildPokemonsFromEditor } from '@/store/pokemonTeamMappers';
-import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
+import {
+  EV_STAT_KEYS,
+  EV_STAT_MAX,
+  EV_TOTAL_MAX,
+  usePokemonTeamStore,
+  type EvStatKey,
+  type TeamPokemonEvs,
+} from '@/store/PokemonTeamStore';
 import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
-import type { ActiveMoveSlot } from '@/hooks/useTeamEditor';
+import type { ActiveMoveSlot, EvAdjustAction } from '@/hooks/useTeamEditor';
 import { getMoveTypeKo } from '@/utils/moveDisplay';
 import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
 import s from '@/app/make-team/maekTeam.module.scss';
@@ -156,6 +163,12 @@ export type TeamProps = {
     pokemonIndex: number,
     moveIndex: number,
   ) => void;
+  selectedEvs: TeamPokemonEvs[];
+  onAdjustEv: (
+    pokemonIndex: number,
+    statKey: EvStatKey,
+    action: EvAdjustAction,
+  ) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -218,6 +231,8 @@ const Team: React.FC<TeamProps> = ({
   onActiveMoveSlotChange,
   onMoveHighlightedIndexChange,
   onMoveKeyDown,
+  selectedEvs,
+  onAdjustEv,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -240,6 +255,7 @@ const Team: React.FC<TeamProps> = ({
       existing,
       selectedMoveIds,
       selectedNatures,
+      selectedEvs,
     );
     syncActiveTeamPokemons(pokemons);
   }, [
@@ -249,6 +265,7 @@ const Team: React.FC<TeamProps> = ({
     selectedItemIds,
     selectedMoveIds,
     selectedNatures,
+    selectedEvs,
     syncActiveTeamPokemons,
   ]);
 
@@ -773,6 +790,94 @@ const Team: React.FC<TeamProps> = ({
                 </div>
               );
             })}
+            <div className={s.evSection}>
+              {selected ? (
+                (() => {
+                  const evs = selectedEvs[index] ?? {
+                    H: 0,
+                    A: 0,
+                    B: 0,
+                    C: 0,
+                    D: 0,
+                    S: 0,
+                    total: 0,
+                  };
+                  const remaining = EV_TOTAL_MAX - evs.total;
+                  return (
+                    <div className={s.evWrap}>
+                      <div className={s.evHeader}>
+                        <span className={s.evTitle}>노력치</span>
+                        <span
+                          className={cn(s.evTotal, {
+                            [s.evTotalFull]: evs.total >= EV_TOTAL_MAX,
+                          })}
+                        >
+                          {evs.total} / {EV_TOTAL_MAX}
+                        </span>
+                      </div>
+                      {EV_STAT_KEYS.map((statKey) => {
+                        const value = evs[statKey];
+                        const canDec = value > 0;
+                        const canInc =
+                          value < EV_STAT_MAX && remaining > 0;
+                        return (
+                          <div key={statKey} className={s.evRow}>
+                            <span className={s.evLabel}>
+                              {STAT_LABEL_BY_KEY[statKey]}
+                            </span>
+                            <div className={s.evControls}>
+                              <button
+                                type="button"
+                                className={s.evBtn}
+                                disabled={!canDec}
+                                onClick={() => onAdjustEv(index, statKey, 'min')}
+                                aria-label={`${STAT_LABEL_BY_KEY[statKey]} 최소로`}
+                                title="0으로"
+                              >
+                                ⏬
+                              </button>
+                              <button
+                                type="button"
+                                className={s.evBtn}
+                                disabled={!canDec}
+                                onClick={() => onAdjustEv(index, statKey, 'dec')}
+                                aria-label={`${STAT_LABEL_BY_KEY[statKey]} 1 감소`}
+                                title="-1"
+                              >
+                                ▼
+                              </button>
+                              <span className={s.evValue}>{value}</span>
+                              <button
+                                type="button"
+                                className={s.evBtn}
+                                disabled={!canInc}
+                                onClick={() => onAdjustEv(index, statKey, 'inc')}
+                                aria-label={`${STAT_LABEL_BY_KEY[statKey]} 1 증가`}
+                                title="+1"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                type="button"
+                                className={s.evBtn}
+                                disabled={!canInc}
+                                onClick={() => onAdjustEv(index, statKey, 'max')}
+                                aria-label={`${STAT_LABEL_BY_KEY[statKey]} 최대로`}
+                                title="최대로"
+                              >
+                                ⏫
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
+              ) : (
+                <span>노력치</span>
+              )}
+            </div>
           </div>
         );
       })}
