@@ -67,11 +67,15 @@ type PokemonTeamStoreState = {
 
 export const POKEMON_TEAM_PERSIST_KEY = 'allpoyou-pokemon-teams';
 
-export function getPokemonTeamPersistKey(userId?: string | null) {
-  return userId
-    ? `${POKEMON_TEAM_PERSIST_KEY}-${userId}`
-    : POKEMON_TEAM_PERSIST_KEY;
-}
+let persistWritesEnabled = true;
+
+const conditionalTeamStorage = {
+  getItem: (name: string) => localStorage.getItem(name),
+  setItem: (name: string, value: string) => {
+    if (persistWritesEnabled) localStorage.setItem(name, value);
+  },
+  removeItem: (name: string) => localStorage.removeItem(name),
+};
 
 function emptyPokemons(): (TeamPokemonSlot | null)[] {
   return Array.from({ length: TEAM_SLOT_COUNT }, () => null);
@@ -86,39 +90,10 @@ export function createDefaultTeams(): SavedTeam[] {
   }));
 }
 
-export function countFilledPokemonSlots(teams: SavedTeam[]): number {
-  return teams.reduce(
-    (sum, team) => sum + team.pokemons.filter((slot) => slot?.pokemonId).length,
-    0,
-  );
-}
-
-export function mergeTeamsPreferRicher(
-  local: SavedTeam[],
-  server: SavedTeam[],
+export function normalizePersistedTeams(
+  teams: SavedTeam[] | undefined,
 ): SavedTeam[] {
-  const defaults = createDefaultTeams();
-
-  return defaults.map((defaultTeam) => {
-    const localTeam =
-      local.find((team) => team.teamId === defaultTeam.teamId) ?? defaultTeam;
-    const serverTeam =
-      server.find((team) => team.teamId === defaultTeam.teamId) ?? defaultTeam;
-
-    const localCount = localTeam.pokemons.filter((slot) => slot?.pokemonId).length;
-    const serverCount = serverTeam.pokemons.filter(
-      (slot) => slot?.pokemonId,
-    ).length;
-
-    if (serverCount > localCount) return normalizeTeams([serverTeam])[0];
-    if (localCount > serverCount) return localTeam;
-
-    return {
-      ...localTeam,
-      teamName: serverTeam.teamName || localTeam.teamName,
-      isPublic: serverTeam.isPublic ?? localTeam.isPublic,
-    };
-  });
+  return normalizeTeams(teams);
 }
 
 function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
@@ -234,7 +209,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
     }),
     {
       name: POKEMON_TEAM_PERSIST_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => conditionalTeamStorage),
       partialize: (state) => ({
         teams: state.teams,
         activeTeamId: state.activeTeamId,
@@ -256,9 +231,15 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
   ),
 );
 
-export function setPokemonTeamPersistUser(userId: string | null) {
-  if (typeof window === 'undefined') return;
-  const persist = usePokemonTeamStore.persist;
-  if (!persist) return;
-  persist.setOptions({ name: getPokemonTeamPersistKey(userId) });
+/** 로그인 중 localStorage 쓰기 차단 (zustand persist.pause 미지원 → 플래그 방식) */
+export function pausePokemonTeamPersist() {
+  persistWritesEnabled = false;
+}
+
+export function resumePokemonTeamPersist() {
+  persistWritesEnabled = true;
+}
+
+export function isPokemonTeamPersistWritesEnabled() {
+  return persistWritesEnabled;
 }

@@ -539,3 +539,53 @@
     }
   }
 }
+
+.teamLinkPrompt {
+  width: min(420px, 90vw);
+  padding: 24px;
+}
+
+.teamLinkPromptMessage {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+}
+
+.teamLinkPromptHint {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.teamLinkPromptActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.teamLinkPromptButtonPrimary,
+.teamLinkPromptButtonSecondary {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.teamLinkPromptButtonPrimary {
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.teamLinkPromptButtonSecondary {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}

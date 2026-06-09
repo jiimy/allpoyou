@@ -5,13 +5,17 @@ import {
   loadUserTeamsFromDb,
   saveTeamToDb,
   setTeamPublicOnDb,
+  uploadTeamsToDb,
 } from '@/app/make-team/actions';
 import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydrated';
-import { hasTeamPokemonData } from '@/store/teamDbMappers';
+import { hasTeamPokemonData, type SavedTeam } from '@/store/teamDbMappers';
 import {
-  setPokemonTeamPersistUser,
+  createDefaultTeams,
+  pausePokemonTeamPersist,
+  resumePokemonTeamPersist,
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
+import { readGuestTeamsFromLocalStorage } from '@/utils/guestTeamStorage';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
 
@@ -31,10 +35,39 @@ export function useDebouncedTeamDbSync({
   const hydrated = usePokemonTeamPersistHydrated();
   const [saveStatus, setSaveStatus] = useState<TeamSaveStatus>('idle');
   const [teamsSourceReady, setTeamsSourceReady] = useState(false);
+  const [linkPromptOpen, setLinkPromptOpen] = useState(false);
+  const [linkResolving, setLinkResolving] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbLoadedRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const pendingTeamIdRef = useRef<number | null>(null);
+  const guestTeamsRef = useRef<SavedTeam[] | null>(null);
+
+  const loadDbTeamsIntoStore = useCallback(async () => {
+    const result = await loadUserTeamsFromDb();
+
+    if (result == null) {
+      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+      return;
+    }
+
+    if ('error' in result) {
+      setSaveStatus('error');
+      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+      return;
+    }
+
+    if (result.hasDbRows) {
+      usePokemonTeamStore.getState().hydrateTeamsFromServer(result.teams);
+    } else {
+      usePokemonTeamStore.getState().hydrateTeamsFromServer(createDefaultTeams());
+    }
+  }, []);
+
+  const finishLoggedInBootstrap = useCallback(() => {
+    dbLoadedRef.current = true;
+    setTeamsSourceReady(true);
+  }, []);
 
   const flushSave = useCallback(
     async (teamId: number) => {
@@ -116,13 +149,53 @@ export function useDebouncedTeamDbSync({
     [loggedInUserId, debounceMs, flushSave],
   );
 
+  const confirmLinkLocalTeams = useCallback(async () => {
+    const guestTeams = guestTeamsRef.current;
+    if (!guestTeams) return;
+
+    setLinkResolving(true);
+    setSaveStatus('saving');
+
+    const result = await uploadTeamsToDb(guestTeams);
+
+    if ('error' in result) {
+      setSaveStatus('error');
+      setLinkResolving(false);
+      return;
+    }
+
+    usePokemonTeamStore.getState().hydrateTeamsFromServer(guestTeams);
+    guestTeamsRef.current = null;
+    setLinkPromptOpen(false);
+    setSaveStatus('saved');
+    finishLoggedInBootstrap();
+    setLinkResolving(false);
+  }, [finishLoggedInBootstrap]);
+
+  const declineLinkLocalTeams = useCallback(async () => {
+    setLinkResolving(true);
+    guestTeamsRef.current = null;
+    setLinkPromptOpen(false);
+
+    await loadDbTeamsIntoStore();
+    finishLoggedInBootstrap();
+    setLinkResolving(false);
+  }, [finishLoggedInBootstrap, loadDbTeamsIntoStore]);
+
   useEffect(() => {
     if (!authReady || !hydrated) return;
 
     if (!loggedInUserId) {
-      setPokemonTeamPersistUser(null);
-      dbLoadedRef.current = true;
-      setTeamsSourceReady(true);
+      resumePokemonTeamPersist();
+      guestTeamsRef.current = null;
+      setLinkPromptOpen(false);
+      setTeamsSourceReady(false);
+
+      void Promise.resolve(usePokemonTeamStore.persist?.rehydrate()).then(() => {
+        usePokemonTeamStore.setState({ serverTeamsLoadedAt: null });
+        dbLoadedRef.current = true;
+        setTeamsSourceReady(true);
+      });
     }
   }, [authReady, hydrated, loggedInUserId]);
 
@@ -132,41 +205,37 @@ export function useDebouncedTeamDbSync({
     let cancelled = false;
     dbLoadedRef.current = false;
     setTeamsSourceReady(false);
+    setLinkPromptOpen(false);
+    guestTeamsRef.current = null;
+
+    pausePokemonTeamPersist();
 
     (async () => {
-      setPokemonTeamPersistUser(loggedInUserId);
-      await usePokemonTeamStore.persist?.rehydrate();
+      const guestTeams = readGuestTeamsFromLocalStorage();
 
       if (cancelled) return;
 
-      const result = await loadUserTeamsFromDb();
+      if (guestTeams) {
+        guestTeamsRef.current = guestTeams;
+        setLinkPromptOpen(true);
+        return;
+      }
+
+      await loadDbTeamsIntoStore();
       if (cancelled) return;
-
-      if (result == null) {
-        dbLoadedRef.current = true;
-        setTeamsSourceReady(true);
-        return;
-      }
-
-      if ('error' in result) {
-        setSaveStatus('error');
-        dbLoadedRef.current = true;
-        setTeamsSourceReady(true);
-        return;
-      }
-
-      if (result.hasDbRows) {
-        usePokemonTeamStore.getState().hydrateTeamsFromServer(result.teams);
-      }
-
-      dbLoadedRef.current = true;
-      setTeamsSourceReady(true);
+      finishLoggedInBootstrap();
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [authReady, loggedInUserId, hydrated]);
+  }, [
+    authReady,
+    loggedInUserId,
+    hydrated,
+    finishLoggedInBootstrap,
+    loadDbTeamsIntoStore,
+  ]);
 
   useEffect(() => {
     if (!loggedInUserId || !teamsSourceReady) return;
@@ -219,5 +288,9 @@ export function useDebouncedTeamDbSync({
     saveStatus,
     toggleTeamPublic,
     isLoggedIn: authReady && loggedInUserId != null,
+    linkPromptOpen,
+    linkResolving,
+    confirmLinkLocalTeams,
+    declineLinkLocalTeams,
   };
 }

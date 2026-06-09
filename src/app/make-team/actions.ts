@@ -78,6 +78,22 @@ async function upsertTeamRow(
   return { ok: true };
 }
 
+export async function uploadTeamsToDb(
+  teams: SavedTeam[],
+): Promise<TeamSaveResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: '로그인이 필요합니다.' };
+
+  for (const team of teams) {
+    if (!hasTeamPokemonData(team)) continue;
+
+    const result = await saveTeamToDb(team);
+    if ('error' in result) return result;
+  }
+
+  return { ok: true };
+}
+
 export async function saveTeamToDb(team: SavedTeam): Promise<TeamSaveResult> {
   const user = await getCurrentUser();
   if (!user) return { error: '로그인이 필요합니다.' };

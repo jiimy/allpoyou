@@ -17,6 +17,7 @@ import { hasPokemonImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import Team from '@/components/team/Team';
+import { TeamLinkPrompt } from '@/components/team/TeamLinkPrompt';
 import TeamSelector from '@/components/team/TeamSelector';
 import { useDebouncedTeamDbSync } from '@/hooks/useDebouncedTeamDbSync';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
@@ -343,11 +344,19 @@ const MakeTeam = () => {
     });
   }, []);
 
-  const { teamsSourceReady, saveStatus, toggleTeamPublic, isLoggedIn } =
-    useDebouncedTeamDbSync({
-      loggedInUserId,
-      authReady,
-    });
+  const {
+    teamsSourceReady,
+    saveStatus,
+    toggleTeamPublic,
+    isLoggedIn,
+    linkPromptOpen,
+    linkResolving,
+    confirmLinkLocalTeams,
+    declineLinkLocalTeams,
+  } = useDebouncedTeamDbSync({
+    loggedInUserId,
+    authReady,
+  });
 
   const {
     teamProps,
@@ -435,6 +444,12 @@ const MakeTeam = () => {
 
   return (
     <div>
+      <TeamLinkPrompt
+        open={linkPromptOpen}
+        resolving={linkResolving}
+        onConfirm={() => void confirmLinkLocalTeams()}
+        onDecline={() => void declineLinkLocalTeams()}
+      />
       {pokemonListError ? (
         <p style={{ color: '#c00', fontSize: 13, marginBottom: 8 }}>
           {pokemonListError}
