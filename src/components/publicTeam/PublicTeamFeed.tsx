@@ -16,8 +16,12 @@ type PublicTeamFeedProps = {
   showSearch?: boolean;
 };
 
+function getLikeTargetId(team: PublicTeam): string {
+  return team.likeTargetId ?? team.id;
+}
+
 export default function PublicTeamFeed({
-  teams,
+  teams: initialTeams,
   likedTeamIds,
   currentUserDbId,
   emptyMessage = '표시할 공개 팀이 없습니다.',
@@ -25,9 +29,12 @@ export default function PublicTeamFeed({
   showSearch = true,
 }: PublicTeamFeedProps) {
   const [keyword, setKeyword] = useState('');
+  const [teams, setTeams] = useState(initialTeams);
   const [likedMap, setLikedMap] = useState(() => new Set(likedTeamIds));
   const [likeCounts, setLikeCounts] = useState(() =>
-    Object.fromEntries(teams.map((team) => [team.id, team.likeCount])),
+    Object.fromEntries(
+      initialTeams.map((team) => [getLikeTargetId(team), team.likeCount]),
+    ),
   );
 
   const filteredTeams = useMemo(() => {
@@ -37,17 +44,21 @@ export default function PublicTeamFeed({
   }, [teams, keyword]);
 
   const handleLikeChange = (
-    teamId: string,
+    likeTargetId: string,
     liked: boolean,
     likeCount: number,
   ) => {
     setLikedMap((prev) => {
       const next = new Set(prev);
-      if (liked) next.add(teamId);
-      else next.delete(teamId);
+      if (liked) next.add(likeTargetId);
+      else next.delete(likeTargetId);
       return next;
     });
-    setLikeCounts((prev) => ({ ...prev, [teamId]: likeCount }));
+    setLikeCounts((prev) => ({ ...prev, [likeTargetId]: likeCount }));
+  };
+
+  const handleSnapshotRemoved = (likeRowId: string) => {
+    setTeams((prev) => prev.filter((team) => team.id !== likeRowId));
   };
 
   return (
@@ -68,19 +79,32 @@ export default function PublicTeamFeed({
         </p>
       ) : (
         <div className={s.listWrap}>
-          {filteredTeams.map((team) => (
-            <PublicTeamItem
-              key={team.id}
-              team={{ ...team, likeCount: likeCounts[team.id] ?? team.likeCount }}
-              liked={likedMap.has(team.id)}
-              isOwnTeam={
-                currentUserDbId != null && team.ownerDbId === currentUserDbId
-              }
-              isLoggedIn={currentUserDbId != null}
-              showLikeButton={showLikeButton}
-              onLikeChange={handleLikeChange}
-            />
-          ))}
+          {filteredTeams.map((team) => {
+            const likeTargetId = getLikeTargetId(team);
+            const isLiked = team.isSnapshot
+              ? true
+              : likedMap.has(likeTargetId);
+
+            return (
+              <PublicTeamItem
+                key={team.id}
+                team={{
+                  ...team,
+                  likeCount: likeCounts[likeTargetId] ?? team.likeCount,
+                }}
+                liked={isLiked}
+                isOwnTeam={
+                  !team.isSnapshot &&
+                  currentUserDbId != null &&
+                  team.ownerDbId === currentUserDbId
+                }
+                isLoggedIn={currentUserDbId != null}
+                showLikeButton={showLikeButton}
+                onLikeChange={handleLikeChange}
+                onSnapshotRemoved={handleSnapshotRemoved}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,9 +1,14 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useCallback, useOptimistic, useState, useTransition } from 'react';
 import cn from 'classnames';
-import { toggleTeamLike, type PublicTeam } from '@/app/public-teams/actions';
+import {
+  removeLikedTeamSnapshot,
+  toggleTeamLike,
+  type PublicTeam,
+} from '@/app/public-teams/actions';
 import PublicPokemonSlot from './PublicPokemonSlot';
 import s from './publicTeam.module.scss';
 
@@ -20,7 +25,12 @@ type PublicTeamItemProps = {
   isOwnTeam: boolean;
   isLoggedIn: boolean;
   showLikeButton?: boolean;
-  onLikeChange?: (teamId: string, liked: boolean, likeCount: number) => void;
+  onLikeChange?: (
+    likeTargetId: string,
+    liked: boolean,
+    likeCount: number,
+  ) => void;
+  onSnapshotRemoved?: (likeRowId: string) => void;
 };
 
 export default function PublicTeamItem({
@@ -30,7 +40,9 @@ export default function PublicTeamItem({
   isLoggedIn,
   showLikeButton = true,
   onLikeChange,
+  onSnapshotRemoved,
 }: PublicTeamItemProps) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -39,9 +51,11 @@ export default function PublicTeamItem({
     'toggle'
   >({ liked, likeCount: team.likeCount }, (state) => ({
     liked: !state.liked,
-    likeCount: state.liked
-      ? Math.max(0, state.likeCount - 1)
-      : state.likeCount + 1,
+    likeCount: team.isSnapshot
+      ? 0
+      : state.liked
+        ? Math.max(0, state.likeCount - 1)
+        : state.likeCount + 1,
   }));
 
   const handleToggleLike = useCallback(() => {
@@ -55,21 +69,41 @@ export default function PublicTeamItem({
     startTransition(async () => {
       setOptimisticLike('toggle');
 
-      const result = await toggleTeamLike(team.id);
+      const result =
+        team.isSnapshot && !team.likeTargetId && team.likeRowId
+          ? await removeLikedTeamSnapshot(team.likeRowId)
+          : await toggleTeamLike(team.likeTargetId ?? team.id);
+
       if ('error' in result) {
         setError(result.error);
         return;
       }
 
-      onLikeChange?.(team.id, result.liked, result.likeCount);
+      const targetId = team.likeTargetId ?? team.id;
+      onLikeChange?.(targetId, result.liked, result.likeCount);
+
+      if (team.isSnapshot && !result.liked) {
+        if (team.likeRowId) {
+          onSnapshotRemoved?.(team.likeRowId);
+        }
+        router.refresh();
+      }
     });
   }, [
     isLoggedIn,
     isOwnTeam,
     onLikeChange,
+    onSnapshotRemoved,
+    router,
     setOptimisticLike,
     team.id,
+    team.isSnapshot,
+    team.likeRowId,
+    team.likeTargetId,
   ]);
+
+  const teamTitle =
+    team.teamName || (team.teamSlot > 0 ? `팀 ${team.teamSlot}` : '저장된 팀');
 
   return (
     <article className={s.listItem}>
@@ -88,11 +122,15 @@ export default function PublicTeamItem({
               isOwnTeam
                 ? '내 팀은 좋아요할 수 없습니다'
                 : optimisticLike.liked
-                  ? '좋아요 취소'
+                  ? team.isSnapshot
+                    ? '보관함에서 제거'
+                    : '좋아요 취소'
                   : '좋아요'
             }
           >
-            <span className={s.likeCount}>{optimisticLike.likeCount}</span>
+            {!team.isSnapshot ? (
+              <span className={s.likeCount}>{optimisticLike.likeCount}</span>
+            ) : null}
             <Image
               src={LIKE_ICON}
               alt=""
@@ -109,8 +147,10 @@ export default function PublicTeamItem({
 
       <div className={s.teamBody}>
         <header className={s.teamHeader}>
-          <h3 className={s.teamName}>{team.teamName || `팀 ${team.teamSlot}`}</h3>
-          <span className={s.teamOwner}>{team.ownerUsername}</span>
+          <h3 className={s.teamName}>{teamTitle}</h3>
+          <span className={s.teamOwner}>
+            {team.isSnapshot ? `${team.ownerUsername} · 저장됨` : team.ownerUsername}
+          </span>
         </header>
         <div className={s.slotsGrid}>
           {team.pokemons.map((slot, index) => (

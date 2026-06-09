@@ -9,7 +9,13 @@ import {
 import { normalizeDbId } from '@/utils/teamDb';
 
 export type PublicTeam = {
+  /** 목록 key (teams.id 또는 team_likes.id) */
   id: string;
+  /** 좋아요 토글·중복 판별용 원본 teams.id (스냅샷만 있을 때 null) */
+  likeTargetId: string | null;
+  /** team_likes.id — 스냅샷 보관함 전용 */
+  likeRowId?: string;
+  isSnapshot?: boolean;
   ownerDbId: string;
   ownerUsername: string;
   teamName: string;
@@ -26,6 +32,15 @@ type TeamDbPublicRow = {
   team_name: string | null;
   pokemon_data: unknown;
   updated_at: string;
+};
+
+type TeamLikeSnapshotRow = {
+  id: unknown;
+  original_team_id: string | null;
+  team_name: string;
+  pokemon_data: unknown;
+  created_at: string;
+  teams?: { user_id: unknown } | { user_id: unknown }[] | null;
 };
 
 async function fetchUsernamesByDbIds(
@@ -52,6 +67,18 @@ async function fetchUsernamesByDbIds(
   return usernames;
 }
 
+function parsePokemonsFromJson(
+  pokemonData: unknown,
+  teamName: string,
+): (TeamPokemonSlot | null)[] {
+  const team = normalizeTeamsFromDb(1, {
+    team_name: teamName,
+    pokemon_data: pokemonData,
+    is_public: true,
+  });
+  return team.pokemons;
+}
+
 function mapPublicTeamRow(
   row: TeamDbPublicRow,
   likeCount: number,
@@ -66,6 +93,7 @@ function mapPublicTeamRow(
 
   return {
     id: row.id,
+    likeTargetId: row.id,
     ownerDbId,
     ownerUsername,
     teamName: team.teamName,
@@ -76,7 +104,7 @@ function mapPublicTeamRow(
   };
 }
 
-async function fetchLikeCountsByTeamIds(
+async function fetchLikeCountsByOriginalTeamIds(
   teamIds: string[],
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
@@ -85,16 +113,17 @@ async function fetchLikeCountsByTeamIds(
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('team_likes')
-    .select('team_id')
-    .in('team_id', teamIds);
+    .select('original_team_id')
+    .in('original_team_id', teamIds);
 
   if (error) {
-    console.error('[fetchLikeCountsByTeamIds]', error);
+    console.error('[fetchLikeCountsByOriginalTeamIds]', error);
     return counts;
   }
 
   for (const row of data ?? []) {
-    const teamId = row.team_id as string;
+    const teamId = row.original_team_id as string | null;
+    if (!teamId) continue;
     counts.set(teamId, (counts.get(teamId) ?? 0) + 1);
   }
 
@@ -106,7 +135,7 @@ async function mapPublicTeamRows(
 ): Promise<PublicTeam[]> {
   const ownerDbIds = [...new Set(rows.map((row) => normalizeDbId(row.user_id)))];
   const [likeCounts, usernames] = await Promise.all([
-    fetchLikeCountsByTeamIds(rows.map((row) => row.id)),
+    fetchLikeCountsByOriginalTeamIds(rows.map((row) => row.id)),
     fetchUsernamesByDbIds(ownerDbIds),
   ]);
 
@@ -117,6 +146,46 @@ async function mapPublicTeamRows(
       usernames.get(normalizeDbId(row.user_id)) ?? '알 수 없음',
     ),
   );
+}
+
+function resolveJoinedOwnerDbId(
+  teams: TeamLikeSnapshotRow['teams'],
+): string | null {
+  if (!teams) return null;
+  const row = Array.isArray(teams) ? teams[0] : teams;
+  if (!row?.user_id) return null;
+  return normalizeDbId(row.user_id);
+}
+
+async function mapSnapshotRows(
+  rows: TeamLikeSnapshotRow[],
+): Promise<PublicTeam[]> {
+  const ownerDbIds = rows
+    .map((row) => resolveJoinedOwnerDbId(row.teams))
+    .filter((id): id is string => id != null);
+
+  const usernames = await fetchUsernamesByDbIds([...new Set(ownerDbIds)]);
+
+  return rows.map((row) => {
+    const ownerDbId = resolveJoinedOwnerDbId(row.teams);
+    const likeRowId = normalizeDbId(row.id);
+
+    return {
+      id: likeRowId,
+      likeTargetId: row.original_team_id,
+      likeRowId,
+      isSnapshot: true,
+      ownerDbId: ownerDbId ?? '',
+      ownerUsername: ownerDbId
+        ? (usernames.get(ownerDbId) ?? '알 수 없음')
+        : '원본 삭제됨',
+      teamName: row.team_name,
+      teamSlot: 0,
+      pokemons: parsePokemonsFromJson(row.pokemon_data, row.team_name),
+      updatedAt: row.created_at,
+      likeCount: 0,
+    };
+  });
 }
 
 export async function getPublicTeamsFromDb(): Promise<PublicTeam[]> {
@@ -135,13 +204,14 @@ export async function getPublicTeamsFromDb(): Promise<PublicTeam[]> {
   return mapPublicTeamRows((data ?? []) as TeamDbPublicRow[]);
 }
 
+/** 좋아요한 원본 teams.id 목록 (홈 피드 하이라이트용) */
 export async function getUserLikedTeamIds(
   userDbId: string,
 ): Promise<string[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('team_likes')
-    .select('team_id')
+    .select('original_team_id')
     .eq('user_id', userDbId);
 
   if (error) {
@@ -149,46 +219,31 @@ export async function getUserLikedTeamIds(
     return [];
   }
 
-  return (data ?? []).map((row) => row.team_id as string);
+  return (data ?? [])
+    .map((row) => row.original_team_id as string | null)
+    .filter((id): id is string => id != null);
 }
 
+/** 마이페이지 — team_likes 스냅샷 보관함 */
 export async function getLikedTeamsForUser(): Promise<PublicTeam[]> {
   const user = await getCurrentUser();
   if (!user) return [];
 
   const supabase = createAdminClient();
-  const { data: likes, error: likesError } = await supabase
+  const { data, error } = await supabase
     .from('team_likes')
-    .select('team_id, created_at')
+    .select(
+      'id, original_team_id, team_name, pokemon_data, created_at, teams(user_id)',
+    )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (likesError) {
-    console.error('[getLikedTeamsForUser] likes', likesError);
+  if (error) {
+    console.error('[getLikedTeamsForUser]', error);
     return [];
   }
 
-  const teamIds = (likes ?? []).map((row) => row.team_id as string);
-  if (teamIds.length === 0) return [];
-
-  const { data: teams, error: teamsError } = await supabase
-    .from('teams')
-    .select('id, user_id, team_slot, team_name, pokemon_data, updated_at')
-    .in('id', teamIds)
-    .eq('is_public', true);
-
-  if (teamsError) {
-    console.error('[getLikedTeamsForUser] teams', teamsError);
-    return [];
-  }
-
-  const rows = (teams ?? []) as TeamDbPublicRow[];
-  const mapped = await mapPublicTeamRows(rows);
-  const teamById = new Map(mapped.map((team) => [team.id, team]));
-
-  return teamIds
-    .map((id) => teamById.get(id))
-    .filter((team): team is PublicTeam => team != null);
+  return mapSnapshotRows((data ?? []) as TeamLikeSnapshotRow[]);
 }
 
 export async function getMyPublicTeamsWithLikes(): Promise<PublicTeam[]> {
@@ -215,8 +270,23 @@ export type ToggleLikeResult =
   | { ok: true; liked: boolean; likeCount: number }
   | { error: string };
 
+async function countLikesForTeam(teamId: string): Promise<number> {
+  const supabase = createAdminClient();
+  const { count, error } = await supabase
+    .from('team_likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('original_team_id', teamId);
+
+  if (error) {
+    console.error('[countLikesForTeam]', error);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
 export async function toggleTeamLike(
-  teamId: string,
+  originalTeamId: string,
 ): Promise<ToggleLikeResult> {
   const user = await getCurrentUser();
   if (!user) return { error: '로그인이 필요합니다.' };
@@ -225,8 +295,8 @@ export async function toggleTeamLike(
 
   const { data: team, error: teamError } = await supabase
     .from('teams')
-    .select('id, user_id, is_public')
-    .eq('id', teamId)
+    .select('id, user_id, team_name, pokemon_data, is_public')
+    .eq('id', originalTeamId)
     .maybeSingle();
 
   if (teamError || !team) {
@@ -245,7 +315,7 @@ export async function toggleTeamLike(
     .from('team_likes')
     .select('id')
     .eq('user_id', user.id)
-    .eq('team_id', teamId)
+    .eq('original_team_id', originalTeamId)
     .maybeSingle();
 
   if (lookupError) {
@@ -263,30 +333,51 @@ export async function toggleTeamLike(
       console.error('[toggleTeamLike] delete', deleteError);
       return { error: '좋아요 취소에 실패했습니다.' };
     }
-  } else {
-    const { error: insertError } = await supabase.from('team_likes').insert({
-      user_id: user.id,
-      team_id: teamId,
-    });
 
-    if (insertError) {
-      console.error('[toggleTeamLike] insert', insertError);
-      return { error: '좋아요에 실패했습니다.' };
-    }
+    return {
+      ok: true,
+      liked: false,
+      likeCount: await countLikesForTeam(originalTeamId),
+    };
   }
 
-  const { count, error: countError } = await supabase
-    .from('team_likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('team_id', teamId);
+  const { error: insertError } = await supabase.from('team_likes').insert({
+    user_id: user.id,
+    original_team_id: originalTeamId,
+    team_name: team.team_name,
+    pokemon_data: team.pokemon_data,
+  });
 
-  if (countError) {
-    console.error('[toggleTeamLike] count', countError);
+  if (insertError) {
+    console.error('[toggleTeamLike] insert', insertError);
+    return { error: '좋아요에 실패했습니다.' };
   }
 
   return {
     ok: true,
-    liked: !existing,
-    likeCount: count ?? 0,
+    liked: true,
+    likeCount: await countLikesForTeam(originalTeamId),
   };
+}
+
+/** 원본 팀이 삭제된 스냅샷 보관함 항목 제거 */
+export async function removeLikedTeamSnapshot(
+  likeRowId: string,
+): Promise<ToggleLikeResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: '로그인이 필요합니다.' };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('team_likes')
+    .delete()
+    .eq('id', likeRowId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('[removeLikedTeamSnapshot]', error);
+    return { error: '보관함에서 제거하지 못했습니다.' };
+  }
+
+  return { ok: true, liked: false, likeCount: 0 };
 }
