@@ -47,29 +47,50 @@ export function createDefaultTeams(): SavedTeam[] {
   }));
 }
 
-type TeamDbRow = {
+export type TeamDbRow = {
+  team_slot?: unknown;
   team_name?: string | null;
   pokemon_data?: unknown;
   is_public?: boolean | null;
 };
 
+function parseNumericId(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseTeamSlot(value: unknown, fallbackIndex: number): number {
+  const parsed = parseNumericId(value);
+  if (parsed != null && parsed >= 1 && parsed <= MAX_TEAMS) {
+    return parsed;
+  }
+  return Math.min(fallbackIndex + 1, MAX_TEAMS);
+}
+
 function normalizePokemonSlot(slot: unknown): TeamPokemonSlot | null {
   if (!slot || typeof slot !== 'object') return null;
   const raw = slot as Record<string, unknown>;
-  if (typeof raw.pokemonId !== 'number') return null;
+  const pokemonId = parseNumericId(raw.pokemonId ?? raw.pokemon_id);
+  if (pokemonId == null) return null;
 
   return {
-    pokemonId: raw.pokemonId,
+    pokemonId,
     nameKo: typeof raw.nameKo === 'string' ? raw.nameKo : '',
     nameEn: typeof raw.nameEn === 'string' ? raw.nameEn : '',
     types: ensureStringArray(raw.types),
     form: typeof raw.form === 'string' ? raw.form : undefined,
-    abilityId: typeof raw.abilityId === 'number' ? raw.abilityId : null,
-    itemId: typeof raw.itemId === 'number' ? raw.itemId : null,
+    abilityId: parseNumericId(raw.abilityId ?? raw.ability_id),
+    itemId: parseNumericId(raw.itemId ?? raw.item_id),
     nature: typeof raw.nature === 'string' ? raw.nature : null,
     teraType: typeof raw.teraType === 'string' ? raw.teraType : null,
     moves: Array.isArray(raw.moves)
-      ? raw.moves.filter((id): id is number => typeof id === 'number')
+      ? raw.moves
+          .map((id) => parseNumericId(id))
+          .filter((id): id is number => id != null)
       : [],
     evs:
       raw.evs && typeof raw.evs === 'object'
@@ -93,4 +114,16 @@ export function normalizeTeamsFromDb(
     pokemons,
     isPublic: row.is_public ?? false,
   };
+}
+
+/** DB rows → 5개 팀 슬롯 (team_slot 숫자/문자열 모두 처리) */
+export function mapTeamsFromDbRows(rows: TeamDbRow[]): SavedTeam[] {
+  const teams = createDefaultTeams();
+
+  rows.forEach((row, index) => {
+    const teamId = parseTeamSlot(row.team_slot, index);
+    teams[teamId - 1] = normalizeTeamsFromDb(teamId, row);
+  });
+
+  return teams;
 }

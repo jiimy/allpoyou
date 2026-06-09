@@ -329,6 +329,13 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   }, [isClient]);
 
   useEffect(() => {
+    if (!teamsSourceReady) {
+      setEditorReady(false);
+      setIsHydratingFromStore(true);
+    }
+  }, [teamsSourceReady]);
+
+  useEffect(() => {
     if (!isClient || pokemonListLoading || !teamsSourceReady) return;
 
     const hydrateEditorFromStore = () => {

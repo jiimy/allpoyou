@@ -67,6 +67,12 @@ type PokemonTeamStoreState = {
 
 export const POKEMON_TEAM_PERSIST_KEY = 'allpoyou-pokemon-teams';
 
+export function getPokemonTeamPersistKey(userId?: string | null) {
+  return userId
+    ? `${POKEMON_TEAM_PERSIST_KEY}-${userId}`
+    : POKEMON_TEAM_PERSIST_KEY;
+}
+
 function emptyPokemons(): (TeamPokemonSlot | null)[] {
   return Array.from({ length: TEAM_SLOT_COUNT }, () => null);
 }
@@ -249,3 +255,10 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
     },
   ),
 );
+
+export function setPokemonTeamPersistUser(userId: string | null) {
+  if (typeof window === 'undefined') return;
+  const persist = usePokemonTeamStore.persist;
+  if (!persist) return;
+  persist.setOptions({ name: getPokemonTeamPersistKey(userId) });
+}

@@ -8,7 +8,10 @@ import {
 } from '@/app/make-team/actions';
 import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydrated';
 import { hasTeamPokemonData } from '@/store/teamDbMappers';
-import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
+import {
+  setPokemonTeamPersistUser,
+  usePokemonTeamStore,
+} from '@/store/PokemonTeamStore';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
 
@@ -117,6 +120,7 @@ export function useDebouncedTeamDbSync({
     if (!authReady || !hydrated) return;
 
     if (!loggedInUserId) {
+      setPokemonTeamPersistUser(null);
       dbLoadedRef.current = true;
       setTeamsSourceReady(true);
     }
@@ -130,6 +134,11 @@ export function useDebouncedTeamDbSync({
     setTeamsSourceReady(false);
 
     (async () => {
+      setPokemonTeamPersistUser(loggedInUserId);
+      await usePokemonTeamStore.persist?.rehydrate();
+
+      if (cancelled) return;
+
       const result = await loadUserTeamsFromDb();
       if (cancelled) return;
 

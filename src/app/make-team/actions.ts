@@ -3,9 +3,8 @@
 import { getCurrentUser } from '@/utils/auth/dal';
 import { createAdminClient } from '@/utils/supabase/admin';
 import {
-  createDefaultTeams,
   hasTeamPokemonData,
-  normalizeTeamsFromDb,
+  mapTeamsFromDbRows,
   type SavedTeam,
 } from '@/store/teamDbMappers';
 import { isTeamShareable } from '@/utils/teamShare';
@@ -30,7 +29,7 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
   const { data, error } = await supabase
     .from('teams')
     .select('team_slot, team_name, pokemon_data, is_public, updated_at')
-    .ilike('user_id', user.user_id)
+    .eq('user_id', user.user_id)
     .order('team_slot', { ascending: true });
 
   if (error) {
@@ -42,12 +41,7 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
     return { teams: [], hasDbRows: false };
   }
 
-  const defaults = createDefaultTeams();
-  const teams = defaults.map((defaultTeam) => {
-    const row = data.find((entry) => entry.team_slot === defaultTeam.teamId);
-    if (!row) return defaultTeam;
-    return normalizeTeamsFromDb(defaultTeam.teamId, row);
-  });
+  const teams = mapTeamsFromDbRows(data);
 
   return { teams, hasDbRows: true };
 }
