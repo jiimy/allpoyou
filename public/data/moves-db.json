@@ -9050,7 +9050,8 @@
     "damage_class": "physical",
     "power": 90,
     "accuracy": 100,
-    "pp": 10
+    "pp": 10,
+    "tag": ["접촉", "펀치"]
   },
   "glacial-lance": {
     "id": 824,

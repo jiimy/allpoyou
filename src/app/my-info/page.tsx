@@ -24,7 +24,7 @@ const MyInfoPage = async () => {
         <div className={s.profile}>
           <div className={s.profileHead}>
             <div>
-              <div className={s.username}>{user.username}</div>
+              <div className={s.user_id}>{user.user_id}</div>
               <div className={s.meta}>가입일 {joinedAt}</div>
             </div>
             <form action={logout}>

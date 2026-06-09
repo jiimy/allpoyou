@@ -7,7 +7,7 @@ import { getSession } from '@/utils/auth/session';
 
 export type CurrentUser = {
   id: string;
-  username: string;
+  user_id: string;
   createdAt: string;
 };
 
@@ -23,7 +23,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, created_at')
+    .select('id, user_id, created_at')
     .eq('id', session.userId)
     .maybeSingle();
 
@@ -31,7 +31,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   return {
     id: data.id as string,
-    username: data.username as string,
+    user_id: data.user_id as string,
     createdAt: data.created_at as string,
   };
 });

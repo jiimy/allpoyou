@@ -34,15 +34,15 @@ export async function signup(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const username = String(formData.get('username') ?? '').trim();
+  const user_id = String(formData.get('user_id') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const passwordConfirm = String(formData.get('passwordConfirm') ?? '');
   const securityAnswer = String(formData.get('securityAnswer') ?? '');
 
   const fieldErrors: Record<string, string> = {};
 
-  if (username.length < 2 || username.length > 20) {
-    fieldErrors.username = '아이디는 2~20자로 입력해주세요.';
+  if (user_id.length < 2 || user_id.length > 20) {
+    fieldErrors.user_id = '아이디는 2~20자로 입력해주세요.';
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     fieldErrors.password = `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`;
@@ -63,15 +63,15 @@ export async function signup(
   const { data: existing, error: lookupError } = await supabase
     .from('users')
     .select('id')
-    .ilike('username', username)
+    .ilike('user_id', user_id)
     .maybeSingle();
 
   if (lookupError) {
-    console.error('[signup] username lookup error:', lookupError);
+    console.error('[signup] user_id lookup error:', lookupError);
     return { error: '회원가입 처리 중 오류가 발생했습니다.' };
   }
   if (existing) {
-    return { fieldErrors: { username: '이미 사용 중인 아이디입니다.' } };
+    return { fieldErrors: { user_id: '이미 사용 중인 아이디입니다.' } };
   }
 
   const passwordHash = await hash(password, SALT_ROUNDS);
@@ -83,17 +83,17 @@ export async function signup(
   const { data: created, error: insertError } = await supabase
     .from('users')
     .insert({
-      username,
+      user_id,
       password_hash: passwordHash,
       security_question: SECURITY_QUESTION,
       security_answer_hash: securityAnswerHash,
     })
-    .select('id, username')
+    .select('id, user_id')
     .single();
 
   if (insertError || !created) {
     if (insertError?.code === '23505') {
-      return { fieldErrors: { username: '이미 사용 중인 아이디입니다.' } };
+      return { fieldErrors: { user_id: '이미 사용 중인 아이디입니다.' } };
     }
     console.error('[signup] insert error:', insertError);
     return { error: '회원가입 처리 중 오류가 발생했습니다.' };
@@ -101,7 +101,7 @@ export async function signup(
 
   await createSession({
     userId: String(created.id),
-    username: created.username as string,
+    user_id: created.user_id as string,
   });
 
   redirect('/my-info');
@@ -112,18 +112,18 @@ export async function login(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const username = String(formData.get('username') ?? '').trim();
+  const user_id = String(formData.get('user_id') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
-  if (!username || !password) {
+  if (!user_id || !password) {
     return { error: '아이디와 비밀번호를 입력해주세요.' };
   }
 
   const supabase = createAdminClient();
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, username, password_hash')
-    .ilike('username', username)
+    .select('id, user_id, password_hash')
+    .ilike('user_id', user_id)
     .maybeSingle();
 
   if (error) {
@@ -142,7 +142,7 @@ export async function login(
 
   await createSession({
     userId: String(user.id),
-    username: user.username as string,
+    user_id: user.user_id as string,
   });
 
   redirect('/my-info');
@@ -159,17 +159,17 @@ export async function lookupSecurityQuestion(
   _prev: ResetState,
   formData: FormData,
 ): Promise<ResetState> {
-  const username = String(formData.get('username') ?? '').trim();
+    const user_id = String(formData.get('user_id') ?? '').trim();
 
-  if (!username) {
+  if (!user_id) {
     return { step: 'lookup', error: '아이디를 입력해주세요.' };
   }
 
   const supabase = createAdminClient();
   const { data: user, error } = await supabase
     .from('users')
-    .select('username, security_question')
-    .ilike('username', username)
+    .select('user_id, security_question')
+    .ilike('user_id', user_id)
     .maybeSingle();
 
   if (error) {
@@ -193,7 +193,7 @@ export async function resetPassword(
   _prev: ResetState,
   formData: FormData,
 ): Promise<ResetState> {
-  const username = String(formData.get('username') ?? '').trim();
+  const user_id = String(formData.get('user_id') ?? '').trim();
   const answer = String(formData.get('securityAnswer') ?? '');
   const newPassword = String(formData.get('newPassword') ?? '');
   const newPasswordConfirm = String(formData.get('newPasswordConfirm') ?? '');
@@ -218,7 +218,7 @@ export async function resetPassword(
   const { data: user, error } = await supabase
     .from('users')
     .select('id, security_answer_hash')
-    .ilike('username', username)
+    .ilike('user_id', user_id)
     .maybeSingle();
 
   if (error || !user || !user.security_answer_hash) {

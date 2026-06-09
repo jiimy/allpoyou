@@ -25,14 +25,14 @@ const LoginForm = () => {
   return (
     <form className={s.form} action={action}>
       <div className={s.field}>
-        <label className={s.label} htmlFor="login-username">
+        <label className={s.label} htmlFor="login-user_id">
           아이디
         </label>
         <input
           className={s.input}
-          id="login-username"
-          name="username"
-          autoComplete="username"
+          id="login-user_id"
+          name="user_id"
+          autoComplete="user_id"
           placeholder="아이디"
         />
       </div>
@@ -67,17 +67,17 @@ const SignupForm = () => {
   return (
     <form className={s.form} action={action}>
       <div className={s.field}>
-        <label className={s.label} htmlFor="signup-username">
+        <label className={s.label} htmlFor="signup-user_id">
           아이디 (닉네임)
         </label>
         <input
           className={s.input}
-          id="signup-username"
-          name="username"
-          autoComplete="username"
+          id="signup-user_id"
+          name="user_id"
+          autoComplete="user_id"
           placeholder="2~20자"
         />
-        {fe?.username && <p className={s.fieldError}>{fe.username}</p>}
+        {fe?.user_id && <p className={s.fieldError}>{fe.user_id}</p>}
       </div>
       <div className={s.field}>
         <label className={s.label} htmlFor="signup-password">
@@ -146,7 +146,7 @@ const ResetForm = ({ onDone }: { onDone: () => void }) => {
     FormData
   >(resetPassword, undefined);
 
-  const [username, setUsername] = useState('');
+  const [user_id, setUser_id] = useState('');
 
   const question = resetState?.question ?? lookupState?.question;
   const isResetStep =
@@ -166,7 +166,7 @@ const ResetForm = ({ onDone }: { onDone: () => void }) => {
   if (isResetStep && question) {
     return (
       <form className={s.form} action={resetAction}>
-        <input type="hidden" name="username" value={username} />
+        <input type="hidden" name="user_id" value={user_id ?? ''} />
         <input type="hidden" name="question" value={question} />
         <div className={s.field}>
           <label className={s.label}>보안 질문</label>
@@ -220,17 +220,17 @@ const ResetForm = ({ onDone }: { onDone: () => void }) => {
   return (
     <form className={s.form} action={lookupAction}>
       <div className={s.field}>
-        <label className={s.label} htmlFor="reset-username">
+        <label className={s.label} htmlFor="reset-user_id">
           아이디
         </label>
         <input
           className={s.input}
-          id="reset-username"
-          name="username"
-          autoComplete="username"
+          id="reset-user_id"
+          name="user_id"
+          autoComplete="user_id"
           placeholder="가입한 아이디"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          value={user_id ?? ''}
+          onChange={(e) => setUser_id(e.target.value)}
         />
       </div>
       {lookupState?.error && <p className={s.formError}>{lookupState.error}</p>}

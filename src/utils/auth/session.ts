@@ -8,7 +8,7 @@ const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7; // 7일
 
 export type SessionPayload = {
   userId: string;
-  username: string;
+  user_id: string;
 };
 
 const secretKey = process.env.JWT_SECRET;
@@ -26,7 +26,7 @@ export async function encryptSession(payload: SessionPayload): Promise<string> {
   // id 타입(uuid/정수)과 무관하게 항상 문자열로 저장합니다.
   return new SignJWT({
     userId: String(payload.userId),
-    username: payload.username,
+    user_id: payload.user_id,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -43,15 +43,15 @@ export async function decryptSession(
     const { payload } = await jwtVerify(token, encodedKey, {
       algorithms: ['HS256'],
     });
-    const { userId, username } = payload as {
+    const { userId, user_id } = payload as {
       userId?: unknown;
-      username?: unknown;
+      user_id?: unknown;
     };
     if (
       (typeof userId === 'string' || typeof userId === 'number') &&
-      typeof username === 'string'
+      typeof user_id === 'string'
     ) {
-      return { userId: String(userId), username };
+      return { userId: String(userId), user_id };
     }
     return null;
   } catch {
