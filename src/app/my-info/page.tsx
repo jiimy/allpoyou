@@ -1,9 +1,16 @@
 import React from 'react';
 
 import { getCurrentUser } from '@/utils/auth/dal';
+import PublicTeamFeed from '@/components/publicTeam/PublicTeamFeed';
+import {
+  getLikedTeamsForUser,
+  getMyPublicTeamsWithLikes,
+  getUserLikedTeamIds,
+} from '@/app/public-teams/actions';
 import { logout } from './actions';
 import AuthForm from './AuthForm';
 import s from './myInfo.module.scss';
+import teamS from '@/components/publicTeam/publicTeam.module.scss';
 
 const MyInfoPage = async () => {
   const user = await getCurrentUser();
@@ -16,10 +23,20 @@ const MyInfoPage = async () => {
     );
   }
 
+  const [myPublicTeams, likedTeams, likedTeamIds] = await Promise.all([
+    getMyPublicTeamsWithLikes(),
+    getLikedTeamsForUser(),
+    getUserLikedTeamIds(user.id),
+  ]);
+
   const joinedAt = new Date(user.createdAt).toLocaleDateString('ko-KR');
+  const totalReceivedLikes = myPublicTeams.reduce(
+    (sum, team) => sum + team.likeCount,
+    0,
+  );
 
   return (
-    <div className={s.wrap}>
+    <div className={s.wrapWide}>
       <div className={s.card}>
         <div className={s.profile}>
           <div className={s.profileHead}>
@@ -36,16 +53,46 @@ const MyInfoPage = async () => {
 
           <div className={s.section}>
             <div className={s.sectionTitle}>내가 공유한 팀 빌드</div>
-            <p className={s.placeholder}>
-              공유한 팀 빌드와 받은 좋아요 수가 여기에 표시됩니다. (준비 중)
-            </p>
+            {myPublicTeams.length === 0 ? (
+              <p className={s.placeholder}>
+                공개한 팀이 없습니다. 팀 만들기에서 공유 설정을 켜주세요.
+              </p>
+            ) : (
+              <>
+                <p className={s.summary}>
+                  공개 팀 {myPublicTeams.length}개 · 받은 좋아요 {totalReceivedLikes}개
+                </p>
+                <div className={`${teamS.feed} ${teamS.compactList} ${s.teamSection}`}>
+                  <PublicTeamFeed
+                    teams={myPublicTeams}
+                    likedTeamIds={likedTeamIds}
+                    currentUserDbId={user.id}
+                    showLikeButton={false}
+                    showSearch={false}
+                    emptyMessage="공개한 팀이 없습니다."
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className={s.section}>
             <div className={s.sectionTitle}>내가 좋아요한 팀</div>
-            <p className={s.placeholder}>
-              좋아요한 팀 목록이 여기에 표시됩니다. (준비 중)
-            </p>
+            {likedTeams.length === 0 ? (
+              <p className={s.placeholder}>
+                좋아요한 팀이 없습니다. 홈에서 다른 사용자의 공개 팀에 좋아요를 눌러보세요.
+              </p>
+            ) : (
+              <div className={`${teamS.feed} ${teamS.compactList} ${s.teamSection}`}>
+                <PublicTeamFeed
+                  teams={likedTeams}
+                  likedTeamIds={likedTeamIds}
+                  currentUserDbId={user.id}
+                  showSearch={false}
+                  emptyMessage="좋아요한 팀이 없습니다."
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

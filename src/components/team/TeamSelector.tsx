@@ -92,7 +92,7 @@ export default function TeamSelector({
             onClick={handleShareClick}
             title={
               !isPublic && !shareable
-                ? '6마리·도구·성격·기술4·노력치66을 모두 채워야 공유할 수 있습니다.'
+                ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공유할 수 있습니다.'
                 : undefined
             }
           >

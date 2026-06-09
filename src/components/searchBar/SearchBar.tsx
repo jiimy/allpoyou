@@ -5,7 +5,7 @@ import s from './searchBar.module.scss';
 type PlaceholderType = 'pokemon' | 'moves' | 'item' | 'ability';
 
 const PLACEHOLDER_BY_TYPE: Record<PlaceholderType, string> = {
-  pokemon: '포켓몬 이름, 타입 검색',
+  pokemon: '포켓몬 이름 검색',
   moves: '기술명, 설명, 포켓몬 이름 검색;',
   item: '도구명, 설명 검색',
   ability: '포켓몬 이름, 특성 이름, 특성 설명 검색',

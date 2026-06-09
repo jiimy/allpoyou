@@ -30,7 +30,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (error || !data) return null;
 
   return {
-    id: data.id as string,
+    id: String(data.id),
     user_id: data.user_id as string,
     createdAt: data.created_at as string,
   };

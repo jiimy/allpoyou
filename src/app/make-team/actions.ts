@@ -8,6 +8,7 @@ import {
   type SavedTeam,
 } from '@/store/teamDbMappers';
 import { isTeamShareable } from '@/utils/teamShare';
+import { buildTeamRowId, normalizeDbId } from '@/utils/teamDb';
 
 export type TeamSaveResult = { ok: true } | { error: string };
 
@@ -29,7 +30,7 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
   const { data, error } = await supabase
     .from('teams')
     .select('team_slot, team_name, pokemon_data, is_public, updated_at')
-    .eq('user_id', user.user_id)
+    .eq('user_id', user.id)
     .order('team_slot', { ascending: true });
 
   if (error) {
@@ -54,7 +55,7 @@ type TeamRowPayload = {
 };
 
 async function upsertTeamRow(
-  userId: string,
+  userDbId: string,
   teamSlot: number,
   payload: TeamRowPayload,
   errorMessage: string,
@@ -63,7 +64,8 @@ async function upsertTeamRow(
 
   const { error } = await supabase.from('teams').upsert(
     {
-      user_id: userId,
+      id: buildTeamRowId(userDbId, teamSlot),
+      user_id: userDbId,
       team_slot: teamSlot,
       ...payload,
     },
@@ -105,7 +107,7 @@ export async function saveTeamToDb(team: SavedTeam): Promise<TeamSaveResult> {
   const now = new Date().toISOString();
 
   return upsertTeamRow(
-    user.user_id,
+    user.id,
     team.teamId,
     {
       team_name: team.teamName,
@@ -132,14 +134,14 @@ export async function setTeamPublicOnDb(
   if (isPublic && !isTeamShareable(teamSnapshot)) {
     return {
       error:
-        '6마리 모두 도구·성격·기술 4개·노력치 66을 채워야 공유할 수 있습니다.',
+        '팀 이름과 6마리·도구·성격·기술 4개·노력치 66을 모두 채워야 공유할 수 있습니다.',
     };
   }
 
   const now = new Date().toISOString();
 
   return upsertTeamRow(
-    user.user_id,
+    user.id,
     teamId,
     {
       team_name: teamSnapshot.teamName,

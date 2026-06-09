@@ -4,6 +4,12 @@
   padding: 0 16px;
 }
 
+.wrapWide {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
 .card {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -185,4 +191,16 @@
 .placeholder {
   font-size: 13px;
   color: #6b7280;
+}
+
+.summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.teamSection {
+  padding: 0;
+  max-width: none;
+  align-items: stretch;
 }

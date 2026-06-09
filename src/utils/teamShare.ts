@@ -16,9 +16,10 @@ export function isPokemonSlotComplete(slot: TeamPokemonSlot | null): boolean {
   return true;
 }
 
-/** 6마리 모두 도구·성격·기술4·노력치66을 채웠을 때만 공유 가능 */
+/** 팀 이름 + 6마리 모두 도구·성격·기술4·노력치66을 채웠을 때만 공유 가능 */
 export function isTeamShareable(team: SavedTeam | undefined): boolean {
   if (!team) return false;
+  if (!team.teamName.trim()) return false;
   if (team.pokemons.length !== TEAM_SLOT_COUNT) return false;
   return team.pokemons.every(isPokemonSlotComplete);
 }
