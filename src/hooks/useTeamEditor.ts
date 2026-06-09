@@ -195,7 +195,8 @@ function applyEditorState(
   setters.setSelectedEvs(state.selectedEvs);
 }
 
-export function useTeamEditor() {
+export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
+  const teamsSourceReady = options?.teamsSourceReady ?? true;
   const serverTeamsLoadedAt = usePokemonTeamStore(
     (state) => state.serverTeamsLoadedAt,
   );
@@ -328,7 +329,7 @@ export function useTeamEditor() {
   }, [isClient]);
 
   useEffect(() => {
-    if (!isClient || pokemonListLoading) return;
+    if (!isClient || pokemonListLoading || !teamsSourceReady) return;
 
     const hydrateEditorFromStore = () => {
       if (!usePokemonTeamStore.persist?.hasHydrated()) return;
@@ -346,6 +347,7 @@ export function useTeamEditor() {
   }, [
     isClient,
     pokemonListLoading,
+    teamsSourceReady,
     allPokemons,
     loadTeamIntoEditor,
     serverTeamsLoadedAt,

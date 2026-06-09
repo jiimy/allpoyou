@@ -343,7 +343,7 @@ const MakeTeam = () => {
     });
   }, []);
 
-  const { saveStatus, toggleTeamPublic, isLoggedIn } =
+  const { teamsSourceReady, saveStatus, toggleTeamPublic, isLoggedIn } =
     useDebouncedTeamDbSync({
       loggedInUserId,
       authReady,
@@ -356,7 +356,10 @@ const MakeTeam = () => {
     allPokemons,
     handleSelect,
     switchActiveTeam,
-  } = useTeamEditor();
+  } = useTeamEditor({
+    teamsSourceReady:
+      authReady && (!loggedInUserId || teamsSourceReady),
+  });
 
   const handleToggleShare = useCallback(
     async (teamId: number) => {

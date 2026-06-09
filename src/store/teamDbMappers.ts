@@ -34,6 +34,10 @@ export type SavedTeam = {
   isPublic?: boolean;
 };
 
+export function hasTeamPokemonData(team: SavedTeam): boolean {
+  return team.pokemons.some((slot) => slot?.pokemonId != null);
+}
+
 export function createDefaultTeams(): SavedTeam[] {
   return Array.from({ length: MAX_TEAMS }, (_, i) => ({
     teamId: i + 1,

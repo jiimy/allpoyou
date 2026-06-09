@@ -7,6 +7,7 @@ import {
   setTeamPublicOnDb,
 } from '@/app/make-team/actions';
 import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydrated';
+import { hasTeamPokemonData } from '@/store/teamDbMappers';
 import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
@@ -26,16 +27,11 @@ export function useDebouncedTeamDbSync({
 }: UseDebouncedTeamDbSyncOptions) {
   const hydrated = usePokemonTeamPersistHydrated();
   const [saveStatus, setSaveStatus] = useState<TeamSaveStatus>('idle');
-  const [dbLoadedFromServer, setDbLoadedFromServer] = useState(false);
+  const [teamsSourceReady, setTeamsSourceReady] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbLoadedRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const pendingTeamIdRef = useRef<number | null>(null);
-
-  const dbReady =
-    loggedInUserId != null
-      ? dbLoadedFromServer
-      : authReady && hydrated;
 
   const flushSave = useCallback(
     async (teamId: number) => {
@@ -45,12 +41,23 @@ export function useDebouncedTeamDbSync({
       saveInFlightRef.current = true;
 
       while (currentTeamId != null) {
-        setSaveStatus('saving');
-
         const team = usePokemonTeamStore
           .getState()
           .teams.find((entry) => entry.teamId === currentTeamId);
-        if (!team) break;
+
+        if (!team || !hasTeamPokemonData(team)) {
+          if (
+            pendingTeamIdRef.current != null &&
+            pendingTeamIdRef.current !== currentTeamId
+          ) {
+            currentTeamId = pendingTeamIdRef.current;
+            pendingTeamIdRef.current = null;
+            continue;
+          }
+          break;
+        }
+
+        setSaveStatus('saving');
 
         const result = await saveTeamToDb(team);
 
@@ -81,6 +88,11 @@ export function useDebouncedTeamDbSync({
     (teamId: number, immediate = false) => {
       if (!loggedInUserId || !dbLoadedRef.current) return;
 
+      const team = usePokemonTeamStore
+        .getState()
+        .teams.find((entry) => entry.teamId === teamId);
+      if (!team || !hasTeamPokemonData(team)) return;
+
       pendingTeamIdRef.current = teamId;
 
       if (timerRef.current) {
@@ -106,7 +118,7 @@ export function useDebouncedTeamDbSync({
 
     if (!loggedInUserId) {
       dbLoadedRef.current = true;
-      setDbLoadedFromServer(false);
+      setTeamsSourceReady(true);
     }
   }, [authReady, hydrated, loggedInUserId]);
 
@@ -115,22 +127,22 @@ export function useDebouncedTeamDbSync({
 
     let cancelled = false;
     dbLoadedRef.current = false;
-    setDbLoadedFromServer(false);
+    setTeamsSourceReady(false);
 
     (async () => {
-      const result = await loadUserTeamsFromDb(loggedInUserId);
+      const result = await loadUserTeamsFromDb();
       if (cancelled) return;
 
       if (result == null) {
         dbLoadedRef.current = true;
-        setDbLoadedFromServer(true);
+        setTeamsSourceReady(true);
         return;
       }
 
       if ('error' in result) {
         setSaveStatus('error');
         dbLoadedRef.current = true;
-        setDbLoadedFromServer(true);
+        setTeamsSourceReady(true);
         return;
       }
 
@@ -139,7 +151,7 @@ export function useDebouncedTeamDbSync({
       }
 
       dbLoadedRef.current = true;
-      setDbLoadedFromServer(true);
+      setTeamsSourceReady(true);
     })();
 
     return () => {
@@ -148,7 +160,7 @@ export function useDebouncedTeamDbSync({
   }, [authReady, loggedInUserId, hydrated]);
 
   useEffect(() => {
-    if (!loggedInUserId || !dbReady) return;
+    if (!loggedInUserId || !teamsSourceReady) return;
 
     const unsub = usePokemonTeamStore.subscribe((state, prevState) => {
       if (!dbLoadedRef.current) return;
@@ -174,7 +186,7 @@ export function useDebouncedTeamDbSync({
         timerRef.current = null;
       }
     };
-  }, [loggedInUserId, dbReady, scheduleSave]);
+  }, [loggedInUserId, teamsSourceReady, scheduleSave]);
 
   const toggleTeamPublic = useCallback(async (teamId: number) => {
     const state = usePokemonTeamStore.getState();
@@ -194,7 +206,7 @@ export function useDebouncedTeamDbSync({
   }, []);
 
   return {
-    dbReady,
+    teamsSourceReady,
     saveStatus,
     toggleTeamPublic,
     isLoggedIn: authReady && loggedInUserId != null,
