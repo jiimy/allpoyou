@@ -33,6 +33,7 @@ import {
   type EvStatKey,
   type SavedTeam,
   type TeamPokemonEvs,
+  type TeamPokemonSlot,
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
 import { useItemPickStore } from '@/store/ItemPickStore';
@@ -102,6 +103,26 @@ function createEmptyEditorState() {
   };
 }
 
+function pokemonFromStoredSlot(slot: TeamPokemonSlot): Pokemon {
+  return {
+    id: slot.pokemonId,
+    number: slot.pokemonId,
+    name: slot.nameEn,
+    nameKo: slot.nameKo,
+    types: slot.types,
+    H: 0,
+    A: 0,
+    B: 0,
+    C: 0,
+    D: 0,
+    S: 0,
+    total: 0,
+    images: [],
+    ability: [],
+    s_ability: [],
+  };
+}
+
 function editorStateFromTeam(
   activeTeam: SavedTeam | undefined,
   allPokemons: Pokemon[],
@@ -113,8 +134,9 @@ function editorStateFromTeam(
   activeTeam.pokemons.forEach((slot, index) => {
     if (!slot?.pokemonId) return;
 
-    const pokemon = allPokemons.find((entry) => entry.id === slot.pokemonId);
-    if (!pokemon) return;
+    const pokemon =
+      allPokemons.find((entry) => entry.id === slot.pokemonId) ??
+      pokemonFromStoredSlot(slot);
 
     const abilityName =
       getAbilityNameById(slot.abilityId) ?? getDefaultAbility(pokemon);
@@ -174,6 +196,9 @@ function applyEditorState(
 }
 
 export function useTeamEditor() {
+  const serverTeamsLoadedAt = usePokemonTeamStore(
+    (state) => state.serverTeamsLoadedAt,
+  );
   const [values, setValues] = useState<string[]>(() =>
     Array.from({ length: TEAM_SLOT_COUNT }, () => ''),
   );
@@ -230,6 +255,7 @@ export function useTeamEditor() {
   const [pokemonListLoading, setPokemonListLoading] = useState(true);
   const [pokemonListError, setPokemonListError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
+  const [isHydratingFromStore, setIsHydratingFromStore] = useState(true);
   const pendingItem = useItemPickStore((state) => state.pendingItem);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const pendingPokemon = usePokemonPickStore((state) => state.pendingPokemon);
@@ -307,6 +333,7 @@ export function useTeamEditor() {
     const hydrateEditorFromStore = () => {
       if (!usePokemonTeamStore.persist?.hasHydrated()) return;
 
+      setIsHydratingFromStore(true);
       const { activeTeamId: currentTeamId } = usePokemonTeamStore.getState();
       loadTeamIntoEditor(currentTeamId);
       setEditorReady(true);
@@ -316,7 +343,27 @@ export function useTeamEditor() {
     const persist = usePokemonTeamStore.persist;
     if (!persist) return;
     return persist.onFinishHydration(hydrateEditorFromStore);
-  }, [isClient, pokemonListLoading, allPokemons, loadTeamIntoEditor]);
+  }, [
+    isClient,
+    pokemonListLoading,
+    allPokemons,
+    loadTeamIntoEditor,
+    serverTeamsLoadedAt,
+  ]);
+
+  useEffect(() => {
+    if (!isHydratingFromStore) return;
+    setIsHydratingFromStore(false);
+  }, [
+    isHydratingFromStore,
+    values,
+    selectedPokemons,
+    selectedAbilities,
+    selectedItemIds,
+    selectedNatures,
+    selectedMoveIds,
+    selectedEvs,
+  ]);
 
   // 선택된 포켓몬별 '배울 수 있는 기술' 목록을 불러와 캐시합니다.
   useEffect(() => {
@@ -1100,6 +1147,7 @@ export function useTeamEditor() {
 
   const teamProps: TeamProps = {
     editorReady,
+    isHydratingFromStore,
     values,
     selectedPokemons,
     selectedAbilities,

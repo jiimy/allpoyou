@@ -90,6 +90,8 @@ const PLACEHOLDERS = [
 export type TeamProps = {
   /** 로컬 persist 복원 전에는 false — 복원 데이터를 빈 슬롯으로 덮어쓰지 않음 */
   editorReady?: boolean;
+  /** store → editor 복원 중에는 true — 빈 에디터 상태가 store를 덮어쓰지 않도록 함 */
+  isHydratingFromStore?: boolean;
   values: string[];
   selectedPokemons: (Pokemon | null)[];
   selectedAbilities: (string | null)[];
@@ -173,6 +175,7 @@ export type TeamProps = {
 
 const Team: React.FC<TeamProps> = ({
   editorReady = true,
+  isHydratingFromStore = false,
   values,
   selectedPokemons,
   selectedAbilities,
@@ -245,7 +248,7 @@ const Team: React.FC<TeamProps> = ({
   const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {
-    if (!editorReady) return;
+    if (!editorReady || isHydratingFromStore) return;
     const existing =
       usePokemonTeamStore.getState().getActiveTeam()?.pokemons ?? [];
     const pokemons = buildPokemonsFromEditor(
@@ -260,6 +263,7 @@ const Team: React.FC<TeamProps> = ({
     syncActiveTeamPokemons(pokemons);
   }, [
     editorReady,
+    isHydratingFromStore,
     selectedPokemons,
     selectedAbilities,
     selectedItemIds,

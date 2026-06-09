@@ -45,13 +45,17 @@ export type SavedTeam = {
   teamId: number;
   teamName: string;
   pokemons: (TeamPokemonSlot | null)[];
+  isPublic?: boolean;
 };
 
 type PokemonTeamStoreState = {
   teams: SavedTeam[];
   activeTeamId: number;
+  serverTeamsLoadedAt: number | null;
   setActiveTeamId: (teamId: number) => void;
   setTeamName: (teamId: number, teamName: string) => void;
+  setTeamPublic: (teamId: number, isPublic: boolean) => void;
+  hydrateTeamsFromServer: (teams: SavedTeam[]) => void;
   syncActiveTeamPokemons: (pokemons: (TeamPokemonSlot | null)[]) => void;
   updateActiveSlot: (
     index: number,
@@ -72,7 +76,43 @@ export function createDefaultTeams(): SavedTeam[] {
     teamId: i + 1,
     teamName: '',
     pokemons: emptyPokemons(),
+    isPublic: false,
   }));
+}
+
+export function countFilledPokemonSlots(teams: SavedTeam[]): number {
+  return teams.reduce(
+    (sum, team) => sum + team.pokemons.filter((slot) => slot?.pokemonId).length,
+    0,
+  );
+}
+
+export function mergeTeamsPreferRicher(
+  local: SavedTeam[],
+  server: SavedTeam[],
+): SavedTeam[] {
+  const defaults = createDefaultTeams();
+
+  return defaults.map((defaultTeam) => {
+    const localTeam =
+      local.find((team) => team.teamId === defaultTeam.teamId) ?? defaultTeam;
+    const serverTeam =
+      server.find((team) => team.teamId === defaultTeam.teamId) ?? defaultTeam;
+
+    const localCount = localTeam.pokemons.filter((slot) => slot?.pokemonId).length;
+    const serverCount = serverTeam.pokemons.filter(
+      (slot) => slot?.pokemonId,
+    ).length;
+
+    if (serverCount > localCount) return normalizeTeams([serverTeam])[0];
+    if (localCount > serverCount) return localTeam;
+
+    return {
+      ...localTeam,
+      teamName: serverTeam.teamName || localTeam.teamName,
+      isPublic: serverTeam.isPublic ?? localTeam.isPublic,
+    };
+  });
 }
 
 function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
@@ -105,6 +145,7 @@ function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
       teamId: defaultTeam.teamId,
       teamName: saved.teamName ?? '',
       pokemons,
+      isPublic: saved.isPublic ?? false,
     };
   });
 }
@@ -114,6 +155,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
     (set, get) => ({
       teams: createDefaultTeams(),
       activeTeamId: 1,
+      serverTeamsLoadedAt: null,
 
       setActiveTeamId: (teamId) => {
         if (teamId < 1 || teamId > MAX_TEAMS) return;
@@ -126,6 +168,19 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
             team.teamId === teamId ? { ...team, teamName } : team,
           ),
         })),
+
+      setTeamPublic: (teamId, isPublic) =>
+        set((state) => ({
+          teams: state.teams.map((team) =>
+            team.teamId === teamId ? { ...team, isPublic } : team,
+          ),
+        })),
+
+      hydrateTeamsFromServer: (teams) =>
+        set({
+          teams: normalizeTeams(teams),
+          serverTeamsLoadedAt: Date.now(),
+        }),
 
       syncActiveTeamPokemons: (pokemons) =>
         set((state) => {

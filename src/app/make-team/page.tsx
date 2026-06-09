@@ -2,6 +2,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -17,7 +18,9 @@ import { ensureStringArray } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import Team from '@/components/team/Team';
 import TeamSelector from '@/components/team/TeamSelector';
+import { useDebouncedTeamDbSync } from '@/hooks/useDebouncedTeamDbSync';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
+import { getLoggedInUserId } from '@/app/make-team/actions';
 import { TEAM_SLOT_COUNT } from '@/store/PokemonTeamStore';
 import s from './maekTeam.module.scss';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
@@ -329,6 +332,23 @@ const TEAM_SIZE = TEAM_SLOT_COUNT;
 const MakeTeam = () => {
   "use no memo";
 
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getLoggedInUserId().then((userId) => {
+      setLoggedInUserId(userId);
+      setAuthReady(true);
+    });
+  }, []);
+
+  const { saveStatus, toggleTeamPublic, isLoggedIn } =
+    useDebouncedTeamDbSync({
+      loggedInUserId,
+      authReady,
+    });
+
   const {
     teamProps,
     pokemonListError,
@@ -337,6 +357,20 @@ const MakeTeam = () => {
     handleSelect,
     switchActiveTeam,
   } = useTeamEditor();
+
+  const handleToggleShare = useCallback(
+    async (teamId: number) => {
+      setShareError(null);
+      try {
+        await toggleTeamPublic(teamId);
+      } catch (err) {
+        setShareError(
+          err instanceof Error ? err.message : '공유 설정에 실패했습니다.',
+        );
+      }
+    },
+    [toggleTeamPublic],
+  );
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
@@ -403,7 +437,13 @@ const MakeTeam = () => {
           {pokemonListError}
         </p>
       ) : null}
-      <TeamSelector onSwitchTeam={switchActiveTeam} />
+      <TeamSelector
+        onSwitchTeam={switchActiveTeam}
+        onToggleShare={handleToggleShare}
+        saveStatus={saveStatus}
+        shareError={shareError}
+        isLoggedIn={isLoggedIn}
+      />
       <Team {...teamProps} />
       <div>
         <div

@@ -106,6 +106,68 @@
   }
 }
 
+.teamMetaActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teamShareBtn {
+  padding: 8px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: #6390f0;
+    background: #f0f7ff;
+  }
+
+  &:disabled {
+    color: #aaa;
+    cursor: not-allowed;
+    background: #fafafa;
+  }
+}
+
+.teamShareBtnActive {
+  border-color: #4caf7d;
+  background: #f1fbf3;
+  color: #2e7d4f;
+
+  &:hover:not(:disabled) {
+    border-color: #3d9a66;
+    background: #e8f7ee;
+  }
+}
+
+.teamSaveStatus {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.teamSaveStatusSaved {
+  color: #2e7d4f;
+}
+
+.teamSaveStatusError {
+  color: #c62828;
+}
+
+.teamShareError {
+  margin: 0;
+  width: 100%;
+  font-size: 12px;
+  color: #c62828;
+}
+
 .input {
   width: 100%;
   padding: 8px 32px 8px 10px;
