@@ -21,15 +21,21 @@ export async function getLoggedInUserId(): Promise<string | null> {
   return user?.user_id ?? null;
 }
 
-export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
+export async function loadUserTeamsFromDb(
+  userId: string,
+): Promise<TeamLoadResult> {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  if (user.user_id !== userId) {
+    return { error: '로그인 정보가 일치하지 않습니다.' };
+  }
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('teams')
     .select('team_slot, team_name, pokemon_data, is_public, updated_at')
-    .eq('user_id', user.user_id)
+    .eq('user_id', userId)
     .order('team_slot', { ascending: true });
 
   if (error) {

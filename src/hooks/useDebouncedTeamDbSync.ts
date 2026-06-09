@@ -7,15 +7,9 @@ import {
   setTeamPublicOnDb,
 } from '@/app/make-team/actions';
 import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydrated';
-import {
-  mergeTeamsPreferRicher,
-  usePokemonTeamStore,
-} from '@/store/PokemonTeamStore';
+import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
-
-/** 같은 브라우저 세션에서 사용자별 DB 초기 로드 1회만 수행 */
-let dbSyncedSessionUserId: string | null = null;
 
 export type TeamSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -111,28 +105,23 @@ export function useDebouncedTeamDbSync({
     if (!authReady || !hydrated) return;
 
     if (!loggedInUserId) {
-      dbSyncedSessionUserId = null;
       dbLoadedRef.current = true;
+      setDbLoadedFromServer(false);
     }
   }, [authReady, hydrated, loggedInUserId]);
 
   useEffect(() => {
     if (!authReady || !loggedInUserId || !hydrated) return;
 
-    if (dbSyncedSessionUserId === loggedInUserId) {
-      dbLoadedRef.current = true;
-      setDbLoadedFromServer(true);
-      return;
-    }
-
     let cancelled = false;
+    dbLoadedRef.current = false;
+    setDbLoadedFromServer(false);
 
     (async () => {
-      const result = await loadUserTeamsFromDb();
+      const result = await loadUserTeamsFromDb(loggedInUserId);
       if (cancelled) return;
 
       if (result == null) {
-        dbSyncedSessionUserId = loggedInUserId;
         dbLoadedRef.current = true;
         setDbLoadedFromServer(true);
         return;
@@ -140,19 +129,15 @@ export function useDebouncedTeamDbSync({
 
       if ('error' in result) {
         setSaveStatus('error');
-        dbSyncedSessionUserId = loggedInUserId;
         dbLoadedRef.current = true;
         setDbLoadedFromServer(true);
         return;
       }
 
       if (result.hasDbRows) {
-        const localTeams = usePokemonTeamStore.getState().teams;
-        const mergedTeams = mergeTeamsPreferRicher(localTeams, result.teams);
-        usePokemonTeamStore.getState().hydrateTeamsFromServer(mergedTeams);
+        usePokemonTeamStore.getState().hydrateTeamsFromServer(result.teams);
       }
 
-      dbSyncedSessionUserId = loggedInUserId;
       dbLoadedRef.current = true;
       setDbLoadedFromServer(true);
     })();
