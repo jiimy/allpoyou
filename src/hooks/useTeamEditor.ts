@@ -13,6 +13,8 @@ import {
 import {
   getAbilitySummary,
   getDefaultAbility,
+  isMegaPokemonName,
+  resolveMoveLookupPokemonId,
   type TeamProps,
 } from '@/components/team/Team';
 import {
@@ -30,6 +32,8 @@ import {
   MAX_TEAMS,
   TEAM_SLOT_COUNT,
   createEmptyEvs,
+  isLoggedInTeamSessionActive,
+  isTeamStoreReadyForUse,
   type EvStatKey,
   type SavedTeam,
   type TeamPokemonEvs,
@@ -339,7 +343,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     if (!isClient || pokemonListLoading || !teamsSourceReady) return;
 
     const hydrateEditorFromStore = () => {
-      if (!usePokemonTeamStore.persist?.hasHydrated()) return;
+      if (!isTeamStoreReadyForUse()) return;
 
       setIsHydratingFromStore(true);
       const { activeTeamId: currentTeamId } = usePokemonTeamStore.getState();
@@ -348,6 +352,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     };
 
     hydrateEditorFromStore();
+
+    if (isLoggedInTeamSessionActive()) return;
+
     const persist = usePokemonTeamStore.persist;
     if (!persist) return;
     return persist.onFinishHydration(hydrateEditorFromStore);
@@ -383,9 +390,14 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       if (pokemonMovesCache[pokemonId] || moveFetchInFlight.current.has(pokemonId)) {
         return;
       }
+      if (isMegaPokemonName(pokemon.nameKo) && allPokemons.length === 0) {
+        return;
+      }
+
+      const moveLookupId = resolveMoveLookupPokemonId(pokemon, allPokemons);
       moveFetchInFlight.current.add(pokemonId);
 
-      fetch(`/api/moves?pokemonId=${pokemonId}`, { cache: 'no-store' })
+      fetch(`/api/moves?pokemonId=${moveLookupId}`, { cache: 'no-store' })
         .then(async (res) => {
           const body = (await res.json()) as {
             moveIds?: number[];
@@ -404,7 +416,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
           moveFetchInFlight.current.delete(pokemonId);
         });
     });
-  }, [isClient, selectedPokemons, pokemonMovesCache]);
+  }, [isClient, selectedPokemons, pokemonMovesCache, allPokemons]);
 
   /** 포켓몬 id별로 배울 수 있는 기술 id 집합 (pickable 판정용) */
   const pokemonMoveIdSets = useMemo(() => {

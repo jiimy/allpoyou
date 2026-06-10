@@ -1,26 +1,31 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { usePokemonTeamStore } from '@/store/PokemonTeamStore';
+import {
+  isTeamStoreReadyForUse,
+  subscribeSessionTeamReady,
+  usePokemonTeamStore,
+} from '@/store/PokemonTeamStore';
 
-function getHydratedSnapshot(): boolean {
-  if (typeof window === 'undefined') return false;
+function subscribeTeamStoreReady(onStoreChange: () => void) {
   const persist = usePokemonTeamStore.persist;
-  if (!persist) return true;
-  return persist.hasHydrated();
+  const unsubSession = subscribeSessionTeamReady(onStoreChange);
+  const unsubPersist =
+    persist && !persist.hasHydrated()
+      ? persist.onFinishHydration(onStoreChange)
+      : () => {};
+
+  return () => {
+    unsubSession();
+    unsubPersist();
+  };
 }
 
-function subscribeHydrated(onStoreChange: () => void): () => void {
-  const persist = usePokemonTeamStore.persist;
-  if (!persist || persist.hasHydrated()) return () => {};
-  return persist.onFinishHydration(onStoreChange);
-}
-
-/** localStorage persist 복원 완료 여부 (SSR/prerender 시 persist API 미노출) */
+/** 팀 스토어 사용 준비 여부 (게스트: persist 복원, 로그인: 세션 부트스트랩) */
 export function usePokemonTeamPersistHydrated(): boolean {
   return useSyncExternalStore(
-    subscribeHydrated,
-    getHydratedSnapshot,
+    subscribeTeamStoreReady,
+    isTeamStoreReadyForUse,
     () => false,
   );
 }

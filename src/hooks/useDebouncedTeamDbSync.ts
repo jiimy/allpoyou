@@ -11,7 +11,8 @@ import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydr
 import { hasTeamPokemonData, type SavedTeam } from '@/store/teamDbMappers';
 import {
   createDefaultTeams,
-  pausePokemonTeamPersist,
+  enableLoggedInTeamSession,
+  isSessionTeamBootstrapped,
   resumePokemonTeamPersist,
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
@@ -218,13 +219,19 @@ export function useDebouncedTeamDbSync({
   useEffect(() => {
     if (!authReady || !loggedInUserId || !hydrated) return;
 
-    let cancelled = false;
-    dbLoadedRef.current = false;
-    setTeamsSourceReady(false);
     setLinkPromptOpen(false);
     guestTeamsRef.current = null;
 
-    pausePokemonTeamPersist();
+    if (isSessionTeamBootstrapped()) {
+      enableLoggedInTeamSession();
+      finishLoggedInBootstrap();
+      return;
+    }
+
+    let cancelled = false;
+    dbLoadedRef.current = false;
+    setTeamsSourceReady(false);
+    enableLoggedInTeamSession();
 
     (async () => {
       const dbResult = await loadUserTeamsFromDb();

@@ -28,11 +28,7 @@ const NatureTable = ({ onPick }: NatureTableProps) => {
   return (
     <div className={s.wrap}>
       <header className={s.header}>
-        <h1 className={s.title}>성격표</h1>
-        <p className={s.desc}>
-          각 칸은 상승 능력치(1.1배)와 하락 능력치(0.9배) 조합에 해당하는 성격입니다.
-          대각선은 같은 능력치가 오르내리므로 보정이 없는 성격입니다.
-        </p>
+        <h1 className={s.title}>성격</h1>
         <div className={s.legend}>
           <span className={s.legendItem}>
             <span className={s.legendUp}>↑ 1.1배</span>
@@ -50,7 +46,7 @@ const NatureTable = ({ onPick }: NatureTableProps) => {
           <thead>
             <tr>
               <th colSpan={2} className={s.cornerGroup}>
-                <div className={s.cornerTitle}>성격 매트릭스</div>
+                {/* <div className={s.cornerTitle}>성격 매트릭스</div> */}
                 <div className={s.cornerDown}>하락 능력치 (0.9배) →</div>
               </th>
               {STAT_LABELS.map((stat) => (

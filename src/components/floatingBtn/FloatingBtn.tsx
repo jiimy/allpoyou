@@ -162,9 +162,9 @@ const FloatingBtn = () => {
                   onClick={() => handleItemClick(item)}
                 >
                   {item.label}
-                  {item.id === 'type-table' && <Command command="Shift+F" />}
-                  {item.id === 'team' && <Command command="Shift+D" />}
-                  {item.id === 'nature' && <Command command="Shift+C" />}
+                  {item.id === 'type-table' && <Command command="+F" />}
+                  {item.id === 'team' && <Command command="+D" />}
+                  {item.id === 'nature' && <Command command="+C" />}
                 </button>
               )}
             </li>

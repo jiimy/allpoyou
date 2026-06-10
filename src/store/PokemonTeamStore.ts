@@ -15,9 +15,7 @@ export type TeamPokemonEvs = {
   total: number;
 };
 
-/** 한 포켓몬에게 줄 수 있는 노력치 총합 */
 export const EV_TOTAL_MAX = 66;
-/** 한 항목에 줄 수 있는 노력치 최대치 */
 export const EV_STAT_MAX = 32;
 export const EV_STAT_KEYS = ['H', 'A', 'B', 'C', 'D', 'S'] as const;
 export type EvStatKey = (typeof EV_STAT_KEYS)[number];
@@ -27,7 +25,6 @@ export function createEmptyEvs(): TeamPokemonEvs {
 }
 
 export type TeamPokemonSlot = {
-  /** pokemon.csv row id */
   pokemonId: number;
   nameKo: string;
   nameEn: string;
@@ -67,14 +64,58 @@ type PokemonTeamStoreState = {
 
 export const POKEMON_TEAM_PERSIST_KEY = 'allpoyou-pokemon-teams';
 
-let persistWritesEnabled = true;
+let loggedInSessionActive = false;
+let sessionBootstrapped = false;
+const sessionReadyListeners = new Set<() => void>();
+
+export function enableLoggedInTeamSession() {
+  loggedInSessionActive = true;
+}
+
+export function disableLoggedInTeamSession() {
+  loggedInSessionActive = false;
+  sessionBootstrapped = false;
+}
+
+export function isLoggedInTeamSessionActive() {
+  return loggedInSessionActive;
+}
+
+export function isSessionTeamBootstrapped() {
+  return sessionBootstrapped;
+}
+
+export function markSessionTeamBootstrapped() {
+  sessionBootstrapped = true;
+  sessionReadyListeners.forEach((listener) => listener());
+}
+
+export function subscribeSessionTeamReady(listener: () => void) {
+  sessionReadyListeners.add(listener);
+  return () => {
+    sessionReadyListeners.delete(listener);
+  };
+}
+
+export function isTeamStoreReadyForUse(): boolean {
+  if (loggedInSessionActive) return sessionBootstrapped;
+  const persist = usePokemonTeamStore.persist;
+  if (!persist) return true;
+  return persist.hasHydrated();
+}
 
 const conditionalTeamStorage = {
-  getItem: (name: string) => localStorage.getItem(name),
-  setItem: (name: string, value: string) => {
-    if (persistWritesEnabled) localStorage.setItem(name, value);
+  getItem: (name: string) => {
+    if (loggedInSessionActive) return null;
+    return localStorage.getItem(name);
   },
-  removeItem: (name: string) => localStorage.removeItem(name),
+  setItem: (name: string, value: string) => {
+    if (loggedInSessionActive) return;
+    localStorage.setItem(name, value);
+  },
+  removeItem: (name: string) => {
+    localStorage.removeItem(name);
+  },
 };
 
 function emptyPokemons(): (TeamPokemonSlot | null)[] {
@@ -231,15 +272,16 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
   ),
 );
 
-/** 로그인 중 localStorage 쓰기 차단 (zustand persist.pause 미지원 → 플래그 방식) */
+/** @deprecated enableLoggedInTeamSession 사용 */
 export function pausePokemonTeamPersist() {
-  persistWritesEnabled = false;
+  enableLoggedInTeamSession();
 }
 
+/** @deprecated disableLoggedInTeamSession 사용 */
 export function resumePokemonTeamPersist() {
-  persistWritesEnabled = true;
+  disableLoggedInTeamSession();
 }
 
 export function isPokemonTeamPersistWritesEnabled() {
-  return persistWritesEnabled;
+  return !loggedInSessionActive;
 }

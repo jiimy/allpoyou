@@ -8,5 +8,8 @@
     display: flex;
     gap: 20px;
     font-size: 18px;
+    li {
+      position: relative;
+    }
   }
 }

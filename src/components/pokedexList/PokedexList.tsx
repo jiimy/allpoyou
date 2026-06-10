@@ -38,6 +38,7 @@ function PokemonCard({
       onClick={onSelect}
       onKeyDown={handleKeyDown}
     >
+      # {pokemon.number}
       <div className={s.imageWrap}>
         {imageUrl && !imageError ? (
           <Image

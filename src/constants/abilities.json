@@ -1,147 +1,1486 @@
 {
-  "1": { "nameKo": "악취", "summary": "공격 시 상대를 10% 확률로 풀죽게 만든다." },
-  "2": { "nameKo": "잔비", "summary": "배틀에 나왔을 때 날씨를 5턴 동안 비 상태로 만든다." },
-  "3": { "nameKo": "가속", "summary": "매 턴이 끝날 때마다 스피드가 1랭크씩 상승한다." },
-  "4": { "nameKo": "전투무장", "summary": "상대의 공격이 급소에 맞지 않는다." },
-  "5": { "nameKo": "옹골참", "summary": "HP가 가득 찼을 때 일격사에 당하지 않고 HP 1을 남긴다." },
-  "6": { "nameKo": "유연", "summary": "마비 상태가 되지 않는다." },
-  "7": { "nameKo": "모래숨기", "summary": "모래바람 날씨일 때 회피율이 1.2배 상승한다." },
-  "8": { "nameKo": "정전기", "summary": "접촉 공격을 한 상대에게 30% 확률로 마비를 유발한다." },
-  "9": { "nameKo": "축전", "summary": "전기 기술을 맞으면 무효화하고 HP를 25% 회복한다." },
-  "10": { "nameKo": "저수", "summary": "물 기술을 맞으면 무효화하고 HP를 25% 회복한다." },
-  "11": { "nameKo": "둔감", "summary": "헤롱헤롱, 도발, 위협 상태에 빠지지 않는다." },
-  "12": { "nameKo": "갈지자걸음", "summary": "혼란 상태일 때 상대의 기술에 대한 회피율이 2배(상승)가 된다." },
-  
-  "13": { "nameKo": "복안", "summary": "기술의 명중률이 1.3배 상승한다." },
-  "14": { "nameKo": "불면", "summary": "잠듦 상태가 되지 않는다." },
-  "16": { "nameKo": "면역", "summary": "독 상태가 되지 않는다." },
-  "17": { "nameKo": "타오르는불꽃", "summary": "불꽃 기술을 맞으면 무효화하고 불꽃 기술 위력이 1.5배 된다." },
-  "18": { "nameKo": "인석", "summary": "상대의 도구를 빼앗아 올 수 있다." },
-  "19": { "nameKo": "방음", "summary": "소리와 관련된 모든 기술을 무효화한다." },
-  "20": { "nameKo": "페이스조절", "summary": "혼란 상태가 되지 않으며 위협을 무효화한다." },
-  "22": { "nameKo": "위협", "summary": "배틀에 나왔을 때 상대방의 공격을 1랭크 떨어뜨린다." },
-  "23": { "nameKo": "그림자밟기", "summary": "상대 포켓몬이 도망치거나 교체할 수 없게 만든다." },
-  "24": { "nameKo": "까칠한피부", "summary": "접촉 공격을 한 상대에게 최대 HP의 1/8만큼 데미지를 준다." },
-  "25": { "nameKo": "불가사의부적", "summary": "효과가 굉장한 타입(약점) 이외의 공격 데미지를 무효화한다." },
-  "26": { "nameKo": "부유", "summary": "땅 타입 기술 및 필드 트랩 효과를 완전히 무시한다." },
-  "28": { "nameKo": "싱크로", "summary": "자신이 독/마비/화상에 걸리면 상대에게도 똑같이 건다." },
-  "29": { "nameKo": "클리어바디", "summary": "상대에 의해 자신의 능력치가 떨어지지 않는다." },
-  "30": { "nameKo": "자연회복", "summary": "벤치로 교체되어 들어가면 상태이상이 치유된다." },
-  "31": { "nameKo": "피뢰침", "summary": "전기 기술을 자신에게 끌어당겨 무효화하고 특공을 1랭크 올린다." },
-  "32": { "nameKo": "하늘의은총", "summary": "기술의 부가 효과가 발동할 확률이 2배가 된다." },
-  "33": { "nameKo": "쓱쓱", "summary": "비가 내리는 날씨일 때 스피드가 2배가 된다." },
-  "34": { "nameKo": "엽록소", "summary": "햇살이 강한 날씨일 때 스피드가 2배가 된다." },
-  "36": { "nameKo": "괴력집게", "summary": "상대에 의해 공격 능력치가 떨어지지 않는다." },
-  "37": { "nameKo": "천하장사", "summary": "자신의 물리공격 능력치가 2배가 된다." },
-  "39": { "nameKo": "인포커스", "summary": "상대의 기술에 풀죽지 않으며, 위협 효과도 무시한다." },
-  "41": { "nameKo": "모래날림", "summary": "배틀에 나왔을 때 날씨를 5턴 동안 모래바람 상태로 만든다." },
-  "42": { "nameKo": "프레셔", "summary": "자신을 공격한 상대 기술의 PP 소모량을 2배로 늘린다." },
-  "43": { "nameKo": "두꺼운지방", "summary": "불꽃 타입과 얼음 타입 기술로 받는 데미지를 절반으로 줄인다." },
-  "44": { "nameKo": "일찍기상", "summary": "잠듦 상태에서 평소보다 2배 빠르게 깨어난다." },
-  "45": { "nameKo": "불꽃몸", "summary": "접촉 공격을 한 상대를 30% 확률로 화상 상태로 만든다." },
-  "46": { "nameKo": "도주", "summary": "야생 포켓몬과의 배틀에서 반드시 도망칠 수 있다." },
-  "47": { "nameKo": "날카로운눈", "summary": "자신의 명중률이 떨어지지 않으며 상대의 회피율 상승을 무시한다." },
-  "48": { "nameKo": "가위손", "summary": "상대의 방어 능력치를 무시하고 데미지를 준다." },
-  "50": { "nameKo": "정의의마음", "summary": "악 타입 기술을 맞으면 공격이 1랭크 상승한다." },
-  "54": { "nameKo": "천진", "summary": "상대의 능력치 변화(랭크업/랭크다운)를 모두 무시하고 계산한다." },
-  "55": { "nameKo": "의기양양", "summary": "잠듦 상태가 되지 않는다." },
-  "56": { "nameKo": "이판사판", "summary": "반동 데미지를 받는 기술의 위력이 1.2배 상승한다." },
-  "57": { "nameKo": "마이페이스", "summary": "혼란 상태가 되지 않으며 위협 효과를 무시한다." },
-  "59": { "nameKo": "심록", "summary": "HP가 1/3 이하일 때 풀 타입 기술의 위력이 1.5배 된다." },
-  "60": { "nameKo": "맹화", "summary": "HP가 1/3 이하일 때 불꽃 타입 기술의 위력이 1.5배 된다." },
-  "61": { "nameKo": "급류", "summary": "HP가 1/3 이하일 때 물 타입 기술의 위력이 1.5배 된다." },
-  "62": { "nameKo": "벌레의알림", "summary": "HP가 1/3 이하일 때 벌레 타입 기술의 위력이 1.5배 된다." },
-  "63": { "nameKo": "돌머리", "summary": "기술의 반동 데미지를 전혀 받지 않는다." },
-  "64": { "nameKo": "가뭄", "summary": "배틀에 나왔을 때 날씨를 5턴 동안 햇살이 강한 상태로 만든다." },
-  "65": { "nameKo": "개미지옥", "summary": "비행/부유 포켓몬을 제외한 상대의 교체를 차단한다." },
-  "66": { "nameKo": "의욕", "summary": "공격력이 1.5배가 되지만, 물리 기술의 명중률이 0.8배가 된다." },
-  "67": { "nameKo": "절대안음", "summary": "메로etta 등 특정 포켓몬의 폼 체인지를 유지시킨다." },
-  "68": { "nameKo": "옹골찬턱", "summary": "물기 기술(물기부수기 등)의 위력이 1.5배 상승한다." },
-  "70": { "nameKo": "이상한비늘", "summary": "상태이상에 걸렸을 때 방어력이 1.5배 상승한다." },
-  "73": { "nameKo": "테라브레이크", "summary": "상대의 방어적 특성(부유, 옹골참 등)을 모두 무시하고 공격한다." },
-  "75": { "nameKo": "이로치스킨", "summary": "노말 타입 기술을 얼음 타입으로 바꾸고 위력을 1.2배 올린다." },
-  "76": { "nameKo": "날씨부정", "summary": "필드의 모든 날씨 효과를 무효화한다." },
-  "77": { "nameKo": "멀티스케일", "summary": "HP가 가득 차 있을 때 받는 데미지를 절반으로 줄인다." },
-  "82": { "nameKo": "독가시", "summary": "접촉 공격을 한 상대를 30% 확률로 독 상태로 만든다." },
-  "87": { "nameKo": "건조피부", "summary": "물 기술로 회복하고 비를 좋아하지만 불꽃 기술과 쾌청에 취약하다." },
-  "88": { "nameKo": "다운로드", "summary": "상대의 방어/특방 중 더 낮은 쪽을 저격해 공격/특공을 올린다." },
-  "89": { "nameKo": "철주먹", "summary": "펀치류 기술(불꽃펀치, 코멧펀치 등)의 위력이 1.2배 상승한다." },
-  "90": { "nameKo": "포이즌힐", "summary": "독/맹독 상태일 때 데미지를 받지 않고 매 턴 HP를 1/8 회복한다." },
-  "91": { "nameKo": "적응력", "summary": "자신과 같은 타입인 기술(자속기)의 보정 배율이 1.5배에서 2배가 된다." },
-  "92": { "nameKo": "테크니션", "summary": "위력 60 이하인 약한 기술들의 위력을 1.5배로 끌어올린다." },
-  "93": { "nameKo": "리프가드", "summary": "쾌청 날씨일 때 상태이상에 걸리지 않는다." },
-  "94": { "nameKo": "서투름", "summary": "자신이 지닌 도구의 효과를 전혀 발동하지 못한다." },
-  "95": { "nameKo": "틀깨기", "summary": "상대의 방어적 특성(부유, 옹골참 등)의 효과를 무시하고 공격한다." },
-  "97": { "nameKo": "이판사판스킨", "summary": "노말 타입 기술을 비행 타입으로 바꾸고 위력을 1.2배 올린다." },
-  "98": { "nameKo": "하드록", "summary": "효과가 굉장한 기술(약점)을 맞았을 때 받는 데미지를 25% 줄인다." },
-  "99": { "nameKo": "느림보", "summary": "우선도가 없는 기술을 쓸 때 무조건 가장 마지막에 행동한다." },
-  "100": { "nameKo": "우격다짐", "summary": "기술의 부가 효과를 없애는 대신 기술 위력을 1.3배 올린다." },
-  "101": { "nameKo": "오기", "summary": "상대에 의해 능력치가 떨어지면 공격력이 2랭크 상승한다." },
-  "102": { "nameKo": "불굴의마음", "summary": "풀죽을 때마다 스피드가 1랭크씩 상승한다." },
-  "103": { "nameKo": "눈치우기", "summary": "눈(싸라기눈) 날씨일 때 자신의 스피드가 2배가 된다." },
-  "105": { "nameKo": "멀티타입", "summary": "플레이트 도구에 따라 자신의 타입이 변화한다." },
-  "110": { "nameKo": "틴트렌즈", "summary": "상대에게 '효과가 별로인' 기술을 썼을 때의 데미지가 2배가 된다." },
-  "111": { "nameKo": "오롱해진몸", "summary": "접촉 기술을 맞으면 30% 확률로 상대를 저주 상태로 만든다." },
-  "113": { "nameKo": "배짱", "summary": "고스트 타입 포켓몬에게 노말/격투 기술로 데미지를 줄 수 있다." },
-  "114": { "nameKo": "지포크", "summary": "나무열매를 먹으면 다음 턴에 한 번 더 먹는다." },
-  "115": { "nameKo": "하드진화", "summary": "진화 폼 체인지를 도와주는 고유 특성이다." },
-  "118": { "nameKo": "심술궂음", "summary": "능력치 변화 효과가 정반대로 적용된다. (다운 ➔ 업)" },
-  "119": { "nameKo": "재생력", "summary": "다른 포켓몬으로 교체되어 벤치로 들어가면 HP를 1/3 회복한다." },
-  "120": { "nameKo": "풀죽지않음", "summary": "상대의 기선제압이나 짓궂은마음 효과에 당하지 않는다." },
-  "121": { "nameKo": "오기명수", "summary": "상대의 물리 공격을 받으면 방어력이 크게 상승한다." },
-  "122": { "nameKo": "짓궂은마음", "summary": "변화 기술(버프/디버프)을 쓸 때 우선도가 +1 상승해 먼저 쓴다." },
-  "123": { "nameKo": "부풀린가슴", "summary": "상대의 공격에 의해 자신의 방어 능력치가 떨어지지 않는다." },
-  "125": { "nameKo": "오버코트", "summary": "날씨(모래바람/눈) 데미지와 가루 기술(수면가루 등)을 무시한다." },
-  "126": { "nameKo": "독수", "summary": "접촉 공격을 성공시켰을 때 30% 확률로 상대를 독 상태로 만든다." },
-  "128": { "nameKo": "절대영도", "summary": "얼음 상태가 되지 않으며 얼음 타입 기술의 위력이 강해진다." },
-  "131": { "nameKo": "주력강화", "summary": "자신의 반동 기술 위력이 증가한다." },
-  "132": { "nameKo": "변환자재", "summary": "자신이 내보내는 기술의 타입과 똑같이 자신의 타입이 변화한다." },
-  "133": { "nameKo": "유대변화", "summary": "상대를 쓰러트리면 지우개굴닌자 등으로 폼체인지 한다." },
-  "140": { "nameKo": "송곳니강화", "summary": "깨물기 기술의 위력이 대폭 상승한다." },
-  "150": { "nameKo": "시작의바다", "summary": "진화/원시회귀 시 전장을 강한 비바라기 상태로 만든다." },
-  "151": { "nameKo": "끝의대지", "summary": "진화/원시회귀 시 전장을 강한 햇살 상태로 만든다." },
-  "158": { "nameKo": "일루전", "summary": "엔트리 가장 마지막에 있는 포켓몬의 모습으로 변신해 등장한다." },
-  "159": { "nameKo": "대포무장", "summary": "파동 기술과 볼/폭탄 기술의 위력이 1.5배 상승한다." },
-  "165": { "nameKo": "비스트부스트", "summary": "상대를 쓰러트릴 때마다 자신의 가장 높은 능력치가 1랭크 상승한다." },
-  "166": { "nameKo": "무선통신", "summary": "일렉트릭필드가 깔리면 자신의 스피드가 2배가 된다." },
-  "178": { "nameKo": "탈", "summary": "적의 공격을 단 한 번 무효화하고 최대 HP의 1/8만큼의 데미지만 입는다." },
-  "182": { "nameKo": "수포", "summary": "물 타입 기술 위력이 2배가 되고, 화상에 걸리지 않으며 불꽃 데미지를 반감한다." },
-  "185": { "nameKo": "리베로", "summary": "선택한 기술의 타입으로 자신의 타입이 변화한다. (판당 1회)" },
-  "190": { "nameKo": "아이스페이스", "summary": "물리 공격을 단 한 번 무효화하며, 눈이 내리면 폼이 복구된다." },
-  "196": { "nameKo": "무도한행동", "summary": "독 또는 맹독 상태인 상대 포켓몬을 공격할 때, 기술이 무조건 급소(크리티컬)에 맞는다." },
-  "222": { "nameKo": "화학변화가스", "summary": "필드에 있는 모든 포켓몬의 특성 효과를 지워버린다." },
-  "225": { "nameKo": "스크류지느러미", "summary": "상대의 기술 유도 효과(날라리, 피뢰침 등)를 무시하고 공격한다." },
-  "258": { "nameKo": "황금몸", "summary": "상대의 모든 변화 기술(디버프, 상태이상기)의 효과를 받지 않는다." },
-  "260": { "nameKo": "대장군", "summary": "기절한 아군 포켓몬의 수만큼 자신의 공격과 특공이 상승한다." },
-  "281": { "nameKo": "사재앙", "summary": "자신 이외의 모든 포켓몬의 공격을 25% 감소시킨다." },
-  "282": { "nameKo": "검은재앙", "summary": "자신 이외의 모든 포켓몬의 특방을 25% 감소시킨다." },
-  "283": { "nameKo": "금지된재앙", "summary": "자신 이외의 모든 포켓몬의 방어력을 25% 감소시킨다." },
-  "284": { "nameKo": "피어나는재앙", "summary": "자신 이외의 모든 포켓몬의 특공을 25% 감소시킨다." },
-  "285": { "nameKo": "마이티체인지", "summary": "벤치로 교체되어 들어갔다 나오면 히어로폼으로 변신한다." },
-  "286": { "nameKo": "풍력발전", "summary": "순풍 상태가 되거나 바람 기술을 맞으면 충전 상태가 된다." },
-  "287": { "nameKo": "의라의리", "summary": "아군이 공격을 받으면 자신의 공격이 1랭크 상승한다." },
-  "288": { "nameKo": "소금정제", "summary": "상태이상에 걸리지 않으며, 고스트 타입 기술의 데미지를 절반으로 줄인다." },
-  "289": { "nameKo": "지구력", "summary": "공격을 받을 때마다 방어력이 1랭크씩 상승한다." },
-  "290": { "nameKo": "열선의바람", "summary": "바람 기술을 맞으면 무효화하고 스피드가 1랭크 상승한다." },
-  "291": { "nameKo": "먹보대장", "summary": "상대가 나무열매를 먹으면 자신도 똑같이 먹는다." },
-  "292": { "nameKo": "독중독", "summary": "상대를 독 상태로 만들면 자신의 공격력이 상승한다." },
-  "293": { "nameKo": "미완성의가면", "summary": "오거폰의 가면 종류에 따라 능력치 보정을 받는다." },
-  "294": { "nameKo": "기승전결", "summary": "상대를 쓰러트리면 자신의 능력치 중 가장 높은 것을 올린다." },
-  "295": { "nameKo": "열받음", "summary": "공격을 받으면 화가 나 공격과 스피드가 상승한다." },
-  "296": { "nameKo": "사령탑", "summary": "싸리용이 어써러셔의 입속으로 들어가 사령탑 역할을 수행한다." },
-  "297": { "nameKo": "토전사", "summary": "지진 등 땅 기술을 쓰거나 맞으면 필드를 일렉트릭필드로 만든다." },
-  "298": { "nameKo": "고대활성", "summary": "부스트에너지를 지니거나 쾌청 날씨일 때 가장 높은 능력치가 상승한다." },
-  "299": { "nameKo": "쿼크차지", "summary": "부스트에너지를 지니거나 일렉트릭필드일 때 가장 높은 능력치가 상승한다." },
-  "300": { "nameKo": "황금의은총", "summary": "등장 시 전장에 황금 기운을 뿜어 상대의 랭크업을 억제한다." },
-  "301": { "nameKo": "투쟁심", "summary": "테라스타일을 하면 오거폰의 가면 형태에 맞는 능력치가 1랭크 상승한다." },
-  "302": { "nameKo": "테라스쉘", "summary": "HP가 가득 차 있을 때 받는 모든 기술의 상성 배율을 '효과가 별로'로 만든다." },
-  "303": { "nameKo": "제로포메이션", "summary": "테라파고스가 스텔라폼으로 변신하며 전장의 날씨와 필드 효과를 지워버린다." },
-  "304": { "nameKo": "독사슬", "summary": "기술을 맞추면 30% 확률로 상대를 맹독 상태로 만든다." },
-  "305": { "nameKo": "새하얀풀", "summary": "등장 시 필드의 날씨와 필드 상태를 완전히 초기화한다." },
-  "306": { "nameKo": "감미로운향기", "summary": "상대가 나무열매를 먹는 타이밍을 늦추거나 방해한다." },
-  "307": { "nameKo": "소생력", "summary": "기절했을 때 단 한 번 동료의 힘을 빌려 부활할 준비를 한다." },
-  "308": { "nameKo": "정전기충전", "summary": "전기 기술을 받으면 몸에 정전기를 충전해 스피드를 올린다." },
-  "309": { "nameKo": "스텔라차지", "summary": "스텔라 속성 기술을 쓰면 능력치가 강화된다." },
-  "310": { "nameKo": "소울하트", "summary": "필드의 포켓몬이 기절할 때마다 자신의 특공이 1랭크씩 상승한다." },
-  "311": { "nameKo": "불요의검", "summary": "배틀에 등장했을 때 자신의 공격력이 1랭크 상승한다."}
+  "1": {
+    "nameKo": "악취",
+    "summary": "악취 때문에 상대가 풀죽을 때가 있다."
+  },
+  "2": {
+    "nameKo": "잔비",
+    "summary": "배틀에 나가면 비를 내린다."
+  },
+  "3": {
+    "nameKo": "가속",
+    "summary": "조금씩 스피드가 높아진다."
+  },
+  "4": {
+    "nameKo": "전투무장",
+    "summary": "상대의 공격이 급소에 맞지 않는다."
+  },
+  "5": {
+    "nameKo": "옹골참",
+    "summary": "일격으로 쓰러지지 않는다."
+  },
+  "6": {
+    "nameKo": "습기",
+    "summary": "누구도 폭발 할 수 없게 된다."
+  },
+  "7": {
+    "nameKo": "유연",
+    "summary": "마비 상태가 되지 않는다."
+  },
+  "8": {
+    "nameKo": "모래숨기",
+    "summary": "모래바람으로 회피율이 올라간다."
+  },
+  "9": {
+    "nameKo": "정전기",
+    "summary": "접촉한 상대를 마비시킬 때가 있다."
+  },
+  "10": {
+    "nameKo": "축전",
+    "summary": "전기를 받으면 회복한다."
+  },
+  "11": {
+    "nameKo": "저수",
+    "summary": "물을 받으면 회복한다."
+  },
+  "12": {
+    "nameKo": "둔감",
+    "summary": "헤롱헤롱이나 도발 상태가 되지 않는다."
+  },
+  "13": {
+    "nameKo": "날씨부정",
+    "summary": "날씨의 영향이 없어진다."
+  },
+  "14": {
+    "nameKo": "복안",
+    "summary": "기술의 명중률이 올라간다."
+  },
+  "15": {
+    "nameKo": "불면",
+    "summary": "잠듦 상태가 되지 않는다."
+  },
+  "16": {
+    "nameKo": "변색",
+    "summary": "받은 기술의 타입으로 변화한다."
+  },
+  "17": {
+    "nameKo": "면역",
+    "summary": "독 상태가 되지 않는다."
+  },
+  "18": {
+    "nameKo": "타오르는불꽃",
+    "summary": "불꽃을 받으면 불꽃 기술이 강해진다."
+  },
+  "19": {
+    "nameKo": "인분",
+    "summary": "기술의 추가 효과를 받지 않는다."
+  },
+  "20": {
+    "nameKo": "마이페이스",
+    "summary": "혼란 상태가 되지 않는다."
+  },
+  "21": {
+    "nameKo": "흡반",
+    "summary": "교체시키는 기술이나 도구의 효과를 받지 않는다."
+  },
+  "22": {
+    "nameKo": "위협",
+    "summary": "상대의 공격을 떨어뜨린다."
+  },
+  "23": {
+    "nameKo": "그림자밟기",
+    "summary": "상대의 그림자를 밟아 도망칠 수 없게 한다."
+  },
+  "24": {
+    "nameKo": "까칠한피부",
+    "summary": "접촉한 상대에게 상처를 입힌다."
+  },
+  "25": {
+    "nameKo": "불가사의부적",
+    "summary": "효과가 굉장한 기술밖에 맞지 않는다."
+  },
+  "26": {
+    "nameKo": "부유",
+    "summary": "땅타입의 기술을 받지 않는다."
+  },
+  "27": {
+    "nameKo": "포자",
+    "summary": "스치면 독, 마비, 잠듦 상태가 될 때가 있다."
+  },
+  "28": {
+    "nameKo": "싱크로",
+    "summary": "독, 마비, 화상을 상대에게 옮긴다."
+  },
+  "29": {
+    "nameKo": "클리어바디",
+    "summary": "상대가 능력을 떨어뜨릴 수 없다."
+  },
+  "30": {
+    "nameKo": "자연회복",
+    "summary": "배틀에서 일단 물러나면 상태 이상이 회복된다."
+  },
+  "31": {
+    "nameKo": "피뢰침",
+    "summary": "전기를 끌어모아 특수공격을 올린다."
+  },
+  "32": {
+    "nameKo": "하늘의은총",
+    "summary": "기술의 추가 효과가 나오기 쉽다."
+  },
+  "33": {
+    "nameKo": "쓱쓱",
+    "summary": "비가 올 때 스피드가 올라간다."
+  },
+  "34": {
+    "nameKo": "엽록소",
+    "summary": "맑을 때 스피드가 올라간다."
+  },
+  "35": {
+    "nameKo": "발광",
+    "summary": "야생 포켓몬과 만나기 쉬워진다."
+  },
+  "36": {
+    "nameKo": "트레이스",
+    "summary": "상대와 같은 특성이 된다."
+  },
+  "37": {
+    "nameKo": "천하장사",
+    "summary": "물리공격의 위력이 올라간다."
+  },
+  "38": {
+    "nameKo": "독가시",
+    "summary": "접촉한 상대를 중독시킬 때가 있다."
+  },
+  "39": {
+    "nameKo": "정신력",
+    "summary": "풀죽지 않는다."
+  },
+  "40": {
+    "nameKo": "마그마의무장",
+    "summary": "얼음 상태가 되지 않는다."
+  },
+  "41": {
+    "nameKo": "수의베일",
+    "summary": "화상 상태가 되지 않는다."
+  },
+  "42": {
+    "nameKo": "자력",
+    "summary": "강철의 포켓몬을 도망칠 수 없게 한다."
+  },
+  "43": {
+    "nameKo": "방음",
+    "summary": "소리 기술을 받지 않는다."
+  },
+  "44": {
+    "nameKo": "젖은접시",
+    "summary": "비가 올 때 조금씩 HP를 회복한다."
+  },
+  "45": {
+    "nameKo": "모래날림",
+    "summary": "배틀에서 모래바람을 일으킨다."
+  },
+  "46": {
+    "nameKo": "프레셔",
+    "summary": "상대가 사용하는 기술의 PP를 많이 줄인다."
+  },
+  "47": {
+    "nameKo": "두꺼운지방",
+    "summary": "불꽃과 얼음타입의 기술에 강하다."
+  },
+  "48": {
+    "nameKo": "일찍기상",
+    "summary": "잠듦 상태에서 빨리 깨어난다."
+  },
+  "49": {
+    "nameKo": "불꽃몸",
+    "summary": "접촉한 상대에게 화상을 입힐 때가 있다."
+  },
+  "50": {
+    "nameKo": "도주",
+    "summary": "야생 포켓몬으로부터 반드시 도망칠 수 있다."
+  },
+  "51": {
+    "nameKo": "날카로운눈",
+    "summary": "명중률이 떨어지지 않는다."
+  },
+  "52": {
+    "nameKo": "괴력집게",
+    "summary": "상대가 공격을 떨어뜨리지 못한다."
+  },
+  "53": {
+    "nameKo": "픽업",
+    "summary": "도구를 주워올 때가 있다."
+  },
+  "54": {
+    "nameKo": "게으름",
+    "summary": "연속으로 공격할 수 없다."
+  },
+  "55": {
+    "nameKo": "의욕",
+    "summary": "공격은 높지만 빗나가기 쉽다."
+  },
+  "56": {
+    "nameKo": "헤롱헤롱바디",
+    "summary": "스치면 헤롱헤롱 상태가 될 때가 있다."
+  },
+  "57": {
+    "nameKo": "플러스",
+    "summary": "플러스나 마이너스가 있으면 특수공격이 올라간다."
+  },
+  "58": {
+    "nameKo": "마이너스",
+    "summary": "플러스나 마이너스가 있으면 특수공격이 올라간다."
+  },
+  "59": {
+    "nameKo": "기분파",
+    "summary": "날씨에 따라 캐스퐁이 변화한다."
+  },
+  "60": {
+    "nameKo": "점착",
+    "summary": "달라붙어서 도구를 지킨다."
+  },
+  "61": {
+    "nameKo": "탈피",
+    "summary": "상태 이상을 회복할 때가 있다."
+  },
+  "62": {
+    "nameKo": "근성",
+    "summary": "상태 이상이 되면 공격이 올라간다."
+  },
+  "63": {
+    "nameKo": "이상한비늘",
+    "summary": "상태 이상이 되면 방어가 올라간다."
+  },
+  "64": {
+    "nameKo": "해감액",
+    "summary": "흡수한 상대의 HP를 줄인다."
+  },
+  "65": {
+    "nameKo": "심록",
+    "summary": "위급할 때 풀타입의 위력이 올라간다."
+  },
+  "66": {
+    "nameKo": "맹화",
+    "summary": "위급할 때 불꽃타입의 위력이 올라간다."
+  },
+  "67": {
+    "nameKo": "급류",
+    "summary": "위급할 때 물타입의 위력이 올라간다."
+  },
+  "68": {
+    "nameKo": "벌레의알림",
+    "summary": "위급할 때 벌레타입의 위력이 올라간다."
+  },
+  "69": {
+    "nameKo": "돌머리",
+    "summary": "부딪쳐도 반동을 받지 않는다."
+  },
+  "70": {
+    "nameKo": "가뭄",
+    "summary": "배틀에 나가면 햇살이 강해진다."
+  },
+  "71": {
+    "nameKo": "개미지옥",
+    "summary": "배틀에서 상대를 도망칠 수 없게 한다."
+  },
+  "72": {
+    "nameKo": "의기양양",
+    "summary": "잠듦 상태가 되지 않는다."
+  },
+  "73": {
+    "nameKo": "하얀연기",
+    "summary": "상대가 능력을 떨어뜨릴 수 없다."
+  },
+  "74": {
+    "nameKo": "순수한힘",
+    "summary": "물리공격의 위력이 올라간다."
+  },
+  "75": {
+    "nameKo": "조가비갑옷",
+    "summary": "상대의 공격이 급소에 맞지 않는다."
+  },
+  "76": {
+    "nameKo": "에어록",
+    "summary": "모든 날씨의 영향이 없어진다."
+  },
+  "77": {
+    "nameKo": "갈지자걸음",
+    "summary": "혼란에 빠져있으면 회피하기 쉬워진다."
+  },
+  "78": {
+    "nameKo": "전기엔진",
+    "summary": "전기를 받으면 스피드가 올라간다."
+  },
+  "79": {
+    "nameKo": "투쟁심",
+    "summary": "상대와 성별이 같으면 강해진다."
+  },
+  "80": {
+    "nameKo": "불굴의마음",
+    "summary": "풀죽을 때마다 스피드가 올라간다."
+  },
+  "81": {
+    "nameKo": "눈숨기",
+    "summary": "날씨가 싸라기눈일 때 회피율이 올라간다."
+  },
+  "82": {
+    "nameKo": "먹보",
+    "summary": "나무열매를 여느 때보다 빨리 사용한다."
+  },
+  "83": {
+    "nameKo": "분노의경혈",
+    "summary": "급소에 맞으면 공격이 올라간다."
+  },
+  "84": {
+    "nameKo": "곡예",
+    "summary": "도구가 없어지면 스피드가 올라간다."
+  },
+  "85": {
+    "nameKo": "내열",
+    "summary": "불꽃 기술의 위력을 약하게 한다."
+  },
+  "86": {
+    "nameKo": "단순",
+    "summary": "능력 변화가 여느 때보다 심하다."
+  },
+  "87": {
+    "nameKo": "건조피부",
+    "summary": "더우면 HP가 줄어든다. 물로 HP를 회복한다."
+  },
+  "88": {
+    "nameKo": "다운로드",
+    "summary": "상대의 능력을 보고 능력치를 바꾼다."
+  },
+  "89": {
+    "nameKo": "철주먹",
+    "summary": "펀치를 사용하는 기술의 위력이 올라간다."
+  },
+  "90": {
+    "nameKo": "포이즌힐",
+    "summary": "독 상태가 되면 HP를 회복한다."
+  },
+  "91": {
+    "nameKo": "적응력",
+    "summary": "타입이 같은 기술의 위력이 올라간다."
+  },
+  "92": {
+    "nameKo": "스킬링크",
+    "summary": "연속 기술을 많이 쓸 수 있다."
+  },
+  "93": {
+    "nameKo": "촉촉바디",
+    "summary": "비가 오면 상태 이상이 회복된다."
+  },
+  "94": {
+    "nameKo": "선파워",
+    "summary": "맑으면 HP가 줄지만 특수공격이 올라간다."
+  },
+  "95": {
+    "nameKo": "속보",
+    "summary": "상태 이상이 되면 스피드가 올라간다."
+  },
+  "96": {
+    "nameKo": "노말스킨",
+    "summary": "쓴 기술이 모두 노말타입이 된다."
+  },
+  "97": {
+    "nameKo": "스나이퍼",
+    "summary": "급소에 맞혔을 때 위력이 올라간다."
+  },
+  "98": {
+    "nameKo": "매직가드",
+    "summary": "공격 이외에는 데미지를 입지 않는다."
+  },
+  "99": {
+    "nameKo": "노가드",
+    "summary": "서로의 기술이 반드시 맞는다."
+  },
+  "100": {
+    "nameKo": "시간벌기",
+    "summary": "상대보다 재빨라도 행동이 느려진다."
+  },
+  "101": {
+    "nameKo": "테크니션",
+    "summary": "약한 기술의 위력이 올라간다."
+  },
+  "102": {
+    "nameKo": "리프가드",
+    "summary": "맑을 때는 상태 이상이 되지 않는다."
+  },
+  "103": {
+    "nameKo": "서투름",
+    "summary": "지니고 있는 도구를 쓸 수 없다."
+  },
+  "104": {
+    "nameKo": "틀깨기",
+    "summary": "특성에 관계없이 상대에게 기술을 쓸 수 있다."
+  },
+  "105": {
+    "nameKo": "대운",
+    "summary": "상대의 급소에 공격이 맞기 쉽다."
+  },
+  "106": {
+    "nameKo": "유폭",
+    "summary": "기절할 때 스친 상대에게 데미지를 준다."
+  },
+  "107": {
+    "nameKo": "위험예지",
+    "summary": "상대가 지닌 위험한 기술을 감지한다."
+  },
+  "108": {
+    "nameKo": "예지몽",
+    "summary": "상대가 지닌 기술을 꿰뚫어볼 수 있다."
+  },
+  "109": {
+    "nameKo": "천진",
+    "summary": "상대의 능력 변화를 무시한다."
+  },
+  "110": {
+    "nameKo": "색안경",
+    "summary": "효과가 별로인 기술이 강해진다."
+  },
+  "111": {
+    "nameKo": "필터",
+    "summary": "효과가 굉장한 기술의 위력을 약하게 한다."
+  },
+  "112": {
+    "nameKo": "슬로스타트",
+    "summary": "공격과 스피드가 잠시 동안 절반이 된다."
+  },
+  "113": {
+    "nameKo": "배짱",
+    "summary": "고스트타입에 노말 기술이 맞는다."
+  },
+  "114": {
+    "nameKo": "마중물",
+    "summary": "물을 끌어모아 특수공격을 올린다."
+  },
+  "115": {
+    "nameKo": "아이스바디",
+    "summary": "싸라기눈일 때 HP를 조금씩 회복한다."
+  },
+  "116": {
+    "nameKo": "하드록",
+    "summary": "효과가 굉장한 기술의 위력을 약하게 한다."
+  },
+  "117": {
+    "nameKo": "눈퍼뜨리기",
+    "summary": "배틀에 나가면 싸라기눈을 내리게 한다."
+  },
+  "118": {
+    "nameKo": "꿀모으기",
+    "summary": "달콤한꿀을 모아서 올 때가 있다."
+  },
+  "119": {
+    "nameKo": "통찰",
+    "summary": "상대가 지닌 물건을 알 수 있다."
+  },
+  "120": {
+    "nameKo": "이판사판",
+    "summary": "반동 데미지를 받는 기술이 강해진다."
+  },
+  "121": {
+    "nameKo": "멀티타입",
+    "summary": "지니고 있는 플레이트에 따라 타입이 바뀐다."
+  },
+  "122": {
+    "nameKo": "플라워기프트",
+    "summary": "맑을 때 자신과 같은 편이 강해진다."
+  },
+  "123": {
+    "nameKo": "나이트메어",
+    "summary": "잠들어 있는 상대의 HP를 줄인다."
+  },
+  "124": {
+    "nameKo": "나쁜손버릇",
+    "summary": "닿은 상대로부터 도구를 훔친다."
+  },
+  "125": {
+    "nameKo": "우격다짐",
+    "summary": "힘이 강해지지만 추가 효과가 없어진다."
+  },
+  "126": {
+    "nameKo": "심술꾸러기",
+    "summary": "능력의 변화가 역전된다."
+  },
+  "127": {
+    "nameKo": "긴장감",
+    "summary": "상대를 긴장시켜 나무열매를 먹지 못하게 한다."
+  },
+  "128": {
+    "nameKo": "오기",
+    "summary": "능력이 떨어지면 공격이 올라간다."
+  },
+  "129": {
+    "nameKo": "무기력",
+    "summary": "HP가 절반이 되면 능력이 떨어진다."
+  },
+  "130": {
+    "nameKo": "저주받은바디",
+    "summary": "공격받으면 가끔 상대를 사슬묶기 상태로 만든다."
+  },
+  "131": {
+    "nameKo": "치유의마음",
+    "summary": "같은 편의 상태 이상을 가끔 회복시킨다."
+  },
+  "132": {
+    "nameKo": "프렌드가드",
+    "summary": "같은 편의 데미지를 줄일 수 있다."
+  },
+  "133": {
+    "nameKo": "깨어진갑옷",
+    "summary": "물리 기술을 받으면 방어가 떨어지고 스피드가 올라간다."
+  },
+  "134": {
+    "nameKo": "헤비메탈",
+    "summary": "자신의 무게가 2배가 된다."
+  },
+  "135": {
+    "nameKo": "라이트메탈",
+    "summary": "자신의 무게가 절반이 된다."
+  },
+  "136": {
+    "nameKo": "멀티스케일",
+    "summary": "HP가 꽉 찼을 때 데미지가 줄어든다."
+  },
+  "137": {
+    "nameKo": "독폭주",
+    "summary": "독 상태일 때 물리공격의 위력이 올라간다."
+  },
+  "138": {
+    "nameKo": "열폭주",
+    "summary": "화상 상태일 때 특수공격의 위력이 올라간다."
+  },
+  "139": {
+    "nameKo": "수확",
+    "summary": "사용한 나무열매를 몇 번이고 만들어 낸다."
+  },
+  "140": {
+    "nameKo": "텔레파시",
+    "summary": "같은 편의 공격의 낌새를 읽고 기술을 받지 않는다."
+  },
+  "141": {
+    "nameKo": "변덕쟁이",
+    "summary": "능력이 오르락내리락한다."
+  },
+  "142": {
+    "nameKo": "방진",
+    "summary": "먼지나 가루를 막는다."
+  },
+  "143": {
+    "nameKo": "독수",
+    "summary": "접촉하기만 해도 상대를 독 상태로 만들 때가 있다."
+  },
+  "144": {
+    "nameKo": "재생력",
+    "summary": "볼에 넣으면 HP가 조금 회복된다."
+  },
+  "145": {
+    "nameKo": "부풀린가슴",
+    "summary": "방어를 떨어뜨리는 공격을 받지 않는다."
+  },
+  "146": {
+    "nameKo": "모래헤치기",
+    "summary": "모래바람으로 스피드가 올라간다."
+  },
+  "147": {
+    "nameKo": "미라클스킨",
+    "summary": "변화 기술을 받기 어려운 몸으로 되어 있다."
+  },
+  "148": {
+    "nameKo": "애널라이즈",
+    "summary": "제일 마지막에 기술을 쓰면 강해진다."
+  },
+  "149": {
+    "nameKo": "일루전",
+    "summary": "뒤의 포켓몬으로 둔갑하여 나온다."
+  },
+  "150": {
+    "nameKo": "괴짜",
+    "summary": "눈앞의 포켓몬으로 변신해버린다."
+  },
+  "151": {
+    "nameKo": "틈새포착",
+    "summary": "상대의 벽을 뚫고 공격한다."
+  },
+  "152": {
+    "nameKo": "미라",
+    "summary": "상대의 기술을 받으면 상대를 미라로 만든다."
+  },
+  "153": {
+    "nameKo": "자기과신",
+    "summary": "상대를 쓰러뜨리면 공격이 올라간다."
+  },
+  "154": {
+    "nameKo": "정의의마음",
+    "summary": "악 기술을 받으면 공격이 올라간다."
+  },
+  "155": {
+    "nameKo": "주눅",
+    "summary": "주눅이 들어 스피드가 올라가는 타입이 있다."
+  },
+  "156": {
+    "nameKo": "매직미러",
+    "summary": "변화 기술을 되받아칠 수 있다."
+  },
+  "157": {
+    "nameKo": "초식",
+    "summary": "풀 기술을 받으면 공격이 올라간다."
+  },
+  "158": {
+    "nameKo": "짓궂은마음",
+    "summary": "변화 기술을 먼저 쓸 수 있다."
+  },
+  "159": {
+    "nameKo": "모래의힘",
+    "summary": "모래바람으로 위력이 올라가는 기술이 있다."
+  },
+  "160": {
+    "nameKo": "철가시",
+    "summary": "접촉한 상대에게 상처를 입힌다."
+  },
+  "161": {
+    "nameKo": "달마모드",
+    "summary": "위급할 때 모습이 변화한다."
+  },
+  "162": {
+    "nameKo": "승리의별",
+    "summary": "자신과 같은 편의 명중률이 올라간다."
+  },
+  "163": {
+    "nameKo": "터보블레이즈",
+    "summary": "특성에 관계없이 상대에게 기술을 쓸 수 있다."
+  },
+  "164": {
+    "nameKo": "테라볼티지",
+    "summary": "특성에 관계없이 상대에게 기술을 쓸 수 있다."
+  },
+  "165": {
+    "nameKo": "아로마베일",
+    "summary": "같은 편으로 향하는 멘탈 공격을 막는다."
+  },
+  "166": {
+    "nameKo": "플라워베일",
+    "summary": "같은 편의 풀타입 포켓몬은 능력이 떨어지지 않는다."
+  },
+  "167": {
+    "nameKo": "볼주머니",
+    "summary": "나무열매를 먹으면 HP도 회복한다."
+  },
+  "168": {
+    "nameKo": "변환자재",
+    "summary": "사용한 기술과 같은 타입으로 변화한다."
+  },
+  "169": {
+    "nameKo": "퍼코트",
+    "summary": "물리 기술의 데미지가 절반이 된다."
+  },
+  "170": {
+    "nameKo": "매지션",
+    "summary": "기술을 맞은 상대의 도구를 빼앗아 버린다."
+  },
+  "171": {
+    "nameKo": "방탄",
+    "summary": "구슬이나 폭탄에 맞지 않는다."
+  },
+  "172": {
+    "nameKo": "승기",
+    "summary": "능력이 떨어지면 특수공격이 올라간다."
+  },
+  "173": {
+    "nameKo": "옹골찬턱",
+    "summary": "턱이 튼튼하여 무는 힘이 강하다."
+  },
+  "174": {
+    "nameKo": "프리즈스킨",
+    "summary": "노말타입의 기술이 얼음타입이 된다."
+  },
+  "175": {
+    "nameKo": "스위트베일",
+    "summary": "같은 편의 포켓몬이 잠들지 않게 된다."
+  },
+  "176": {
+    "nameKo": "배틀스위치",
+    "summary": "배틀모드에서 모습이 바뀐다."
+  },
+  "177": {
+    "nameKo": "질풍날개",
+    "summary": "비행타입의 기술이 먼저 나오게 된다."
+  },
+  "178": {
+    "nameKo": "메가런처",
+    "summary": "파동 기술의 위력이 크다."
+  },
+  "179": {
+    "nameKo": "풀모피",
+    "summary": "그래스필드일 때 방어가 올라간다."
+  },
+  "180": {
+    "nameKo": "공생",
+    "summary": "같은 편에게 도구를 건넬 수 있게 된다."
+  },
+  "181": {
+    "nameKo": "단단한발톱",
+    "summary": "접촉하는 기술의 위력이 올라간다."
+  },
+  "182": {
+    "nameKo": "페어리스킨",
+    "summary": "노말타입의 기술이 페어리타입이 된다."
+  },
+  "183": {
+    "nameKo": "미끈미끈",
+    "summary": "접촉한 상대의 스피드를 떨어뜨린다."
+  },
+  "184": {
+    "nameKo": "스카이스킨",
+    "summary": "노말타입의 기술이 비행타입이 된다."
+  },
+  "185": {
+    "nameKo": "부자유친",
+    "summary": "부모와 자식 2마리가 공격한다."
+  },
+  "186": {
+    "nameKo": "다크오라",
+    "summary": "전원의 악타입 기술이 강해진다."
+  },
+  "187": {
+    "nameKo": "페어리오라",
+    "summary": "전원의 페어리타입 기술이 강해진다."
+  },
+  "188": {
+    "nameKo": "오라브레이크",
+    "summary": "오라의 효과가 반대가 된다."
+  },
+  "189": {
+    "nameKo": "시작의바다",
+    "summary": "불꽃타입의 공격을 받지 않는 날씨로 만든다."
+  },
+  "190": {
+    "nameKo": "끝의대지",
+    "summary": "물타입의 공격을 받지 않는 날씨로 만든다."
+  },
+  "191": {
+    "nameKo": "델타스트림",
+    "summary": "비행타입의 약점이 없어지는 날씨로 만든다."
+  },
+  "192": {
+    "nameKo": "지구력",
+    "summary": "공격을 받으면 방어가 올라간다."
+  },
+  "193": {
+    "nameKo": "도망태세",
+    "summary": "HP가 절반이 되면 황급히 도망쳐서 지닌 포켓몬으로 돌아간다."
+  },
+  "194": {
+    "nameKo": "위기회피",
+    "summary": "HP가 절반이 되면 위험을 회피하기 위해 지닌 포켓몬으로 돌아간다."
+  },
+  "195": {
+    "nameKo": "꾸덕꾸덕굳기",
+    "summary": "물타입의 기술을 받으면 방어가 크게 올라간다."
+  },
+  "196": {
+    "nameKo": "무도한행동",
+    "summary": "독 상태의 상대를 공격하면 반드시 급소에 맞는다."
+  },
+  "197": {
+    "nameKo": "리밋실드",
+    "summary": "HP가 절반이 되면 껍질이 깨져 공격적으로 된다."
+  },
+  "198": {
+    "nameKo": "잠복",
+    "summary": "교체로 나온 상대에게 2배 데미지로 공격할 수 있다."
+  },
+  "199": {
+    "nameKo": "수포",
+    "summary": "자신을 향하는 불꽃타입 기술의 위력을 떨어뜨린다. 화상을 입지 않는다."
+  },
+  "200": {
+    "nameKo": "강철술사",
+    "summary": "강철타입 기술의 위력이 올라간다."
+  },
+  "201": {
+    "nameKo": "발끈",
+    "summary": "상대의 공격으로 HP가 절반이 되면 특수공격이 올라간다."
+  },
+  "202": {
+    "nameKo": "눈치우기",
+    "summary": "날씨가 싸라기눈일 때 스피드가 올라간다."
+  },
+  "203": {
+    "nameKo": "원격",
+    "summary": "모든 기술을 상대에게 접촉하지 않고 사용할 수 있다."
+  },
+  "204": {
+    "nameKo": "촉촉보이스",
+    "summary": "모든 소리 기술이 물타입이 된다."
+  },
+  "205": {
+    "nameKo": "힐링시프트",
+    "summary": "회복 기술을 먼저 사용할 수 있다."
+  },
+  "206": {
+    "nameKo": "일렉트릭스킨",
+    "summary": "노말타입 기술이 전기타입이 된다. 위력이 조금 올라간다."
+  },
+  "207": {
+    "nameKo": "서핑테일",
+    "summary": "일렉트릭필드일 때 스피드가 2배가 된다."
+  },
+  "208": {
+    "nameKo": "어군",
+    "summary": "HP가 많을 때 무리지어 강해진다. HP가 얼마 남지 않으면 무리는 뿔뿔이 흩어진다."
+  },
+  "209": {
+    "nameKo": "탈",
+    "summary": "몸을 덮는 탈로 1번 공격을 막을 수 있다."
+  },
+  "210": {
+    "nameKo": "유대변화",
+    "summary": "상대를 쓰러뜨리면 트레이너와의 유대감이 깊어져서 지우개굴닌자로 변한다. 물수리검이 강해진다."
+  },
+  "211": {
+    "nameKo": "스웜체인지",
+    "summary": "HP가 절반이 되면 셀들이 응원하러 달려와 퍼펙트폼으로 모습이 변한다."
+  },
+  "212": {
+    "nameKo": "부식",
+    "summary": "강철타입이나 독타입도 독 상태로 만들 수 있다."
+  },
+  "213": {
+    "nameKo": "절대안깸",
+    "summary": "항상 비몽사몽 상태로 절대 깨지 않는다. 잠든 상태로 공격할 수 있다."
+  },
+  "214": {
+    "nameKo": "여왕의위엄",
+    "summary": "상대에게 위압감을 줘서 이쪽을 향한 선제 기술을 사용할 수 없게 한다."
+  },
+  "215": {
+    "nameKo": "내용물분출",
+    "summary": "상대가 쓰러뜨렸을 때 HP의 남은 양만큼 상대에게 데미지를 준다."
+  },
+  "216": {
+    "nameKo": "무희",
+    "summary": "누군가 춤 기술을 쓰면 자신도 이어서 춤 기술을 쓸 수 있다."
+  },
+  "217": {
+    "nameKo": "배터리",
+    "summary": "같은 편 특수 기술의 위력을 올린다."
+  },
+  "218": {
+    "nameKo": "복슬복슬",
+    "summary": "상대로부터 받은 접촉하는 기술의 데미지를 반감시키지만 불꽃타입 기술의 데미지는 2배가 된다."
+  },
+  "219": {
+    "nameKo": "비비드바디",
+    "summary": "상대를 놀라게 해서 이쪽을 향한 선제 기술을 사용할 수 없게 한다."
+  },
+  "220": {
+    "nameKo": "소울하트",
+    "summary": "포켓몬이 기절할 때마다 특수공격이 올라간다."
+  },
+  "221": {
+    "nameKo": "컬리헤어",
+    "summary": "공격으로 자신과 접촉한 상대의 스피드를 떨어뜨린다."
+  },
+  "222": {
+    "nameKo": "리시버",
+    "summary": "쓰러진 같은 편의 특성을 이어받아 같은 특성이 된다."
+  },
+  "223": {
+    "nameKo": "과학의힘",
+    "summary": "쓰러진 같은 편의 특성을 이어받아 같은 특성으로 바뀐다."
+  },
+  "224": {
+    "nameKo": "비스트부스트",
+    "summary": "상대를 기절시켰을 때 자신의 가장 높은 능력이 올라간다."
+  },
+  "225": {
+    "nameKo": "AR시스템",
+    "summary": "지니고 있는 메모리로 자신의 타입이 변한다."
+  },
+  "226": {
+    "nameKo": "일렉트릭메이커",
+    "summary": "등장했을 때 일렉트릭필드를 사용한다."
+  },
+  "227": {
+    "nameKo": "사이코메이커",
+    "summary": "등장했을 때 사이코필드를 사용한다."
+  },
+  "228": {
+    "nameKo": "미스트메이커",
+    "summary": "등장했을 때 미스트필드를 사용한다."
+  },
+  "229": {
+    "nameKo": "그래스메이커",
+    "summary": "등장했을 때 그래스필드를 사용한다."
+  },
+  "230": {
+    "nameKo": "메탈프로텍트",
+    "summary": "상대 기술이나 특성으로 능력을 떨어뜨릴 수 없다."
+  },
+  "231": {
+    "nameKo": "스펙터가드",
+    "summary": "HP가 꽉 찼을 때 받는 데미지가 줄어든다."
+  },
+  "232": {
+    "nameKo": "프리즘아머",
+    "summary": "효과가 굉장한 공격의 위력을 약하게 만든다."
+  },
+  "233": {
+    "nameKo": "브레인포스",
+    "summary": "효과가 굉장한 공격의 위력이 더욱 올라간다."
+  },
+  "234": {
+    "nameKo": "불요의검",
+    "summary": "등장했을 때 공격이 올라간다."
+  },
+  "235": {
+    "nameKo": "불굴의방패",
+    "summary": "등장했을 때 방어가 올라간다."
+  },
+  "236": {
+    "nameKo": "리베로",
+    "summary": "자신이 사용한 기술과 같은 타입으로 변화한다."
+  },
+  "237": {
+    "nameKo": "볼줍기",
+    "summary": "도구를 지니고 있지 않은 경우 첫 번째로 던져서 실패한 몬스터볼을 주워온다."
+  },
+  "238": {
+    "nameKo": "솜털",
+    "summary": "공격을 받으면 솜털을 흩뿌려서 자신을 제외한 모든 포켓몬의 스피드를 떨어뜨린다."
+  },
+  "239": {
+    "nameKo": "스크루지느러미",
+    "summary": "상대의 기술을 끌어모으는 특성이나 기술의 영향을 받지 않는다."
+  },
+  "240": {
+    "nameKo": "미러아머",
+    "summary": "자신이 받는 능력 다운 효과에 한해 되받아친다."
+  },
+  "241": {
+    "nameKo": "그대로꿀꺽미사일",
+    "summary": "파도타기나 다이빙을 쓰면 먹이를 물어온다. 데미지를 받으면 먹이를 토해내서 공격한다."
+  },
+  "242": {
+    "nameKo": "굳건한신념",
+    "summary": "상대의 기술을 끌어모으는 특성이나 기술의 영향을 받지 않는다."
+  },
+  "243": {
+    "nameKo": "증기기관",
+    "summary": "물타입이나 불꽃타입 기술을 받으면 스피드가 매우 크게 올라간다."
+  },
+  "244": {
+    "nameKo": "펑크록",
+    "summary": "소리 기술의 위력이 올라간다. 상대로부터 받는 소리 기술의 데미지는 절반이 된다."
+  },
+  "245": {
+    "nameKo": "모래뿜기",
+    "summary": "공격을 받으면 모래바람을 일으킨다."
+  },
+  "246": {
+    "nameKo": "얼음인분",
+    "summary": "얼음인분의 보호를 받아 특수공격으로 받는 데미지가 절반이 된다."
+  },
+  "247": {
+    "nameKo": "숙성",
+    "summary": "나무열매를 숙성시켜서 효과가 2배가 된다."
+  },
+  "248": {
+    "nameKo": "아이스페이스",
+    "summary": "물리공격을 머리의 얼음이 대신 맞아주지만 모습도 바뀐다. 얼음은 싸라기눈이 내리면 원래대로 돌아온다."
+  },
+  "249": {
+    "nameKo": "파워스폿",
+    "summary": "옆에 있기만 해도 기술의 위력이 올라간다."
+  },
+  "250": {
+    "nameKo": "의태",
+    "summary": "필드의 상태에 따라 포켓몬의 타입이 바뀐다."
+  },
+  "251": {
+    "nameKo": "배리어프리",
+    "summary": "등장했을 때 상대와 같은 편의 빛의장막, 리플렉터, 오로라베일의 효과가 사라진다."
+  },
+  "252": {
+    "nameKo": "강철정신",
+    "summary": "같은 편의 강철타입 공격의 위력이 올라간다."
+  },
+  "253": {
+    "nameKo": "멸망의바디",
+    "summary": "접촉하는 기술을 받으면 3턴 후에 양쪽 모두 기절한다. 교체되면 효과가 없어진다."
+  },
+  "254": {
+    "nameKo": "떠도는영혼",
+    "summary": "접촉하는 기술로 공격해온 포켓몬과 특성을 바꾼다."
+  },
+  "255": {
+    "nameKo": "무아지경",
+    "summary": "공격이 올라가지만 처음에 선택한 기술 외에는 쓸 수 없게 된다."
+  },
+  "256": {
+    "nameKo": "화학변화가스",
+    "summary": "화학변화가스를 가진 포켓몬이 배틀에 나와 있으면 모든 포켓몬이 가진 특성의 효과가 사라지거나 발동하지 않게 된다."
+  },
+  "257": {
+    "nameKo": "파스텔베일",
+    "summary": "자신과 같은 편이 독의 상태 이상 효과를 받지 않게 된다."
+  },
+  "258": {
+    "nameKo": "꼬르륵스위치",
+    "summary": "턴이 끝날 때마다 배부른 모양, 배고픈 모양, 배부른 모양...으로 번갈아서 모습을 바꾼다."
+  },
+  "259": {
+    "nameKo": "퀵드로",
+    "summary": "상대보다 먼저 행동할 수도 있다."
+  },
+  "260": {
+    "nameKo": "보이지않는주먹",
+    "summary": "상대에게 접촉하는 기술을 사용하면 방어의 효과를 무시하고 공격할 수 있다."
+  },
+  "261": {
+    "nameKo": "기묘한약",
+    "summary": "등장했을 때 조개껍질에서 약을 흩뿌려서 능력 변화를 원래대로 되돌린다."
+  },
+  "262": {
+    "nameKo": "트랜지스터",
+    "summary": "전기타입 기술의 위력이 올라간다."
+  },
+  "263": {
+    "nameKo": "용의턱",
+    "summary": "드래곤타입 기술의 위력이 올라간다."
+  },
+  "264": {
+    "nameKo": "백의울음",
+    "summary": "상대를 쓰러뜨리면 차가운 울음소리를 내면서 공격이 올라간다."
+  },
+  "265": {
+    "nameKo": "흑의울음",
+    "summary": "상대를 쓰러뜨리면 무서운 울음소리를 내면서 특수공격이 올라간다."
+  },
+  "266": {
+    "nameKo": "혼연일체",
+    "summary": "버드렉스의 긴장감과 블리자포스의 백의울음 두 가지 특성을 겸비한다."
+  },
+  "267": {
+    "nameKo": "혼연일체",
+    "summary": "버드렉스의 긴장감과 레이스포스의 흑의울음 두 가지 특성을 겸비한다."
+  },
+  "268": {
+    "nameKo": "Lingering Aroma",
+    "summary": "Contact with the Pokémon changes the attacker's Ability to Lingering Aroma."
+  },
+  "269": {
+    "nameKo": "Seed Sower",
+    "summary": "Turns the ground into Grassy Terrain when the Pokémon is hit by an attack."
+  },
+  "270": {
+    "nameKo": "Thermal Exchange",
+    "summary": "Boosts the Attack stat when the Pokémon is hit by a Fire-type move. The Pokémon also cannot be burned."
+  },
+  "271": {
+    "nameKo": "Anger Shell",
+    "summary": "When an attack causes its HP to drop to half or less, the Pokémon gets angry. This lowers its Defense and Sp. Def stats but boosts its Attack, Sp. Atk, and Speed stats."
+  },
+  "272": {
+    "nameKo": "Purifying Salt",
+    "summary": "The Pokémon's pure salt protects it from status conditions and halves the damage taken from Ghost-type moves."
+  },
+  "273": {
+    "nameKo": "Well-Baked Body",
+    "summary": "The Pokémon takes no damage when hit by Fire-type moves. Instead, its Defense stat is sharply boosted."
+  },
+  "274": {
+    "nameKo": "Wind Rider",
+    "summary": "Boosts the Pokémon's Attack stat if Tailwind takes effect or if the Pokémon is hit by a wind move. The Pokémon also takes no damage from wind moves."
+  },
+  "275": {
+    "nameKo": "Guard Dog",
+    "summary": "Boosts the Pokémon’s Attack stat if intimidated. Moves and items that would force the Pokémon to switch out also fail to work."
+  },
+  "276": {
+    "nameKo": "Rocky Payload",
+    "summary": "Powers up Rock-type moves."
+  },
+  "277": {
+    "nameKo": "Wind Power",
+    "summary": "The Pokémon becomes charged when it is hit by a wind move, boosting the power of the next Electric-type move the Pokémon uses."
+  },
+  "278": {
+    "nameKo": "Zero to Hero",
+    "summary": "The Pokémon transforms into its Hero Form when it switches out."
+  },
+  "279": {
+    "nameKo": "Commander",
+    "summary": "When the Pokémon enters a battle, it goes inside the mouth of an ally Dondozo if one is on the field. The Pokémon then issues commands from there."
+  },
+  "280": {
+    "nameKo": "Electromorphosis",
+    "summary": "The Pokémon becomes charged when it takes damage, boosting the power of the next Electric-type move the Pokémon uses."
+  },
+  "281": {
+    "nameKo": "Protosynthesis",
+    "summary": "Boosts the Pokémon's most proficient stat in harsh sunlight or if the Pokémon is holding Booster Energy."
+  },
+  "282": {
+    "nameKo": "Quark Drive",
+    "summary": "Boosts the Pokémon's most proficient stat on Electric Terrain or if the Pokémon is holding Booster Energy."
+  },
+  "283": {
+    "nameKo": "Good as Gold",
+    "summary": "A body of pure, solid gold gives the Pokémon full immunity to other Pokémon's status moves."
+  },
+  "284": {
+    "nameKo": "Vessel of Ruin",
+    "summary": "The power of the Pokémon's ruinous vessel lowers the Sp. Atk stats of all Pokémon except itself."
+  },
+  "285": {
+    "nameKo": "Sword of Ruin",
+    "summary": "The power of the Pokémon's ruinous sword lowers the Defense stats of all Pokémon except itself."
+  },
+  "286": {
+    "nameKo": "Tablets of Ruin",
+    "summary": "The power of the Pokémon's ruinous wooden tablets lowers the Attack stats of all Pokémon except itself."
+  },
+  "287": {
+    "nameKo": "Beads of Ruin",
+    "summary": "The power of the Pokémon's ruinous beads lowers the Sp. Def stats of all Pokémon except itself."
+  },
+  "288": {
+    "nameKo": "Orichalcum Pulse",
+    "summary": "Turns the sunlight harsh when the Pokémon enters a battle. The ancient pulse thrumming through the Pokémon also boosts its Attack stat in harsh sunlight."
+  },
+  "289": {
+    "nameKo": "Hadron Engine",
+    "summary": "Turns the ground into Electric Terrain when the Pokémon enters a battle. The futuristic engine within the Pokémon also boosts its Sp. Atk stat on Electric Terrain."
+  },
+  "290": {
+    "nameKo": "Opportunist",
+    "summary": "If an opponent's stat is boosted, the Pokémon seizes the opportunity to boost the same stat for itself."
+  },
+  "291": {
+    "nameKo": "Cud Chew",
+    "summary": "When the Pokémon eats a Berry, it will regurgitate that Berry at the end of the next turn and eat it one more time."
+  },
+  "292": {
+    "nameKo": "Sharpness",
+    "summary": "Powers up slicing moves."
+  },
+  "293": {
+    "nameKo": "Supreme Overlord",
+    "summary": "When the Pokémon enters a battle, its Attack and Sp. Atk stats are slightly boosted for each of the allies in its party that have already been defeated."
+  },
+  "294": {
+    "nameKo": "Costar",
+    "summary": "When the Pokémon enters a battle, it copies an ally's stat changes."
+  },
+  "295": {
+    "nameKo": "Toxic Debris",
+    "summary": "Scatters poison spikes at the feet of the opposing team when the Pokémon takes damage from physical moves."
+  },
+  "296": {
+    "nameKo": "Armor Tail",
+    "summary": "The mysterious tail covering the Pokémon's head makes opponents unable to use priority moves against the Pokémon or its allies."
+  },
+  "297": {
+    "nameKo": "Earth Eater",
+    "summary": "If hit by a Ground-type move, the Pokémon has its HP restored instead of taking damage."
+  },
+  "298": {
+    "nameKo": "Mycelium Might",
+    "summary": "The Pokémon will always act more slowly when using status moves, but these moves will be unimpeded by the Ability of the target."
+  },
+  "299": {
+    "nameKo": "심안",
+    "summary": "The Pokémon ignores changes to opponents' evasiveness, its accuracy can't be lowered, and it can hit Ghost types with Normal-type and Fighting-type moves"
+  },
+  "300": {
+    "nameKo": "감미로운꿀",
+    "summary": "Lowers the evasion of opposing Pokémon by 1 stage when first sent into battle"
+  },
+  "301": {
+    "nameKo": "대접",
+    "summary": "When the Pokémon enters a battle, it showers its ally with hospitality, restoring a small amount of the ally's HP"
+  },
+  "302": {
+    "nameKo": "독사슬",
+    "summary": "The power of the Pokémon's toxic chain may badly poison any target the Pokémon hits with a move"
+  },
+  "303": {
+    "nameKo": "초상투영",
+    "summary": "The Pokémon's heart fills with memories, causing the Mask to shine and one of the Pokémon's stats to be boosted."
+  },
+  "304": {
+    "nameKo": "테라체인지",
+    "summary": "When the Pokémon enters a battle, it absorbs the energy around itself and transforms into its Terastal Form."
+  },
+  "305": {
+    "nameKo": "테라셸",
+    "summary": "The Pokémon's shell contains the powers of each type. All damage-dealing moves that hit the Pokémon when its HP is full will not be very effective."
+  },
+  "306": {
+    "nameKo": "제로포밍",
+    "summary": "When Terapagos changes into its Stellar Form, it uses its hidden powers to eliminate all effects of weather and terrain, reducing them to zero."
+  },
+  "307": {
+    "nameKo": "독조종",
+    "summary": "Pokémon poisoned by Pecharunt's moves will also become confused."
+  },
+  "308": {
+    "nameKo": "Piercing Drill",
+    "summary": "When the Pokémon uses contact moves, it can hit even targets that are protecting themselves, dealing 1/4 of the damage that the move would otherwise deal. Everything aside from the target's protective effects is still triggered."
+  },
+  "309": {
+    "nameKo": "Dragonize",
+    "summary": "The Pokémon's Normal-type moves become Dragon-type moves and their power is boosted by 20%."
+  },
+  "310": {
+    "nameKo": "Mega Sol",
+    "summary": "Even when the sunlight has not turned harsh, the Pokémon can use its moves as if the weather were harsh sunlight."
+  },
+  "311": {
+    "nameKo": "Spicy Spray",
+    "summary": "When the Pokémon takes damage from a move, it burns the attacker."
+  },
+  "10001": {
+    "nameKo": "Mountaineer",
+    "summary": "No description available."
+  },
+  "10002": {
+    "nameKo": "Wave Rider",
+    "summary": "No description available."
+  },
+  "10003": {
+    "nameKo": "Skater",
+    "summary": "No description available."
+  },
+  "10004": {
+    "nameKo": "Thrust",
+    "summary": "No description available."
+  },
+  "10005": {
+    "nameKo": "Perception",
+    "summary": "No description available."
+  },
+  "10006": {
+    "nameKo": "Parry",
+    "summary": "No description available."
+  },
+  "10007": {
+    "nameKo": "Instinct",
+    "summary": "No description available."
+  },
+  "10008": {
+    "nameKo": "Dodge",
+    "summary": "No description available."
+  },
+  "10009": {
+    "nameKo": "Jagged Edge",
+    "summary": "No description available."
+  },
+  "10010": {
+    "nameKo": "Frostbite",
+    "summary": "No description available."
+  },
+  "10011": {
+    "nameKo": "Tenacity",
+    "summary": "No description available."
+  },
+  "10012": {
+    "nameKo": "Pride",
+    "summary": "No description available."
+  },
+  "10013": {
+    "nameKo": "Deep Sleep",
+    "summary": "No description available."
+  },
+  "10014": {
+    "nameKo": "Power Nap",
+    "summary": "No description available."
+  },
+  "10015": {
+    "nameKo": "Spirit",
+    "summary": "No description available."
+  },
+  "10016": {
+    "nameKo": "Warm Blanket",
+    "summary": "No description available."
+  },
+  "10017": {
+    "nameKo": "Gulp",
+    "summary": "No description available."
+  },
+  "10018": {
+    "nameKo": "Herbivore",
+    "summary": "No description available."
+  },
+  "10019": {
+    "nameKo": "Sandpit",
+    "summary": "No description available."
+  },
+  "10020": {
+    "nameKo": "Hot Blooded",
+    "summary": "No description available."
+  },
+  "10021": {
+    "nameKo": "Medic",
+    "summary": "No description available."
+  },
+  "10022": {
+    "nameKo": "Life Force",
+    "summary": "No description available."
+  },
+  "10023": {
+    "nameKo": "Lunchbox",
+    "summary": "No description available."
+  },
+  "10024": {
+    "nameKo": "Nurse",
+    "summary": "No description available."
+  },
+  "10025": {
+    "nameKo": "Melee",
+    "summary": "No description available."
+  },
+  "10026": {
+    "nameKo": "Sponge",
+    "summary": "No description available."
+  },
+  "10027": {
+    "nameKo": "Bodyguard",
+    "summary": "No description available."
+  },
+  "10028": {
+    "nameKo": "Hero",
+    "summary": "No description available."
+  },
+  "10029": {
+    "nameKo": "Last Bastion",
+    "summary": "No description available."
+  },
+  "10030": {
+    "nameKo": "Stealth",
+    "summary": "No description available."
+  },
+  "10031": {
+    "nameKo": "Vanguard",
+    "summary": "No description available."
+  },
+  "10032": {
+    "nameKo": "Nomad",
+    "summary": "No description available."
+  },
+  "10033": {
+    "nameKo": "Sequence",
+    "summary": "No description available."
+  },
+  "10034": {
+    "nameKo": "Grass Cloak",
+    "summary": "No description available."
+  },
+  "10035": {
+    "nameKo": "Celebrate",
+    "summary": "No description available."
+  },
+  "10036": {
+    "nameKo": "Lullaby",
+    "summary": "No description available."
+  },
+  "10037": {
+    "nameKo": "Calming",
+    "summary": "No description available."
+  },
+  "10038": {
+    "nameKo": "Daze",
+    "summary": "No description available."
+  },
+  "10039": {
+    "nameKo": "Frighten",
+    "summary": "No description available."
+  },
+  "10040": {
+    "nameKo": "Interference",
+    "summary": "No description available."
+  },
+  "10041": {
+    "nameKo": "Mood Maker",
+    "summary": "No description available."
+  },
+  "10042": {
+    "nameKo": "Confidence",
+    "summary": "No description available."
+  },
+  "10043": {
+    "nameKo": "Fortune",
+    "summary": "No description available."
+  },
+  "10044": {
+    "nameKo": "Bonanza",
+    "summary": "No description available."
+  },
+  "10045": {
+    "nameKo": "Explode",
+    "summary": "No description available."
+  },
+  "10046": {
+    "nameKo": "Omnipotent",
+    "summary": "No description available."
+  },
+  "10047": {
+    "nameKo": "Share",
+    "summary": "No description available."
+  },
+  "10048": {
+    "nameKo": "Black Hole",
+    "summary": "No description available."
+  },
+  "10049": {
+    "nameKo": "Shadow Dash",
+    "summary": "No description available."
+  },
+  "10050": {
+    "nameKo": "Sprint",
+    "summary": "No description available."
+  },
+  "10051": {
+    "nameKo": "Disgust",
+    "summary": "No description available."
+  },
+  "10052": {
+    "nameKo": "High-rise",
+    "summary": "No description available."
+  },
+  "10053": {
+    "nameKo": "Climber",
+    "summary": "No description available."
+  },
+  "10054": {
+    "nameKo": "Flame Boost",
+    "summary": "No description available."
+  },
+  "10055": {
+    "nameKo": "Aqua Boost",
+    "summary": "No description available."
+  },
+  "10056": {
+    "nameKo": "Run Up",
+    "summary": "No description available."
+  },
+  "10057": {
+    "nameKo": "Conqueror",
+    "summary": "No description available."
+  },
+  "10058": {
+    "nameKo": "Shackle",
+    "summary": "No description available."
+  },
+  "10059": {
+    "nameKo": "Decoy",
+    "summary": "No description available."
+  },
+  "10060": {
+    "nameKo": "Shield",
+    "summary": "No description available."
+  }
 }

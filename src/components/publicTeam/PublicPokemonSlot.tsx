@@ -25,27 +25,32 @@ export default function PublicPokemonSlot({
 
   return (
     <div className={s.slot}>
-      <div className={s.slotImageWrap}>
-        <Image
-          src={resolved.imageUrl}
-          alt={resolved.nameKo}
-          width={72}
-          height={72}
-          className={s.slotImage}
-        />
+      <div className={s.slotHeader}>
+        <div className={s.slotImageWrap}>
+          <Image
+            src={resolved.imageUrl}
+            alt={resolved.nameKo}
+            width={72}
+            height={72}
+            className={s.slotImage}
+          />
+        </div>
+        <div className={s.slotNameWrap}>
+          <div className={s.slotName}>{resolved.nameKo}</div>
+          <div className={s.slotTypes}>
+            {resolved.types.map((type) => (
+              <span
+                key={type}
+                className={s.typeBadge}
+                style={{ backgroundColor: TYPE_COLOR[type] ?? '#888' }}
+              >
+                {type}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className={s.slotTypes}>
-        {resolved.types.map((type) => (
-          <span
-            key={type}
-            className={s.typeBadge}
-            style={{ backgroundColor: TYPE_COLOR[type] ?? '#888' }}
-          >
-            {type}
-          </span>
-        ))}
-      </div>
-      <div className={s.slotName}>{resolved.nameKo}</div>
+
       <dl className={s.slotDetails}>
         <div>
           <dt>특성</dt>

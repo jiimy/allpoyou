@@ -47,6 +47,33 @@ export function getDefaultAbility(pokemon: Pokemon): string | null {
   return ability[0] ?? sAbility[0] ?? null;
 }
 
+const MEGA_NAME_PREFIX = '메가 ';
+
+/** 메가 포켓몬이면 기술 목록 조회용 이름에서 '메가 ' 접두어를 제거합니다. */
+export function getMoveLookupNameKo(nameKo: string): string {
+  return nameKo.startsWith(MEGA_NAME_PREFIX)
+    ? nameKo.slice(MEGA_NAME_PREFIX.length)
+    : nameKo;
+}
+
+/** 배울 수 있는 기술 조회에 사용할 포켓몬 id (메가 → 일반 형태) */
+export function resolveMoveLookupPokemonId(
+  pokemon: Pokemon,
+  pokemonList: Pokemon[],
+): number {
+  const lookupName = getMoveLookupNameKo(pokemon.nameKo);
+  if (lookupName === pokemon.nameKo) {
+    return pokemon.id;
+  }
+
+  const baseForm = pokemonList.find((entry) => entry.nameKo === lookupName);
+  return baseForm?.id ?? pokemon.id;
+}
+
+export function isMegaPokemonName(nameKo: string): boolean {
+  return nameKo.startsWith(MEGA_NAME_PREFIX);
+}
+
 const STAT_HIGHLIGHT_KEYS = ['H', 'A', 'B', 'C', 'D', 'S'] as const;
 const STAT_LABEL_BY_KEY: Record<(typeof STAT_HIGHLIGHT_KEYS)[number], string> = {
   H: '체력',

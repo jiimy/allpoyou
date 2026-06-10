@@ -62,7 +62,7 @@ const MyInfoPage = async () => {
                 <p className={s.summary}>
                   공개 팀 {myPublicTeams.length}개 · 받은 좋아요 {totalReceivedLikes}개
                 </p>
-                <div className={`${teamS.feed} ${teamS.compactList} ${s.teamSection}`}>
+                <div className={`${s.teamSection}`}>
                   <PublicTeamFeed
                     teams={myPublicTeams}
                     likedTeamIds={likedTeamIds}
