@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 
 const SESSION_COOKIE = 'session';
-const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7; // 7일
+const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30; // 30일
 
 export type SessionPayload = {
   userId: string;
