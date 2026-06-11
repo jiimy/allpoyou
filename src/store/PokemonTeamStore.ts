@@ -42,7 +42,6 @@ export type SavedTeam = {
   teamId: number;
   teamName: string;
   pokemons: (TeamPokemonSlot | null)[];
-  isPublic?: boolean;
 };
 
 type PokemonTeamStoreState = {
@@ -51,7 +50,6 @@ type PokemonTeamStoreState = {
   serverTeamsLoadedAt: number | null;
   setActiveTeamId: (teamId: number) => void;
   setTeamName: (teamId: number, teamName: string) => void;
-  setTeamPublic: (teamId: number, isPublic: boolean) => void;
   hydrateTeamsFromServer: (teams: SavedTeam[]) => void;
   syncActiveTeamPokemons: (pokemons: (TeamPokemonSlot | null)[]) => void;
   updateActiveSlot: (
@@ -127,7 +125,6 @@ export function createDefaultTeams(): SavedTeam[] {
     teamId: i + 1,
     teamName: '',
     pokemons: emptyPokemons(),
-    isPublic: false,
   }));
 }
 
@@ -135,17 +132,6 @@ export function normalizePersistedTeams(
   teams: SavedTeam[] | undefined,
 ): SavedTeam[] {
   return normalizeTeams(teams);
-}
-
-function revokePublicIfPokemonsChanged(
-  team: SavedTeam,
-  nextPokemons: (TeamPokemonSlot | null)[],
-): SavedTeam {
-  if (!team.isPublic) return { ...team, pokemons: nextPokemons };
-  if (JSON.stringify(team.pokemons) === JSON.stringify(nextPokemons)) {
-    return { ...team, pokemons: nextPokemons };
-  }
-  return { ...team, pokemons: nextPokemons, isPublic: false };
 }
 
 function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
@@ -178,7 +164,6 @@ function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
       teamId: defaultTeam.teamId,
       teamName: saved.teamName ?? '',
       pokemons,
-      isPublic: saved.isPublic ?? false,
     };
   });
 }
@@ -202,13 +187,6 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
           ),
         })),
 
-      setTeamPublic: (teamId, isPublic) =>
-        set((state) => ({
-          teams: state.teams.map((team) =>
-            team.teamId === teamId ? { ...team, isPublic } : team,
-          ),
-        })),
-
       hydrateTeamsFromServer: (teams) =>
         set({
           teams: normalizeTeams(teams),
@@ -224,7 +202,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
           return {
             teams: state.teams.map((team) =>
               team.teamId === state.activeTeamId
-                ? revokePublicIfPokemonsChanged(team, normalized)
+                ? { ...team, pokemons: normalized }
                 : team,
             ),
           };
@@ -240,7 +218,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
               if (!current) return team;
               const next = [...team.pokemons];
               next[index] = { ...current, ...patch };
-              return revokePublicIfPokemonsChanged(team, next);
+              return { ...team, pokemons: next };
             }),
           };
         }),
@@ -254,7 +232,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
         set((state) => ({
           teams: state.teams.map((team) =>
             team.teamId === state.activeTeamId
-              ? revokePublicIfPokemonsChanged(team, emptyPokemons())
+              ? { ...team, pokemons: emptyPokemons() }
               : team,
           ),
         })),

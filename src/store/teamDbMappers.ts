@@ -31,7 +31,6 @@ export type SavedTeam = {
   teamId: number;
   teamName: string;
   pokemons: (TeamPokemonSlot | null)[];
-  isPublic?: boolean;
 };
 
 export function hasTeamPokemonData(team: SavedTeam): boolean {
@@ -43,7 +42,6 @@ export function createDefaultTeams(): SavedTeam[] {
     teamId: i + 1,
     teamName: '',
     pokemons: Array.from({ length: TEAM_SLOT_COUNT }, () => null),
-    isPublic: false,
   }));
 }
 
@@ -51,7 +49,6 @@ export type TeamDbRow = {
   team_slot?: unknown;
   team_name?: string | null;
   pokemon_data?: unknown;
-  is_public?: boolean | null;
 };
 
 function parseNumericId(value: unknown): number | null {
@@ -112,7 +109,6 @@ export function normalizeTeamsFromDb(
     teamId,
     teamName: row.team_name ?? '',
     pokemons,
-    isPublic: row.is_public ?? false,
   };
 }
 

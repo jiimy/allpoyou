@@ -55,7 +55,7 @@ const MyInfoPage = async () => {
             <div className={s.sectionTitle}>내가 공유한 팀 빌드</div>
             {myPublicTeams.length === 0 ? (
               <p className={s.placeholder}>
-                공개한 팀이 없습니다. 팀 만들기에서 공유 설정을 켜주세요.
+                공개한 팀이 없습니다. 팀 만들기에서 [공개]를 눌러 전시장에 올려보세요.
               </p>
             ) : (
               <>

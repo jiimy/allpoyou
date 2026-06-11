@@ -1,5 +1,7 @@
 'use server';
 
+import { randomUUID } from 'crypto';
+
 import { getCurrentUser } from '@/utils/auth/dal';
 import { createAdminClient } from '@/utils/supabase/admin';
 import {
@@ -8,9 +10,12 @@ import {
   type SavedTeam,
 } from '@/store/teamDbMappers';
 import { isTeamShareable } from '@/utils/teamShare';
-import { buildTeamRowId, normalizeDbId } from '@/utils/teamDb';
 
 export type TeamSaveResult = { ok: true } | { error: string };
+
+export type PublishTeamResult =
+  | { ok: true; publicTeamId: string }
+  | { error: string };
 
 export type TeamLoadResult =
   | { teams: SavedTeam[]; hasDbRows: boolean }
@@ -29,7 +34,7 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('teams')
-    .select('team_slot, team_name, pokemon_data, is_public, updated_at')
+    .select('team_slot, team_name, pokemon_data, updated_at')
     .eq('user_id', user.id)
     .order('team_slot', { ascending: true });
 
@@ -50,7 +55,6 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
 type TeamRowPayload = {
   team_name: string;
   pokemon_data: SavedTeam['pokemons'];
-  is_public: boolean;
   updated_at: string;
 };
 
@@ -64,7 +68,6 @@ async function upsertTeamRow(
 
   const { error } = await supabase.from('teams').upsert(
     {
-      id: buildTeamRowId(userDbId, teamSlot),
       user_id: userDbId,
       team_slot: teamSlot,
       ...payload,
@@ -112,18 +115,17 @@ export async function saveTeamToDb(team: SavedTeam): Promise<TeamSaveResult> {
     {
       team_name: team.teamName,
       pokemon_data: team.pokemons,
-      is_public: team.isPublic === true,
       updated_at: now,
     },
     '팀 저장에 실패했습니다.',
   );
 }
 
-export async function setTeamPublicOnDb(
+/** 슬롯 팀을 public_teams에 새 게시물로 발행합니다. */
+export async function publishTeamToDb(
   teamId: number,
-  isPublic: boolean,
   teamSnapshot: SavedTeam,
-): Promise<TeamSaveResult> {
+): Promise<PublishTeamResult> {
   const user = await getCurrentUser();
   if (!user) return { error: '로그인이 필요합니다.' };
 
@@ -131,24 +133,41 @@ export async function setTeamPublicOnDb(
     return { error: '잘못된 팀 번호입니다.' };
   }
 
-  if (isPublic && !isTeamShareable(teamSnapshot)) {
+  if (!isTeamShareable(teamSnapshot)) {
     return {
       error:
         '팀 이름과 6마리·도구·성격·기술 4개·노력치 66을 모두 채워야 공개할 수 있습니다.',
     };
   }
 
-  const now = new Date().toISOString();
+  const saveResult = await saveTeamToDb(teamSnapshot);
+  if ('error' in saveResult) return saveResult;
 
-  return upsertTeamRow(
-    user.id,
-    teamId,
-    {
-      team_name: teamSnapshot.teamName,
-      pokemon_data: teamSnapshot.pokemons,
-      is_public: isPublic,
-      updated_at: now,
-    },
-    '공개 설정 저장에 실패했습니다.',
-  );
+  const publicTeamId = randomUUID();
+  const supabase = createAdminClient();
+
+  const { error: publishError } = await supabase.from('public_teams').insert({
+    id: publicTeamId,
+    author_id: user.id,
+    team_name: teamSnapshot.teamName,
+    pokemon_data: teamSnapshot.pokemons,
+    likes_count: 0,
+  });
+
+  if (publishError) {
+    console.error('[publishTeamToDb]', publishError);
+    return { error: '팀 공개에 실패했습니다.' };
+  }
+
+  const { error: flagError } = await supabase
+    .from('teams')
+    .update({ is_public: true, updated_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('team_slot', teamId);
+
+  if (flagError) {
+    console.error('[publishTeamToDb] is_public flag', flagError);
+  }
+
+  return { ok: true, publicTeamId };
 }

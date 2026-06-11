@@ -22,6 +22,7 @@ import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
 import type { ActiveMoveSlot, EvAdjustAction } from '@/hooks/useTeamEditor';
 import { getMoveTypeKo } from '@/utils/moveDisplay';
+import { getMoveById } from '@/utils/movesIndex';
 import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
 import s from '@/app/make-team/maekTeam.module.scss';
 
@@ -762,6 +763,11 @@ const Team: React.FC<TeamProps> = ({
               const showMoveDropdown =
                 isClient && isMoveActive && selected != null;
               const moveValue = moveSearchValues[index][moveIndex];
+              const selectedMoveId = selectedMoveIds[index][moveIndex];
+              const selectedMoveTypeKo = (() => {
+                const move = getMoveById(selectedMoveId);
+                return move ? getMoveTypeKo(move.type) : null;
+              })();
               const moveListLoading =
                 selected != null && !(selected.id in pokemonMoveIdSets);
 
@@ -780,7 +786,7 @@ const Team: React.FC<TeamProps> = ({
                 >
                   {selected ? (
                     <div
-                      className={s.inputWrap}
+                      className={cn(s.inputWrap, s.moveInputWrap)}
                       ref={(el) => {
                         if (!moveInputWrapRefs.current[index]) {
                           moveInputWrapRefs.current[index] = [];
@@ -805,6 +811,17 @@ const Team: React.FC<TeamProps> = ({
                         aria-label={`${movePlaceholder} 선택`}
                         suppressHydrationWarning
                       />
+                      {selectedMoveTypeKo ? (
+                        <span
+                          className={s.moveTypeBadge}
+                          style={{
+                            background:
+                              TYPE_COLOR[selectedMoveTypeKo] ?? '#999',
+                          }}
+                        >
+                          {selectedMoveTypeKo}
+                        </span>
+                      ) : null}
                       {moveValue ? (
                         <button
                           type="button"

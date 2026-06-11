@@ -327,6 +327,35 @@
   position: relative;
 }
 
+.moveInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-radius: 4px;
+
+  .fieldInput {
+    flex: 1;
+    min-width: 0;
+    padding-right: 4px;
+  }
+
+  .clearBtn {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+  }
+}
+
+.moveTypeBadge {
+  flex-shrink: 0;
+  color: #fff;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .moveSectionPickable {
   cursor: pointer;
   background: #f8fbff;

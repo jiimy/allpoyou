@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   loadUserTeamsFromDb,
+  publishTeamToDb,
   saveTeamToDb,
-  setTeamPublicOnDb,
   uploadTeamsToDb,
 } from '@/app/make-team/actions';
 import { usePokemonTeamPersistHydrated } from '@/hooks/usePokemonTeamPersistHydrated';
@@ -17,6 +17,7 @@ import {
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
 import { readGuestTeamsFromLocalStorage } from '@/utils/guestTeamStorage';
+import { isTeamShareable } from '@/utils/teamShare';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
 
@@ -298,16 +299,15 @@ export function useDebouncedTeamDbSync({
   const publishTeamPublic = useCallback(async (teamId: number) => {
     const state = usePokemonTeamStore.getState();
     const team = state.teams.find((entry) => entry.teamId === teamId);
-    if (!team || team.isPublic) return;
+    if (!team || !isTeamShareable(team)) return;
 
-    const result = await setTeamPublicOnDb(teamId, true, team);
+    const result = await publishTeamToDb(teamId, team);
 
     if ('error' in result) {
       setSaveStatus('error');
       throw new Error(result.error);
     }
 
-    state.setTeamPublic(teamId, true);
     setSaveStatus('saved');
   }, []);
 
