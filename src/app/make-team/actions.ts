@@ -9,7 +9,7 @@ import {
   mapTeamsFromDbRows,
   type SavedTeam,
 } from '@/store/teamDbMappers';
-import { isTeamShareable } from '@/utils/teamShare';
+import { isTeamAlreadyPublished, isTeamShareable } from '@/utils/teamShare';
 
 export type TeamSaveResult = { ok: true } | { error: string };
 
@@ -50,6 +50,24 @@ export async function loadUserTeamsFromDb(): Promise<TeamLoadResult> {
   const teams = mapTeamsFromDbRows(data);
 
   return { teams, hasDbRows: true };
+}
+
+export async function loadUserPublishedPokemonData(): Promise<unknown[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('public_teams')
+    .select('pokemon_data')
+    .eq('author_id', user.id);
+
+  if (error) {
+    console.error('[loadUserPublishedPokemonData]', error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => row.pokemon_data);
 }
 
 type TeamRowPayload = {
@@ -137,6 +155,14 @@ export async function publishTeamToDb(
     return {
       error:
         '팀 이름과 6마리·도구·성격·기술 4개·노력치 66을 모두 채워야 공개할 수 있습니다.',
+    };
+  }
+
+  const publishedPokemonData = await loadUserPublishedPokemonData();
+  if (isTeamAlreadyPublished(teamSnapshot, publishedPokemonData)) {
+    return {
+      error:
+        '이미 동일한 포켓몬 구성으로 공개한 팀이 있습니다. 포켓몬 정보를 수정한 뒤 다시 공개해 주세요.',
     };
   }
 

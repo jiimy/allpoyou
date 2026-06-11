@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  loadUserPublishedPokemonData,
   loadUserTeamsFromDb,
   publishTeamToDb,
   saveTeamToDb,
@@ -17,7 +18,7 @@ import {
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
 import { readGuestTeamsFromLocalStorage } from '@/utils/guestTeamStorage';
-import { isTeamShareable } from '@/utils/teamShare';
+import { isTeamPublishable } from '@/utils/teamShare';
 
 const DEFAULT_DEBOUNCE_MS = 5000;
 
@@ -39,6 +40,9 @@ export function useDebouncedTeamDbSync({
   const [teamsSourceReady, setTeamsSourceReady] = useState(false);
   const [linkPromptOpen, setLinkPromptOpen] = useState(false);
   const [linkResolving, setLinkResolving] = useState(false);
+  const [publishedPokemonDataList, setPublishedPokemonDataList] = useState<
+    unknown[]
+  >([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbLoadedRef = useRef(false);
   const saveInFlightRef = useRef(false);
@@ -268,6 +272,25 @@ export function useDebouncedTeamDbSync({
   ]);
 
   useEffect(() => {
+    if (!authReady || !loggedInUserId) {
+      setPublishedPokemonDataList([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void loadUserPublishedPokemonData().then((data) => {
+      if (!cancelled) {
+        setPublishedPokemonDataList(data);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, loggedInUserId]);
+
+  useEffect(() => {
     if (!loggedInUserId || !teamsSourceReady) return;
 
     const unsub = usePokemonTeamStore.subscribe((state, prevState) => {
@@ -299,7 +322,7 @@ export function useDebouncedTeamDbSync({
   const publishTeamPublic = useCallback(async (teamId: number) => {
     const state = usePokemonTeamStore.getState();
     const team = state.teams.find((entry) => entry.teamId === teamId);
-    if (!team || !isTeamShareable(team)) return;
+    if (!team || !isTeamPublishable(team, publishedPokemonDataList)) return;
 
     const result = await publishTeamToDb(teamId, team);
 
@@ -308,13 +331,15 @@ export function useDebouncedTeamDbSync({
       throw new Error(result.error);
     }
 
+    setPublishedPokemonDataList((prev) => [...prev, team.pokemons]);
     setSaveStatus('saved');
-  }, []);
+  }, [publishedPokemonDataList]);
 
   return {
     teamsSourceReady,
     saveStatus,
     publishTeamPublic,
+    publishedPokemonDataList,
     isLoggedIn: authReady && loggedInUserId != null,
     linkPromptOpen,
     linkResolving,

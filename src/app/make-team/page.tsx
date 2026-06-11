@@ -348,6 +348,7 @@ const MakeTeam = () => {
     teamsSourceReady,
     saveStatus,
     publishTeamPublic,
+    publishedPokemonDataList,
     isLoggedIn,
     linkPromptOpen,
     linkResolving,
@@ -461,6 +462,7 @@ const MakeTeam = () => {
         saveStatus={saveStatus}
         publishError={publishError}
         isLoggedIn={isLoggedIn}
+        publishedPokemonDataList={publishedPokemonDataList}
       />
       <Team {...teamProps} />
       <div>
