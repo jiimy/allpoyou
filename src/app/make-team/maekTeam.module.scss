@@ -299,12 +299,14 @@
   border: 1px solid #eee;
   border-top: none;
   justify-content: center;
+  padding: 0px 8px;
   ~ div {
     display: flex;
     align-items: center;
     border: 1px solid #eee;
     border-top: none;
     min-height: 45px;
+    padding: 0px 8px;
   }
 }
 
@@ -442,14 +444,12 @@
 }
 
 .evSection {
-  // .abilitySection ~ div 규칙(가운데 정렬)을 위/세로 정렬로 덮어씁니다.
-  align-items: stretch !important;
-  flex-direction: column;
   padding: 6px 8px;
 }
 
 .evWrap {
   width: 100%;
+  padding: 6px 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
