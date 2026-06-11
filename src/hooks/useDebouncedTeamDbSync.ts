@@ -295,27 +295,26 @@ export function useDebouncedTeamDbSync({
     };
   }, [loggedInUserId, teamsSourceReady, scheduleSave]);
 
-  const toggleTeamPublic = useCallback(async (teamId: number) => {
+  const publishTeamPublic = useCallback(async (teamId: number) => {
     const state = usePokemonTeamStore.getState();
     const team = state.teams.find((entry) => entry.teamId === teamId);
-    if (!team) return;
+    if (!team || team.isPublic) return;
 
-    const nextPublic = !(team.isPublic ?? false);
-    const result = await setTeamPublicOnDb(teamId, nextPublic, team);
+    const result = await setTeamPublicOnDb(teamId, true, team);
 
     if ('error' in result) {
       setSaveStatus('error');
       throw new Error(result.error);
     }
 
-    state.setTeamPublic(teamId, nextPublic);
+    state.setTeamPublic(teamId, true);
     setSaveStatus('saved');
   }, []);
 
   return {
     teamsSourceReady,
     saveStatus,
-    toggleTeamPublic,
+    publishTeamPublic,
     isLoggedIn: authReady && loggedInUserId != null,
     linkPromptOpen,
     linkResolving,

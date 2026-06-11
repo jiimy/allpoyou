@@ -134,7 +134,7 @@ export async function setTeamPublicOnDb(
   if (isPublic && !isTeamShareable(teamSnapshot)) {
     return {
       error:
-        '팀 이름과 6마리·도구·성격·기술 4개·노력치 66을 모두 채워야 공유할 수 있습니다.',
+        '팀 이름과 6마리·도구·성격·기술 4개·노력치 66을 모두 채워야 공개할 수 있습니다.',
     };
   }
 
@@ -149,6 +149,6 @@ export async function setTeamPublicOnDb(
       is_public: isPublic,
       updated_at: now,
     },
-    '공유 설정 저장에 실패했습니다.',
+    '공개 설정 저장에 실패했습니다.',
   );
 }

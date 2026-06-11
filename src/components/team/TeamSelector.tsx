@@ -12,24 +12,22 @@ import s from '@/app/make-team/maekTeam.module.scss';
 
 type TeamSelectorProps = {
   onSwitchTeam: (teamId: number) => void;
-  onToggleShare?: (teamId: number) => void | Promise<void>;
+  onPublishTeam?: (teamId: number) => void | Promise<void>;
   saveStatus?: TeamSaveStatus;
-  shareError?: string | null;
+  publishError?: string | null;
   isLoggedIn?: boolean;
 };
 
-const SAVE_STATUS_LABEL: Record<TeamSaveStatus, string> = {
-  idle: '',
+const SAVE_STATUS_LABEL = {
   saving: '저장 중…',
-  saved: '저장됨',
   error: '저장 실패',
-};
+} as const satisfies Partial<Record<TeamSaveStatus, string>>;
 
 export default function TeamSelector({
   onSwitchTeam,
-  onToggleShare,
+  onPublishTeam,
   saveStatus = 'idle',
-  shareError = null,
+  publishError = null,
   isLoggedIn = false,
 }: TeamSelectorProps) {
   const activeTeamId = usePokemonTeamStore((state) => state.activeTeamId);
@@ -38,17 +36,17 @@ export default function TeamSelector({
   const activeTeam = teams.find((team) => team.teamId === activeTeamId);
   const shareable = isTeamShareable(activeTeam);
   const isPublic = activeTeam?.isPublic ?? false;
-  const [sharePending, setSharePending] = useState(false);
+  const [publishPending, setPublishPending] = useState(false);
+  const showPublishButton = isLoggedIn && !isPublic;
 
-  const handleShareClick = async () => {
-    if (!onToggleShare || sharePending) return;
-    if (!isPublic && !shareable) return;
+  const handlePublishClick = async () => {
+    if (!onPublishTeam || publishPending || isPublic || !shareable) return;
 
-    setSharePending(true);
+    setPublishPending(true);
     try {
-      await onToggleShare(activeTeamId);
+      await onPublishTeam(activeTeamId);
     } finally {
-      setSharePending(false);
+      setPublishPending(false);
     }
   };
 
@@ -83,22 +81,24 @@ export default function TeamSelector({
         />
       </label>
 
-      {isLoggedIn ? (
+      {isLoggedIn && (showPublishButton || saveStatus === 'saving' || saveStatus === 'error') ? (
         <div className={s.teamMetaActions}>
-          <button
-            type="button"
-            className={`${s.teamShareBtn} ${isPublic ? s.teamShareBtnActive : ''}`}
-            disabled={sharePending || (!isPublic && !shareable)}
-            onClick={handleShareClick}
-            title={
-              !isPublic && !shareable
-                ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공유할 수 있습니다.'
-                : undefined
-            }
-          >
-            {sharePending ? '처리 중…' : isPublic ? '공유 중' : '공유'}
-          </button>
-          {saveStatus !== 'idle' ? (
+          {showPublishButton ? (
+            <button
+              type="button"
+              className={s.teamShareBtn}
+              disabled={publishPending || !shareable}
+              onClick={handlePublishClick}
+              title={
+                !shareable
+                  ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공개할 수 있습니다.'
+                  : undefined
+              }
+            >
+              {publishPending ? '공개 중…' : '공개'}
+            </button>
+          ) : null}
+          {saveStatus === 'saving' || saveStatus === 'error' ? (
             <span className={saveStatusClass(saveStatus)} aria-live="polite">
               {SAVE_STATUS_LABEL[saveStatus]}
             </span>
@@ -106,17 +106,16 @@ export default function TeamSelector({
         </div>
       ) : null}
 
-      {shareError ? (
+      {publishError ? (
         <p className={s.teamShareError} role="alert">
-          {shareError}
+          {publishError}
         </p>
       ) : null}
     </div>
   );
 }
 
-function saveStatusClass(status: TeamSaveStatus): string {
+function saveStatusClass(status: 'saving' | 'error'): string {
   if (status === 'error') return `${s.teamSaveStatus} ${s.teamSaveStatusError}`;
-  if (status === 'saved') return `${s.teamSaveStatus} ${s.teamSaveStatusSaved}`;
   return s.teamSaveStatus;
 }

@@ -269,6 +269,10 @@ const Team: React.FC<TeamProps> = ({
   );
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
+  const itemInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const natureInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const moveInputWrapRefs = useRef<(HTMLDivElement | null)[][]>([]);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const itemDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const natureDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -302,17 +306,44 @@ const Team: React.FC<TeamProps> = ({
 
   const handleOutsideClick = useCallback(() => {
     onActiveIndexChange(null);
+  }, [onActiveIndexChange]);
+
+  const handleFieldOutsideClick = useCallback(() => {
     onActiveItemIndexChange(null);
     onActiveNatureIndexChange(null);
     onActiveMoveSlotChange(null);
   }, [
-    onActiveIndexChange,
     onActiveItemIndexChange,
     onActiveNatureIndexChange,
     onActiveMoveSlotChange,
   ]);
 
   useOutOfClick(wrapperRef, handleOutsideClick);
+  useOutOfClick(activeFieldDropdownRef, handleFieldOutsideClick);
+
+  useEffect(() => {
+    if (activeItemIndex !== null) {
+      activeFieldDropdownRef.current =
+        itemInputWrapRefs.current[activeItemIndex] ?? null;
+      return;
+    }
+
+    if (activeNatureIndex !== null) {
+      activeFieldDropdownRef.current =
+        natureInputWrapRefs.current[activeNatureIndex] ?? null;
+      return;
+    }
+
+    if (activeMoveSlot !== null) {
+      activeFieldDropdownRef.current =
+        moveInputWrapRefs.current[activeMoveSlot.pokemon]?.[
+          activeMoveSlot.move
+        ] ?? null;
+      return;
+    }
+
+    activeFieldDropdownRef.current = null;
+  }, [activeItemIndex, activeNatureIndex, activeMoveSlot]);
 
   useEffect(() => {
     itemRefs.current = [];
@@ -554,7 +585,12 @@ const Team: React.FC<TeamProps> = ({
               }}
             >
               {selected ? (
-                <div className={s.inputWrap}>
+                <div
+                  className={s.inputWrap}
+                  ref={(el) => {
+                    itemInputWrapRefs.current[index] = el;
+                  }}
+                >
                   <input
                     type="text"
                     className={s.fieldInput}
@@ -634,7 +670,12 @@ const Team: React.FC<TeamProps> = ({
               }}
             >
               {selected ? (
-                <div className={s.inputWrap}>
+                <div
+                  className={s.inputWrap}
+                  ref={(el) => {
+                    natureInputWrapRefs.current[index] = el;
+                  }}
+                >
                   <input
                     type="text"
                     className={s.fieldInput}
@@ -738,7 +779,15 @@ const Team: React.FC<TeamProps> = ({
                   }}
                 >
                   {selected ? (
-                    <div className={s.inputWrap}>
+                    <div
+                      className={s.inputWrap}
+                      ref={(el) => {
+                        if (!moveInputWrapRefs.current[index]) {
+                          moveInputWrapRefs.current[index] = [];
+                        }
+                        moveInputWrapRefs.current[index][moveIndex] = el;
+                      }}
+                    >
                       <input
                         type="text"
                         className={s.fieldInput}

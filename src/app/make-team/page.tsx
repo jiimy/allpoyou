@@ -335,7 +335,7 @@ const MakeTeam = () => {
 
   const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   useEffect(() => {
     getLoggedInUserId().then((userId) => {
@@ -347,7 +347,7 @@ const MakeTeam = () => {
   const {
     teamsSourceReady,
     saveStatus,
-    toggleTeamPublic,
+    publishTeamPublic,
     isLoggedIn,
     linkPromptOpen,
     linkResolving,
@@ -370,18 +370,18 @@ const MakeTeam = () => {
       authReady && (!loggedInUserId || teamsSourceReady),
   });
 
-  const handleToggleShare = useCallback(
+  const handlePublishTeam = useCallback(
     async (teamId: number) => {
-      setShareError(null);
+      setPublishError(null);
       try {
-        await toggleTeamPublic(teamId);
+        await publishTeamPublic(teamId);
       } catch (err) {
-        setShareError(
-          err instanceof Error ? err.message : '공유 설정에 실패했습니다.',
+        setPublishError(
+          err instanceof Error ? err.message : '공개 설정에 실패했습니다.',
         );
       }
     },
-    [toggleTeamPublic],
+    [publishTeamPublic],
   );
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
@@ -457,9 +457,9 @@ const MakeTeam = () => {
       ) : null}
       <TeamSelector
         onSwitchTeam={switchActiveTeam}
-        onToggleShare={handleToggleShare}
+        onPublishTeam={handlePublishTeam}
         saveStatus={saveStatus}
-        shareError={shareError}
+        publishError={publishError}
         isLoggedIn={isLoggedIn}
       />
       <Team {...teamProps} />

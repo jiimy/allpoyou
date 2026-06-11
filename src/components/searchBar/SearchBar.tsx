@@ -1,6 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import s from './searchBar.module.scss';
+
+const DEBOUNCE_MS = 1000;
 
 type PlaceholderType = 'pokemon' | 'moves' | 'item' | 'ability';
 
@@ -28,6 +32,24 @@ export default function SearchBar({
   matchedPokemonNames = [],
   placeholderType = 'moves',
 }: SearchBarProps) {
+  const [inputValue, setInputValue] = useState(keyword);
+  const [prevKeyword, setPrevKeyword] = useState(keyword);
+
+  if (prevKeyword !== keyword) {
+    setPrevKeyword(keyword);
+    setInputValue(keyword);
+  }
+
+  useEffect(() => {
+    if (inputValue === keyword) return;
+
+    const timer = window.setTimeout(() => {
+      onKeywordChange(inputValue);
+    }, DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [inputValue, keyword, onKeywordChange]);
+
   const q = keyword.trim();
   const showPokemonHint = placeholderType === 'moves' && q.length > 0;
 
@@ -37,8 +59,8 @@ export default function SearchBar({
         type="search"
         className={s.input}
         placeholder={PLACEHOLDER_BY_TYPE[placeholderType]}
-        value={keyword}
-        onChange={(e) => onKeywordChange(e.target.value)}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
         autoComplete="off"
       />
       {showPokemonHint ? (

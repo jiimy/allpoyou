@@ -24,6 +24,28 @@ export const ALL_ABILITIES: AbilityListItem[] = Object.entries(
   .filter((entry) => Number.isFinite(entry.id))
   .sort((a, b) => a.id - b.id);
 
+const ABILITY_SUMMARY_BY_NAME = Object.fromEntries(
+  ALL_ABILITIES.map((ability) => [ability.nameKo, ability.summary]),
+) as Record<string, string>;
+
+export function getAbilitySummary(
+  abilityName: string | null | undefined,
+): string | null {
+  if (!abilityName) return null;
+  return ABILITY_SUMMARY_BY_NAME[abilityName] ?? null;
+}
+
+export function formatAbilityTooltipText(abilityNames: string[]): string | undefined {
+  if (abilityNames.length === 0) return undefined;
+
+  return abilityNames
+    .map((name) => {
+      const summary = getAbilitySummary(name);
+      return summary ? `${name}: ${summary}` : name;
+    })
+    .join('\n');
+}
+
 export type FilteredAbility = AbilityListItem & {
   matchedPokemons: Pokemon[];
 };

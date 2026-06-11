@@ -5,8 +5,11 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 40px 60px;
   box-sizing: border-box;
+}
+
+.publicTeamFeed {
+  padding: 20px 40px 60px;
 }
 
 .empty {
@@ -22,6 +25,11 @@
   gap: 16px;
   width: 100%;
   margin-top: 24px;
+}
+
+.sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
 }
 
 .listItem {
@@ -81,6 +89,13 @@
   font-size: 14px;
   font-weight: 700;
   color: #374151;
+}
+
+.likeStat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .likeError {
@@ -185,6 +200,7 @@
   font-weight: 700;
   color: #111827;
   text-align: center;
+  white-space: pre;
 }
 
 .slotDetails {
@@ -212,7 +228,7 @@
     font-size: 12px;
     color: #374151;
     line-height: 1.6;
-    word-break: break-word;
+    word-break: keep-all;
   }
 }
 

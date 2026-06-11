@@ -7,6 +7,7 @@ import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { fetchPokemonList, filterPokemonList, type Pokemon } from '@/store/PokemonStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
+import { formatAbilityTooltipText } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 
 import s from './pokedex.module.scss';
@@ -107,12 +108,18 @@ function PokemonCard({
 
       <div className={s.abilities}>
         {pokemon.ability.length > 0 ? (
-          <span className={s.abilityLine}>
+          <span
+            className={s.abilityLine}
+            title={formatAbilityTooltipText(pokemon.ability)}
+          >
             {pokemon.ability.join(', ')}
           </span>
         ) : null}
         {pokemon.s_ability.length > 0 ? (
-          <span className={s.abilityLine}>
+          <span
+            className={s.abilityLine}
+            title={formatAbilityTooltipText(pokemon.s_ability)}
+          >
             / 🔓 {pokemon.s_ability.join(', ')}
           </span>
         ) : null}

@@ -68,6 +68,7 @@ const MyInfoPage = async () => {
                     likedTeamIds={likedTeamIds}
                     currentUserDbId={user.id}
                     showLikeButton={false}
+                    showLikeCount
                     showSearch={false}
                     emptyMessage="공개한 팀이 없습니다."
                   />

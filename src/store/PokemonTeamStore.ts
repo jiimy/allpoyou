@@ -137,6 +137,17 @@ export function normalizePersistedTeams(
   return normalizeTeams(teams);
 }
 
+function revokePublicIfPokemonsChanged(
+  team: SavedTeam,
+  nextPokemons: (TeamPokemonSlot | null)[],
+): SavedTeam {
+  if (!team.isPublic) return { ...team, pokemons: nextPokemons };
+  if (JSON.stringify(team.pokemons) === JSON.stringify(nextPokemons)) {
+    return { ...team, pokemons: nextPokemons };
+  }
+  return { ...team, pokemons: nextPokemons, isPublic: false };
+}
+
 function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
   const defaults = createDefaultTeams();
   if (!teams?.length) return defaults;
@@ -213,7 +224,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
           return {
             teams: state.teams.map((team) =>
               team.teamId === state.activeTeamId
-                ? { ...team, pokemons: normalized }
+                ? revokePublicIfPokemonsChanged(team, normalized)
                 : team,
             ),
           };
@@ -229,7 +240,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
               if (!current) return team;
               const next = [...team.pokemons];
               next[index] = { ...current, ...patch };
-              return { ...team, pokemons: next };
+              return revokePublicIfPokemonsChanged(team, next);
             }),
           };
         }),
@@ -243,7 +254,7 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
         set((state) => ({
           teams: state.teams.map((team) =>
             team.teamId === state.activeTeamId
-              ? { ...team, pokemons: emptyPokemons() }
+              ? revokePublicIfPokemonsChanged(team, emptyPokemons())
               : team,
           ),
         })),

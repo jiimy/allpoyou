@@ -25,6 +25,7 @@ type PublicTeamItemProps = {
   isOwnTeam: boolean;
   isLoggedIn: boolean;
   showLikeButton?: boolean;
+  showLikeCount?: boolean;
   onLikeChange?: (
     likeTargetId: string,
     liked: boolean,
@@ -39,6 +40,7 @@ export default function PublicTeamItem({
   isOwnTeam,
   isLoggedIn,
   showLikeButton = true,
+  showLikeCount = false,
   onLikeChange,
   onSnapshotRemoved,
 }: PublicTeamItemProps) {
@@ -107,40 +109,58 @@ export default function PublicTeamItem({
 
   return (
     <article className={s.listItem}>
-      {showLikeButton ? (
+      {(showLikeButton || (!team.isSnapshot && showLikeCount)) ? (
         <div className={s.likeArea}>
-          <button
-            type="button"
-            className={cn(s.likeBtn, {
-              [s.likeBtnDisabled]: isOwnTeam,
-            })}
-            onClick={handleToggleLike}
-            disabled={isOwnTeam}
-            aria-pressed={optimisticLike.liked}
-            aria-label={optimisticLike.liked ? '좋아요 취소' : '좋아요'}
-            title={
-              isOwnTeam
-                ? '내 팀은 좋아요할 수 없습니다'
-                : optimisticLike.liked
-                  ? team.isSnapshot
-                    ? '보관함에서 제거'
-                    : '좋아요 취소'
-                  : '좋아요'
-            }
-          >
-            {!team.isSnapshot ? (
-              <span className={s.likeCount}>{optimisticLike.likeCount}</span>
-            ) : null}
-            <Image
-              src={LIKE_ICON}
-              alt=""
-              width={32}
-              height={32}
-              className={cn(s.likeIcon, {
-                [s.likeIconActive]: optimisticLike.liked,
+          {showLikeButton ? (
+            <button
+              type="button"
+              className={cn(s.likeBtn, {
+                [s.likeBtnDisabled]: isOwnTeam,
               })}
-            />
-          </button>
+              onClick={handleToggleLike}
+              disabled={isOwnTeam}
+              aria-pressed={optimisticLike.liked}
+              aria-label={optimisticLike.liked ? '좋아요 취소' : '좋아요'}
+              title={
+                isOwnTeam
+                  ? '내 팀은 좋아요할 수 없습니다'
+                  : optimisticLike.liked
+                    ? team.isSnapshot
+                      ? '보관함에서 제거'
+                      : '좋아요 취소'
+                    : '좋아요'
+              }
+            >
+              {!team.isSnapshot ? (
+                <span className={s.likeCount}>{optimisticLike.likeCount}</span>
+              ) : null}
+              <Image
+                src={LIKE_ICON}
+                alt=""
+                width={32}
+                height={32}
+                className={cn(s.likeIcon, {
+                  [s.likeIconActive]: optimisticLike.liked,
+                })}
+              />
+            </button>
+          ) : (
+            <div
+              className={s.likeStat}
+              aria-label={`받은 좋아요 ${optimisticLike.likeCount}개`}
+            >
+              <span className={s.likeCount}>{optimisticLike.likeCount}</span>
+              <Image
+                src={LIKE_ICON}
+                alt=""
+                width={32}
+                height={32}
+                className={cn(s.likeIcon, {
+                  [s.likeIconActive]: optimisticLike.likeCount > 0,
+                })}
+              />
+            </div>
+          )}
           {error ? <p className={s.likeError}>{error}</p> : null}
         </div>
       ) : null}

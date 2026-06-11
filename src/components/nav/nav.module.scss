@@ -13,3 +13,29 @@
     }
   }
 }
+
+.link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #2563eb;
+  }
+}
+
+.linkActive {
+  color: #2563eb;
+  // font-weight: 700;
+
+  // &::after {
+  //   content: '';
+  //   position: absolute;
+  //   left: 0;
+  //   right: 0;
+  //   bottom: -6px;
+  //   height: 2px;
+  //   background: #2563eb;
+  //   border-radius: 1px;
+  // }
+}

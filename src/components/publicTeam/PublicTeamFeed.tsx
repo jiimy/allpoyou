@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchBar from '@/components/searchBar/SearchBar';
 import { teamMatchesPokemonQuery } from '@/utils/publicTeamDisplay';
 import type { PublicTeam } from '@/app/public-teams/actions';
 import PublicTeamItem from './PublicTeamItem';
 import s from './publicTeam.module.scss';
+
+const PAGE_SIZE = 8;
 
 type PublicTeamFeedProps = {
   teams: PublicTeam[];
@@ -13,6 +15,7 @@ type PublicTeamFeedProps = {
   currentUserDbId: string | null;
   emptyMessage?: string;
   showLikeButton?: boolean;
+  showLikeCount?: boolean;
   showSearch?: boolean;
 };
 
@@ -26,6 +29,7 @@ export default function PublicTeamFeed({
   currentUserDbId,
   emptyMessage = '표시할 공개 팀이 없습니다.',
   showLikeButton = true,
+  showLikeCount = false,
   showSearch = true,
 }: PublicTeamFeedProps) {
   const [keyword, setKeyword] = useState('');
@@ -36,12 +40,47 @@ export default function PublicTeamFeed({
       initialTeams.map((team) => [getLikeTargetId(team), team.likeCount]),
     ),
   );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const filteredTeams = useMemo(() => {
     return teams.filter((team) =>
       teamMatchesPokemonQuery(team.pokemons, keyword),
     );
   }, [teams, keyword]);
+
+  const visibleTeams = useMemo(
+    () => filteredTeams.slice(0, visibleCount),
+    [filteredTeams, visibleCount],
+  );
+
+  const hasMore = visibleCount < filteredTeams.length;
+
+  const [prevKeyword, setPrevKeyword] = useState(keyword);
+  if (prevKeyword !== keyword) {
+    setPrevKeyword(keyword);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) =>
+            Math.min(prev + PAGE_SIZE, filteredTeams.length),
+          );
+        }
+      },
+      { rootMargin: '240px' },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [filteredTeams.length, hasMore]);
 
   const handleLikeChange = (
     likeTargetId: string,
@@ -62,51 +101,57 @@ export default function PublicTeamFeed({
   };
 
   return (
-    <div className={s.feed}>
-      {showSearch ? (
-        <SearchBar
-          keyword={keyword}
-          onKeywordChange={setKeyword}
-          placeholderType="pokemon"
-        />
-      ) : null}
+    <div className={s.publicTeamFeed}>
+      <div className={s.feed}>
+        {showSearch ? (
+          <SearchBar
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+            placeholderType="pokemon"
+          />
+        ) : null}
 
-      {filteredTeams.length === 0 ? (
-        <p className={s.empty}>
-          {keyword.trim()
-            ? `"${keyword.trim()}"(으)로 검색된 팀이 없습니다.`
-            : emptyMessage}
-        </p>
-      ) : (
-        <div className={s.listWrap}>
-          {filteredTeams.map((team) => {
-            const likeTargetId = getLikeTargetId(team);
-            const isLiked = team.isSnapshot
-              ? true
-              : likedMap.has(likeTargetId);
+        {filteredTeams.length === 0 ? (
+          <p className={s.empty}>
+            {keyword.trim()
+              ? `"${keyword.trim()}"(으)로 검색된 팀이 없습니다.`
+              : emptyMessage}
+          </p>
+        ) : (
+          <div className={s.listWrap}>
+            {visibleTeams.map((team) => {
+              const likeTargetId = getLikeTargetId(team);
+              const isLiked = team.isSnapshot
+                ? true
+                : likedMap.has(likeTargetId);
 
-            return (
-              <PublicTeamItem
-                key={team.id}
-                team={{
-                  ...team,
-                  likeCount: likeCounts[likeTargetId] ?? team.likeCount,
-                }}
-                liked={isLiked}
-                isOwnTeam={
-                  !team.isSnapshot &&
-                  currentUserDbId != null &&
-                  team.ownerDbId === currentUserDbId
-                }
-                isLoggedIn={currentUserDbId != null}
-                showLikeButton={showLikeButton}
-                onLikeChange={handleLikeChange}
-                onSnapshotRemoved={handleSnapshotRemoved}
-              />
-            );
-          })}
-        </div>
-      )}
+              return (
+                <PublicTeamItem
+                  key={team.id}
+                  team={{
+                    ...team,
+                    likeCount: likeCounts[likeTargetId] ?? team.likeCount,
+                  }}
+                  liked={isLiked}
+                  isOwnTeam={
+                    !team.isSnapshot &&
+                    currentUserDbId != null &&
+                    team.ownerDbId === currentUserDbId
+                  }
+                  isLoggedIn={currentUserDbId != null}
+                  showLikeButton={showLikeButton}
+                  showLikeCount={showLikeCount}
+                  onLikeChange={handleLikeChange}
+                  onSnapshotRemoved={handleSnapshotRemoved}
+                />
+              );
+            })}
+            {hasMore ? (
+              <div ref={sentinelRef} className={s.sentinel} aria-hidden />
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
