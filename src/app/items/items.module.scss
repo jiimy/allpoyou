@@ -64,7 +64,7 @@
   padding: 12px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background: #fff;
+  // background: #fff;
 }
 
 .cardSelectable {
@@ -113,13 +113,13 @@
 
 .meta {
   margin: 0;
-  color: #888;
+  // color: #555;
   font-size: 12px;
 }
 
 .description {
   margin: 0;
-  color: #555;
+  // color: #555;
   font-size: 13px;
   line-height: 1.4;
   display: -webkit-box;
@@ -131,7 +131,7 @@
 .empty {
   grid-column: 1 / -1;
   padding: 40px 0;
-  color: #888;
+  // color: #555;
   text-align: center;
 }
 

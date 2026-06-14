@@ -6,6 +6,7 @@ import FloatingBtn from "@/components/floatingBtn/FloatingBtn";
 import { TeamSessionBootstrap } from "@/components/team/TeamSessionBootstrap";
 import s from './main.module.scss'
 import Footer from "@/components/footer/Footer";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
         </div>
         <Footer />
         <div id="modal" />
+        <Analytics />
       </body>
     </html>
   );

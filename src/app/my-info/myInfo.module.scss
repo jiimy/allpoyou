@@ -14,7 +14,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 24px;
-  background: #fff;
+  // background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
@@ -155,7 +155,7 @@
 .user_id {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color);
 }
 
 .meta {
@@ -184,7 +184,7 @@
 .sectionTitle {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color);
   margin-bottom: 8px;
 }
 
