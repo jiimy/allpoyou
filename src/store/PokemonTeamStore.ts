@@ -52,6 +52,11 @@ type PokemonTeamStoreState = {
   setTeamName: (teamId: number, teamName: string) => void;
   hydrateTeamsFromServer: (teams: SavedTeam[]) => void;
   syncActiveTeamPokemons: (pokemons: (TeamPokemonSlot | null)[]) => void;
+  replaceTeamAtSlot: (
+    teamId: number,
+    teamName: string,
+    pokemons: (TeamPokemonSlot | null)[],
+  ) => void;
   updateActiveSlot: (
     index: number,
     patch: Partial<TeamPokemonSlot>,
@@ -203,6 +208,25 @@ export const usePokemonTeamStore = create<PokemonTeamStoreState>()(
             teams: state.teams.map((team) =>
               team.teamId === state.activeTeamId
                 ? { ...team, pokemons: normalized }
+                : team,
+            ),
+          };
+        }),
+
+      replaceTeamAtSlot: (teamId, teamName, pokemons) =>
+        set((state) => {
+          if (teamId < 1 || teamId > MAX_TEAMS) return state;
+
+          const normalized = Array.from(
+            { length: TEAM_SLOT_COUNT },
+            (_, index) => pokemons[index] ?? null,
+          );
+
+          return {
+            activeTeamId: teamId,
+            teams: state.teams.map((team) =>
+              team.teamId === teamId
+                ? { ...team, teamName, pokemons: normalized }
                 : team,
             ),
           };

@@ -386,6 +386,7 @@ const MakeTeam = () => {
   );
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
+  const [finalEvolutionOnly, setFinalEvolutionOnly] = useState(true);
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => true),
   );
@@ -476,24 +477,52 @@ const MakeTeam = () => {
         >
           <div>
             <h2 style={{ margin: 0 }}>추천 포켓몬</h2>
-            <label
+            <div
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: 6,
-                fontSize: 13,
-                color: '#555',
-                cursor: 'pointer',
-                userSelect: 'none',
+                gap: 16,
+                flexWrap: 'wrap',
+                marginTop: 4,
               }}
             >
-              <input
-                type="checkbox"
-                checked={excludeSameTypes}
-                onChange={(e) => setExcludeSameTypes(e.target.checked)}
-              />
-              선택한 포켓몬과 다른 타입만 보기
-            </label>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 13,
+                  color: '#555',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={excludeSameTypes}
+                  onChange={(e) => setExcludeSameTypes(e.target.checked)}
+                />
+                선택한 포켓몬과 다른 타입만 보기
+              </label>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 13,
+                  color: '#555',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={finalEvolutionOnly}
+                  onChange={(e) => setFinalEvolutionOnly(e.target.checked)}
+                />
+                최종 진화체만 보기
+              </label>
+            </div>
           </div>
         </div>
         {selectedPokemons.every((p) => p === null) && (
@@ -531,6 +560,7 @@ const MakeTeam = () => {
             if (matches.length < minRecTypeCount) return false;
             if (excludeMegaEvolution[idx] && isMegaDisplayName(p.nameKo))
               return false;
+            if (finalEvolutionOnly && p.grade !== 3) return false;
             if (teamTypes) {
               const overlapsTeam = ensureStringArray(p.types).some((t) =>
                 teamTypes.has(t),

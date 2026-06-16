@@ -436,9 +436,9 @@ const Team: React.FC<TeamProps> = ({
                 <PokemonSpriteImage
                   images={selected.images}
                   alt={selected.nameKo}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="!relative !h-auto object-contain max-h-full"
+                  width={150}
+                  height={150}
+                  className="object-contain max-h-full w-full h-full"
                   priority
                 />
               ) : null}

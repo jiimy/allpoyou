@@ -32,6 +32,7 @@ type PublicTeamItemProps = {
     likeCount: number,
   ) => void;
   onSnapshotRemoved?: (likeRowId: string) => void;
+  onTeamSelect?: (team: PublicTeam) => void;
 };
 
 export default function PublicTeamItem({
@@ -43,6 +44,7 @@ export default function PublicTeamItem({
   showLikeCount = false,
   onLikeChange,
   onSnapshotRemoved,
+  onTeamSelect,
 }: PublicTeamItemProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +110,11 @@ export default function PublicTeamItem({
     team.teamName || (team.teamSlot > 0 ? `팀 ${team.teamSlot}` : '저장된 팀');
 
   return (
-    <article className={s.listItem}>
+    <article
+      className={cn(s.listItem, {
+        [s.listItemSelectable]: onTeamSelect != null,
+      })}
+    >
       {(showLikeButton || (!team.isSnapshot && showLikeCount)) ? (
         <div className={s.likeArea}>
           {showLikeButton ? (
@@ -165,7 +171,28 @@ export default function PublicTeamItem({
         </div>
       ) : null}
 
-      <div className={s.teamBody}>
+      <div
+        className={s.teamBody}
+        role={onTeamSelect ? 'button' : undefined}
+        tabIndex={onTeamSelect ? 0 : undefined}
+        onClick={
+          onTeamSelect
+            ? () => {
+                onTeamSelect(team);
+              }
+            : undefined
+        }
+        onKeyDown={
+          onTeamSelect
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onTeamSelect(team);
+                }
+              }
+            : undefined
+        }
+      >
         <header className={s.teamHeader}>
           <h3 className={s.teamName}>{teamTitle}</h3>
           <span className={s.teamOwner}>

@@ -21,6 +21,8 @@ export type Pokemon = {
   images: string[];
   ability: string[];
   s_ability: string[];
+  /** 1=1단, 2=2단, 3=최종 진화 */
+  grade: number;
 };
 
 let cachedList: Pokemon[] | null = null;
@@ -41,11 +43,21 @@ function indexPokemon(list: Pokemon[]) {
   }
 }
 
+function isValidCachedList(list: Pokemon[] | null): list is Pokemon[] {
+  const sample = list?.[0];
+  if (!sample) return false;
+  return (
+    !sample.nameKo.startsWith('[') &&
+    sample.images.some((url) => url.startsWith('http')) &&
+    Number.isFinite(sample.grade)
+  );
+}
+
 /** public/data/pokemon.csv에서 목록을 가져옵니다 (메모리 캐시, 클라이언트 전용). */
 export async function fetchPokemonList(force = false): Promise<Pokemon[]> {
   if (typeof window === 'undefined') return [];
 
-  if (!force && cachedList) return cachedList;
+  if (!force && isValidCachedList(cachedList)) return cachedList;
 
   const res = await fetch('/data/pokemon.csv', { cache: 'force-cache' });
   if (!res.ok) {

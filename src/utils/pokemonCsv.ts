@@ -46,51 +46,43 @@ function parseJsonArrayField(raw: string | undefined): string[] {
   return [];
 }
 
+function fieldAt(fields: string[], headers: string[], name: string): string {
+  const index = headers.indexOf(name);
+  return index >= 0 ? (fields[index] ?? '') : '';
+}
+
 /** public/data/pokemon.csv 본문을 Pokemon[]로 변환 */
 export function parsePokemonCsv(csv: string): Pokemon[] {
-  const lines = csv.split(/\r?\n/).filter(Boolean);
+  const lines = csv.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVLine(lines[0]).map((h) => h.trim());
   const pokemons: Pokemon[] = [];
 
   for (let li = 1; li < lines.length; li++) {
     const f = parseCSVLine(lines[li]);
-    if (f.length < 15) continue;
+    if (f.length < 3) continue;
 
-    const [
-      id,
-      number,
-      name,
-      nameKo,
-      types,
-      H,
-      A,
-      B,
-      C,
-      D,
-      S,
-      total,
-      ,
-      images,
-      ability,
-      s_ability,
-    ] = f;
+    const get = (name: string) => fieldAt(f, headers, name);
 
     pokemons.push(
       normalizePokemon({
-        id: Number(id),
-        number: Number(number),
-        name,
-        nameKo,
-        types: parseJsonArrayField(types),
-        H: Number(H),
-        A: Number(A),
-        B: Number(B),
-        C: Number(C),
-        D: Number(D),
-        S: Number(S),
-        total: Number(total),
-        images: parseJsonArrayField(images),
-        ability: parseJsonArrayField(ability),
-        s_ability: parseJsonArrayField(s_ability),
+        id: Number(get('id')),
+        number: Number(get('number')),
+        name: get('name'),
+        nameKo: get('nameKo'),
+        types: parseJsonArrayField(get('types')),
+        H: Number(get('H')),
+        A: Number(get('A')),
+        B: Number(get('B')),
+        C: Number(get('C')),
+        D: Number(get('D')),
+        S: Number(get('S')),
+        total: Number(get('total')),
+        images: parseJsonArrayField(get('images')),
+        ability: parseJsonArrayField(get('ability')),
+        s_ability: parseJsonArrayField(get('s_ability')),
+        grade: Number(get('grade')),
       }),
     );
   }

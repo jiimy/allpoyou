@@ -70,6 +70,7 @@ const MyInfoPage = async () => {
                     showLikeButton={false}
                     showLikeCount
                     showSearch={false}
+                    enableTeamClone
                     emptyMessage="공개한 팀이 없습니다."
                   />
                 </div>
@@ -90,6 +91,7 @@ const MyInfoPage = async () => {
                   likedTeamIds={likedTeamIds}
                   currentUserDbId={user.id}
                   showSearch={false}
+                  enableTeamClone
                   emptyMessage="좋아요한 팀이 없습니다."
                 />
               </div>

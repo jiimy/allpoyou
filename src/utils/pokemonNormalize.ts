@@ -47,5 +47,6 @@ export function normalizePokemon(row: Record<string, unknown>): Pokemon {
     D: Number(row.D),
     S: Number(row.S),
     total: Number(row.total),
+    grade: Number(row.grade),
   };
 }

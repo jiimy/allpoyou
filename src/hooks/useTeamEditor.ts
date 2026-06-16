@@ -124,6 +124,7 @@ function pokemonFromStoredSlot(slot: TeamPokemonSlot): Pokemon {
     images: [],
     ability: [],
     s_ability: [],
+    grade: 0,
   };
 }
 
@@ -140,6 +141,7 @@ function editorStateFromTeam(
 
     const pokemon =
       allPokemons.find((entry) => entry.id === slot.pokemonId) ??
+      allPokemons.find((entry) => entry.nameKo === slot.nameKo) ??
       pokemonFromStoredSlot(slot);
 
     const abilityName =

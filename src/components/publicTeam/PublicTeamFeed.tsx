@@ -5,6 +5,7 @@ import SearchBar from '@/components/searchBar/SearchBar';
 import { teamMatchesPokemonQuery } from '@/utils/publicTeamDisplay';
 import type { PublicTeam } from '@/app/public-teams/actions';
 import PublicTeamItem from './PublicTeamItem';
+import CloneTeamModal from './CloneTeamModal';
 import s from './publicTeam.module.scss';
 
 const PAGE_SIZE = 8;
@@ -17,6 +18,7 @@ type PublicTeamFeedProps = {
   showLikeButton?: boolean;
   showLikeCount?: boolean;
   showSearch?: boolean;
+  enableTeamClone?: boolean;
 };
 
 function getLikeTargetId(team: PublicTeam): string {
@@ -31,9 +33,11 @@ export default function PublicTeamFeed({
   showLikeButton = true,
   showLikeCount = false,
   showSearch = true,
+  enableTeamClone = false,
 }: PublicTeamFeedProps) {
   const [keyword, setKeyword] = useState('');
   const [teams, setTeams] = useState(initialTeams);
+  const [cloneTarget, setCloneTarget] = useState<PublicTeam | null>(null);
   const [likedMap, setLikedMap] = useState(() => new Set(likedTeamIds));
   const [likeCounts, setLikeCounts] = useState(() =>
     Object.fromEntries(
@@ -143,6 +147,9 @@ export default function PublicTeamFeed({
                   showLikeCount={showLikeCount}
                   onLikeChange={handleLikeChange}
                   onSnapshotRemoved={handleSnapshotRemoved}
+                  onTeamSelect={
+                    enableTeamClone ? (selectedTeam) => setCloneTarget(selectedTeam) : undefined
+                  }
                 />
               );
             })}
@@ -152,6 +159,9 @@ export default function PublicTeamFeed({
           </div>
         )}
       </div>
+      {cloneTarget ? (
+        <CloneTeamModal team={cloneTarget} onClose={() => setCloneTarget(null)} />
+      ) : null}
     </div>
   );
 }
