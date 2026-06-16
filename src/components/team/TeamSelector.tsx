@@ -13,6 +13,7 @@ type TeamSelectorProps = {
   onSwitchTeam: (teamId: number) => void;
   onPublishTeam?: (teamId: number) => void | Promise<void>;
   saveStatus?: TeamSaveStatus;
+  // saveCountdownSec?: number | null;
   publishError?: string | null;
   isLoggedIn?: boolean;
   publishedPokemonDataList?: unknown[];
@@ -21,12 +22,14 @@ type TeamSelectorProps = {
 const SAVE_STATUS_LABEL = {
   saving: '저장 중…',
   error: '저장 실패',
+  saved: '저장 완료',
 } as const satisfies Partial<Record<TeamSaveStatus, string>>;
 
 export default function TeamSelector({
   onSwitchTeam,
   onPublishTeam,
   saveStatus = 'idle',
+  // saveCountdownSec = null,
   publishError = null,
   isLoggedIn = false,
   publishedPokemonDataList = [],
@@ -43,6 +46,16 @@ export default function TeamSelector({
   const publishable = isTeamPublishable(activeTeam, publishedPokemonDataList);
   const [publishPending, setPublishPending] = useState(false);
   const showPublishButton = isLoggedIn;
+  // const showCountdown =
+  //   saveCountdownSec != null &&
+  //   saveCountdownSec > 0 &&
+  //   saveStatus !== 'saving' &&
+  //   saveStatus !== 'saved';
+  const showSaveIndicator =
+    saveStatus === 'saving' ||
+    saveStatus === 'saved' ||
+    saveStatus === 'error';
+    // || showCountdown;
 
   const handlePublishClick = async () => {
     if (!onPublishTeam || publishPending || !publishable) return;
@@ -84,7 +97,7 @@ export default function TeamSelector({
           maxLength={40}
         />
       </label>
-      {isLoggedIn && (showPublishButton || saveStatus === 'saving' || saveStatus === 'error') ? (
+      {isLoggedIn && (showPublishButton || showSaveIndicator) ? (
         <div className={s.teamMetaActions}>
           {showPublishButton ? (
             <button
@@ -103,7 +116,14 @@ export default function TeamSelector({
               {publishPending ? '공개 중…' : '공개'}
             </button>
           ) : null}
-          {saveStatus === 'saving' || saveStatus === 'error' ? (
+          {/* {showCountdown ? (
+            <span className={s.teamSaveStatus} aria-live="polite">
+              자동저장 남은 시간 {saveCountdownSec}초..
+            </span>
+          ) : null} */}
+          {saveStatus === 'saving' ||
+          saveStatus === 'error' ||
+          saveStatus === 'saved' ? (
             <span className={saveStatusClass(saveStatus)} aria-live="polite">
               {SAVE_STATUS_LABEL[saveStatus]}
             </span>
@@ -120,7 +140,10 @@ export default function TeamSelector({
   );
 }
 
-function saveStatusClass(status: 'saving' | 'error'): string {
+function saveStatusClass(
+  status: 'saving' | 'error' | 'saved',
+): string {
   if (status === 'error') return `${s.teamSaveStatus} ${s.teamSaveStatusError}`;
+  if (status === 'saved') return `${s.teamSaveStatus} ${s.teamSaveStatusSaved}`;
   return s.teamSaveStatus;
 }

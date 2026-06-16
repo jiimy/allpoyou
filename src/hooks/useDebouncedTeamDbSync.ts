@@ -20,7 +20,7 @@ import {
 import { readGuestTeamsFromLocalStorage } from '@/utils/guestTeamStorage';
 import { isTeamPublishable } from '@/utils/teamShare';
 
-const DEFAULT_DEBOUNCE_MS = 5000;
+const DEFAULT_DEBOUNCE_MS = 4000;
 
 export type TeamSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -48,6 +48,52 @@ export function useDebouncedTeamDbSync({
   const saveInFlightRef = useRef(false);
   const pendingTeamIdRef = useRef<number | null>(null);
   const guestTeamsRef = useRef<SavedTeam[] | null>(null);
+  // const saveDeadlineRef = useRef<number | null>(null);
+  // const countdownTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // const [saveCountdownSec, setSaveCountdownSec] = useState<number | null>(null);
+
+  // const clearSaveCountdown = useCallback(() => {
+  //   if (countdownTickRef.current) {
+  //     clearInterval(countdownTickRef.current);
+  //     countdownTickRef.current = null;
+  //   }
+  //   saveDeadlineRef.current = null;
+  //   setSaveCountdownSec(null);
+  // }, []);
+
+  // const startSaveCountdown = useCallback(() => {
+  //   clearSaveCountdown();
+  //   saveDeadlineRef.current = Date.now() + debounceMs;
+  //
+  //   const tick = () => {
+  //     const deadline = saveDeadlineRef.current;
+  //     if (deadline == null) return;
+  //
+  //     const remainingMs = deadline - Date.now();
+  //     if (remainingMs <= 0) {
+  //       setSaveCountdownSec(0);
+  //       return;
+  //     }
+  //
+  //     setSaveCountdownSec(Math.ceil(remainingMs / 1000));
+  //   };
+  //
+  //   tick();
+  //   countdownTickRef.current = setInterval(tick, 100);
+  // }, [clearSaveCountdown, debounceMs]);
+
+  const showSavedFlash = useCallback(() => {
+    if (savedFlashTimerRef.current) {
+      clearTimeout(savedFlashTimerRef.current);
+    }
+
+    setSaveStatus('saved');
+    savedFlashTimerRef.current = setTimeout(() => {
+      savedFlashTimerRef.current = null;
+      setSaveStatus('idle');
+    }, 300);
+  }, []);
 
   const applyDbTeamsToStore = useCallback(
     (result: Awaited<ReturnType<typeof loadUserTeamsFromDb>>) => {
@@ -116,6 +162,7 @@ export function useDebouncedTeamDbSync({
         }
 
         setSaveStatus('saving');
+        // clearSaveCountdown();
 
         const result = await saveTeamToDb(team);
 
@@ -124,7 +171,7 @@ export function useDebouncedTeamDbSync({
           break;
         }
 
-        setSaveStatus('saved');
+        showSavedFlash();
 
         if (
           pendingTeamIdRef.current != null &&
@@ -139,7 +186,7 @@ export function useDebouncedTeamDbSync({
 
       saveInFlightRef.current = false;
     },
-    [loggedInUserId],
+    [loggedInUserId, showSavedFlash],
   );
 
   const scheduleSave = useCallback(
@@ -159,9 +206,12 @@ export function useDebouncedTeamDbSync({
       }
 
       if (immediate) {
+        // clearSaveCountdown();
         void flushSave(teamId);
         return;
       }
+
+      // startSaveCountdown();
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
@@ -189,10 +239,10 @@ export function useDebouncedTeamDbSync({
     usePokemonTeamStore.getState().hydrateTeamsFromServer(guestTeams);
     guestTeamsRef.current = null;
     setLinkPromptOpen(false);
-    setSaveStatus('saved');
+    showSavedFlash();
     finishLoggedInBootstrap();
     setLinkResolving(false);
-  }, [finishLoggedInBootstrap]);
+  }, [finishLoggedInBootstrap, showSavedFlash]);
 
   const declineLinkLocalTeams = useCallback(async () => {
     setLinkResolving(true);
@@ -316,6 +366,11 @@ export function useDebouncedTeamDbSync({
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      // clearSaveCountdown();
+      if (savedFlashTimerRef.current) {
+        clearTimeout(savedFlashTimerRef.current);
+        savedFlashTimerRef.current = null;
+      }
     };
   }, [loggedInUserId, teamsSourceReady, scheduleSave]);
 
@@ -332,12 +387,13 @@ export function useDebouncedTeamDbSync({
     }
 
     setPublishedPokemonDataList((prev) => [...prev, team.pokemons]);
-    setSaveStatus('saved');
-  }, [publishedPokemonDataList]);
+    showSavedFlash();
+  }, [publishedPokemonDataList, showSavedFlash]);
 
   return {
     teamsSourceReady,
     saveStatus,
+    // saveCountdownSec,
     publishTeamPublic,
     publishedPokemonDataList,
     isLoggedIn: authReady && loggedInUserId != null,

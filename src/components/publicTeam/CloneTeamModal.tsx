@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import cn from 'classnames';
 import ModalFrame from '@/components/portalModal/ModalFrame';
-import { loadUserTeamsFromDb, saveTeamToDb } from '@/app/make-team/actions';
+import { saveTeamToDb } from '@/app/make-team/actions';
 import type { PublicTeam } from '@/app/public-teams/actions';
 import {
-  createDefaultTeams,
   MAX_TEAMS,
   usePokemonTeamStore,
   type SavedTeam,
@@ -32,18 +31,11 @@ type CloneTeamModalProps = {
 };
 
 export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
+  const teams = usePokemonTeamStore((state) => state.teams);
   const replaceTeamAtSlot = usePokemonTeamStore((state) => state.replaceTeamAtSlot);
-  const hydrateTeamsFromServer = usePokemonTeamStore(
-    (state) => state.hydrateTeamsFromServer,
-  );
 
-  const [userTeams, setUserTeams] = useState<SavedTeam[]>(() =>
-    usePokemonTeamStore.getState().teams,
-  );
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successSlot, setSuccessSlot] = useState<number | null>(null);
-  const [loadingTeams, setLoadingTeams] = useState(true);
   const [pendingSlot, setPendingSlot] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -56,47 +48,6 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
     const next = typeof value === 'function' ? value(true) : value;
     if (!next) onClose();
   };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    loadUserTeamsFromDb()
-      .then((result) => {
-        if (cancelled) return;
-
-        if (!result) {
-          setUserTeams(usePokemonTeamStore.getState().teams);
-          return;
-        }
-
-        if ('error' in result) {
-          setLoadError(result.error);
-          setUserTeams(usePokemonTeamStore.getState().teams);
-          return;
-        }
-
-        const teams =
-          result.hasDbRows || result.teams.some(hasTeamPokemonData)
-            ? result.teams
-            : createDefaultTeams();
-
-        hydrateTeamsFromServer(teams);
-        setUserTeams(teams);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setLoadError('팀 슬롯 정보를 불러오지 못했습니다.');
-          setUserTeams(usePokemonTeamStore.getState().teams);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTeams(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrateTeamsFromServer]);
 
   const handleCloneToSlot = useCallback(
     (teamId: number) => {
@@ -120,9 +71,6 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
           return;
         }
 
-        setUserTeams((prev) =>
-          prev.map((entry) => (entry.teamId === teamId ? nextTeam : entry)),
-        );
         setSuccessSlot(teamId);
         setPendingSlot(null);
       });
@@ -159,13 +107,10 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
 
         <p className={s.sectionLabel}>복제할 슬롯 선택</p>
 
-        {loadingTeams ? (
-          <p className={s.loading}>슬롯 정보 불러오는 중…</p>
-        ) : (
-          <div className={s.slotGrid}>
-            {Array.from({ length: MAX_TEAMS }, (_, index) => {
-              const teamId = index + 1;
-              const slotTeam = userTeams.find((entry) => entry.teamId === teamId);
+        <div className={s.slotGrid}>
+          {Array.from({ length: MAX_TEAMS }, (_, index) => {
+            const teamId = index + 1;
+            const slotTeam = teams.find((entry) => entry.teamId === teamId);
               const slotLabel = slotTeam?.teamName?.trim() || '비어 있음';
               const pokemonCount = countFilledPokemon(slotTeam);
               const hasData = hasTeamPokemonData(
@@ -202,14 +147,7 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
                 </button>
               );
             })}
-          </div>
-        )}
-
-        {loadError ? (
-          <p className={cn(s.message, s.error)} role="alert">
-            {loadError}
-          </p>
-        ) : null}
+        </div>
 
         {actionError ? (
           <p className={cn(s.message, s.error)} role="alert">

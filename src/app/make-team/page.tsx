@@ -347,6 +347,7 @@ const MakeTeam = () => {
   const {
     teamsSourceReady,
     saveStatus,
+    // saveCountdownSec,
     publishTeamPublic,
     publishedPokemonDataList,
     isLoggedIn,
@@ -461,6 +462,7 @@ const MakeTeam = () => {
         onSwitchTeam={switchActiveTeam}
         onPublishTeam={handlePublishTeam}
         saveStatus={saveStatus}
+        // saveCountdownSec={saveCountdownSec}
         publishError={publishError}
         isLoggedIn={isLoggedIn}
         publishedPokemonDataList={publishedPokemonDataList}
