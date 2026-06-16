@@ -19,3 +19,8 @@ export const TYPE_COLOR: Record<string, string> = {
   악: '#705746',
   페어리: '#D685AD',
 };
+
+/** 한글 타입명 전체 목록 (가나다순) */
+export const ALL_POKEMON_TYPES_KO = Object.keys(TYPE_COLOR).sort((a, b) =>
+  a.localeCompare(b, 'ko'),
+);

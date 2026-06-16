@@ -48,13 +48,21 @@ import { getItemNameKoById, searchHeldItems } from '@/utils/itemSearch';
 import { isValidNature, searchNatures, type NatureEntry } from '@/utils/natureList';
 import { getMovesByIds, searchLearnableMoves } from '@/utils/movesDb';
 import { MOVES_BY_ID, getMoveById } from '@/utils/movesIndex';
-import { normalizePokemon } from '@/utils/pokemonNormalize';
+import { normalizePokemon, ensureStringArray } from '@/utils/pokemonNormalize';
 import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
 
 export const MOVE_SLOT_COUNT = 4;
 
 export type ActiveMoveSlot = { pokemon: number; move: number } | null;
+
+export type TypePickerSource = 'team' | 'recommendation';
+
+export type ActiveTypeSlot = {
+  source: TypePickerSource;
+  pokemon: number;
+  typeIndex: number;
+} | null;
 
 /** 노력치 조절 동작: +1 / -1 / 최대로 / 0으로 */
 export type EvAdjustAction = 'inc' | 'dec' | 'max' | 'min';
@@ -149,7 +157,13 @@ function editorStateFromTeam(
     const itemName = getItemNameKoById(slot.itemId);
 
     state.values[index] = pokemon.nameKo;
-    state.selectedPokemons[index] = pokemon;
+    state.selectedPokemons[index] = {
+      ...pokemon,
+      types:
+        ensureStringArray(slot.types).length > 0
+          ? ensureStringArray(slot.types)
+          : ensureStringArray(pokemon.types),
+    };
     state.selectedAbilities[index] = abilityName;
     state.abilitySummaries[index] = getAbilitySummary(abilityName);
     state.selectedItemIds[index] = slot.itemId ?? null;
@@ -249,6 +263,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     Array.from({ length: TEAM_SLOT_COUNT }, () => createEmptyEvs()),
   );
   const [activeMoveSlot, setActiveMoveSlot] = useState<ActiveMoveSlot>(null);
+  const [activeTypeSlot, setActiveTypeSlot] = useState<ActiveTypeSlot>(null);
   const [moveHighlightedIndex, setMoveHighlightedIndex] = useState(0);
   const [pokemonMovesCache, setPokemonMovesCache] = useState<
     Record<number, MoveDbEntry[]>
@@ -553,7 +568,51 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     setActiveMoveSlot((current) =>
       current?.pokemon === index ? null : current,
     );
+    setActiveTypeSlot((current) =>
+      current?.pokemon === index ? null : current,
+    );
   }, []);
+
+  const handleTypeSlotActivate = useCallback(
+    (
+      pokemonIndex: number,
+      typeIndex: number,
+      source: TypePickerSource,
+    ) => {
+      setActiveIndex(null);
+      setActiveItemIndex(null);
+      setActiveNatureIndex(null);
+      setActiveMoveSlot(null);
+      setActiveTypeSlot((current) =>
+        current?.source === source &&
+        current?.pokemon === pokemonIndex &&
+        current?.typeIndex === typeIndex
+          ? null
+          : { source, pokemon: pokemonIndex, typeIndex },
+      );
+    },
+    [],
+  );
+
+  const handleSelectType = useCallback(
+    (pokemonIndex: number, typeIndex: number, newType: string) => {
+      setSelectedPokemons((prev) => {
+        const pokemon = prev[pokemonIndex];
+        if (!pokemon) return prev;
+
+        const types = [...ensureStringArray(pokemon.types)];
+        if (typeIndex >= types.length) return prev;
+        if (types[typeIndex] === newType) return prev;
+
+        types[typeIndex] = newType;
+        const next = [...prev];
+        next[pokemonIndex] = { ...pokemon, types };
+        return next;
+      });
+      setActiveTypeSlot(null);
+    },
+    [],
+  );
 
   const handleSelectAbility = useCallback(
     (index: number, abilityName: string) => {
@@ -629,6 +688,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     (index: number) => {
       if (applyPendingItemToSlot(index)) return;
       setActiveIndex(null);
+      setActiveTypeSlot(null);
       setActiveItemIndex(index);
       setItemHighlightedIndex(0);
     },
@@ -637,6 +697,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
 
   const handleItemSearchChange = useCallback((index: number, value: string) => {
     setActiveIndex(null);
+    setActiveTypeSlot(null);
     setActiveItemIndex(index);
     setItemHighlightedIndex(0);
     setItemSearchValues((prev) => {
@@ -695,6 +756,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       if (applyPendingNatureToSlot(index)) return;
       setActiveIndex(null);
       setActiveItemIndex(null);
+      setActiveTypeSlot(null);
       setActiveNatureIndex(index);
       setNatureHighlightedIndex(0);
     },
@@ -705,6 +767,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     (index: number, value: string) => {
       setActiveIndex(null);
       setActiveItemIndex(null);
+      setActiveTypeSlot(null);
       setActiveNatureIndex(index);
       setNatureHighlightedIndex(0);
       setNatureSearchValues((prev) => {
@@ -829,6 +892,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       if (applyPendingMoveToSlot(pokemonIndex, moveIndex)) return;
       setActiveIndex(null);
       setActiveItemIndex(null);
+      setActiveTypeSlot(null);
       setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
       setMoveHighlightedIndex(0);
     },
@@ -839,6 +903,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     (pokemonIndex: number, moveIndex: number, value: string) => {
       setActiveIndex(null);
       setActiveItemIndex(null);
+      setActiveTypeSlot(null);
       setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
       setMoveHighlightedIndex(0);
       setMoveSearchValues((prev) => {
@@ -972,6 +1037,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       return next;
     });
     setActiveIndex(null);
+    setActiveTypeSlot(null);
   }, []);
 
   const applyPendingPokemonToSlot = useCallback(
@@ -1017,6 +1083,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveItemIndex(null);
       setActiveNatureIndex(null);
       setActiveMoveSlot(null);
+      setActiveTypeSlot(null);
     },
     [
       activeTeamId,
@@ -1231,6 +1298,10 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onMoveKeyDown: handleMoveKeyDown,
     selectedEvs,
     onAdjustEv: handleAdjustEv,
+    activeTypeSlot,
+    onTypeSlotActivate: handleTypeSlotActivate,
+    onSelectType: handleSelectType,
+    onActiveTypeSlotChange: setActiveTypeSlot,
   };
 
   return {

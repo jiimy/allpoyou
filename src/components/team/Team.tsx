@@ -20,10 +20,16 @@ import {
 } from '@/store/PokemonTeamStore';
 import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
-import type { ActiveMoveSlot, EvAdjustAction } from '@/hooks/useTeamEditor';
+import type {
+  ActiveMoveSlot,
+  ActiveTypeSlot,
+  EvAdjustAction,
+  TypePickerSource,
+} from '@/hooks/useTeamEditor';
 import { getMoveTypeKo } from '@/utils/moveDisplay';
 import { getMoveById } from '@/utils/movesIndex';
 import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
+import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
 import s from '@/app/make-team/maekTeam.module.scss';
 
 const MOVE_SLOT_PLACEHOLDERS = ['기술1', '기술2', '기술3', '기술4'] as const;
@@ -199,6 +205,14 @@ export type TeamProps = {
     statKey: EvStatKey,
     action: EvAdjustAction,
   ) => void;
+  activeTypeSlot: ActiveTypeSlot;
+  onTypeSlotActivate: (
+    pokemonIndex: number,
+    typeIndex: number,
+    source: TypePickerSource,
+  ) => void;
+  onSelectType: (pokemonIndex: number, typeIndex: number, newType: string) => void;
+  onActiveTypeSlotChange: (slot: ActiveTypeSlot) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -264,6 +278,10 @@ const Team: React.FC<TeamProps> = ({
   onMoveKeyDown,
   selectedEvs,
   onAdjustEv,
+  activeTypeSlot,
+  onTypeSlotActivate,
+  onSelectType,
+  onActiveTypeSlotChange,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -271,6 +289,7 @@ const Team: React.FC<TeamProps> = ({
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
+  const typePickerWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const natureInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const moveInputWrapRefs = useRef<(HTMLDivElement | null)[][]>([]);
@@ -313,10 +332,12 @@ const Team: React.FC<TeamProps> = ({
     onActiveItemIndexChange(null);
     onActiveNatureIndexChange(null);
     onActiveMoveSlotChange(null);
+    onActiveTypeSlotChange(null);
   }, [
     onActiveItemIndexChange,
     onActiveNatureIndexChange,
     onActiveMoveSlotChange,
+    onActiveTypeSlotChange,
   ]);
 
   useOutOfClick(wrapperRef, handleOutsideClick);
@@ -343,8 +364,14 @@ const Team: React.FC<TeamProps> = ({
       return;
     }
 
+    if (activeTypeSlot?.source === 'team') {
+      activeFieldDropdownRef.current =
+        typePickerWrapRefs.current[activeTypeSlot.pokemon] ?? null;
+      return;
+    }
+
     activeFieldDropdownRef.current = null;
-  }, [activeItemIndex, activeNatureIndex, activeMoveSlot]);
+  }, [activeItemIndex, activeNatureIndex, activeMoveSlot, activeTypeSlot]);
 
   useEffect(() => {
     itemRefs.current = [];
@@ -449,17 +476,23 @@ const Team: React.FC<TeamProps> = ({
               ) : null}
             </div>
             <span className={s.types}>
-              <div className={s.typesList}>
-                {ensureStringArray(selected?.types).map((t) => (
-                  <span
-                    key={t}
-                    style={{
-                      background: TYPE_COLOR[t] ?? '#999',
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
+              <div
+                ref={(el) => {
+                  typePickerWrapRefs.current[index] = el;
+                }}
+              >
+                {selected ? (
+                  <PokemonTypePicker
+                    source="team"
+                    pokemonIndex={index}
+                    types={ensureStringArray(selected.types)}
+                    activeTypeSlot={activeTypeSlot}
+                    isClient={isClient}
+                    onTypeSlotActivate={onTypeSlotActivate}
+                    onSelectType={onSelectType}
+                    onActiveTypeSlotChange={onActiveTypeSlotChange}
+                  />
+                ) : null}
               </div>
               <div>{selected ? getHighestStatLabel(selected) : null}</div>
             </span>
@@ -473,6 +506,9 @@ const Team: React.FC<TeamProps> = ({
                   onChange={(e) => onChange(index, e.target.value)}
                   onFocus={() => {
                     onActiveItemIndexChange(null);
+                    onActiveNatureIndexChange(null);
+                    onActiveMoveSlotChange(null);
+                    onActiveTypeSlotChange(null);
                     onActiveIndexChange(index);
                     onHighlightedIndexChange(0);
                   }}

@@ -17,6 +17,7 @@ import { hasPokemonImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
 import { isMegaDisplayName } from '@/utils/pokemonName';
 import Team from '@/components/team/Team';
+import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
 import { TeamLinkPrompt } from '@/components/team/TeamLinkPrompt';
 import TeamSelector from '@/components/team/TeamSelector';
 import { useDebouncedTeamDbSync } from '@/hooks/useDebouncedTeamDbSync';
@@ -594,23 +595,16 @@ const MakeTeam = () => {
               >
                 ( {`${idx + 2}`} 번째 포켓몬 선택)
                 <strong>{pokemon.nameKo}</strong>
-                <span style={{ display: 'inline-flex', gap: 4 }}>
-                  {ensureStringArray(pokemon.types).map((t) => (
-                    <span
-                      key={t}
-                      style={{
-                        background: TYPE_COLOR[t] ?? '#999',
-                        color: '#fff',
-                        padding: '2px 10px',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </span>
+                <PokemonTypePicker
+                  source="recommendation"
+                  pokemonIndex={idx}
+                  types={ensureStringArray(pokemon.types)}
+                  activeTypeSlot={teamProps.activeTypeSlot}
+                  isClient={teamProps.isClient}
+                  onTypeSlotActivate={teamProps.onTypeSlotActivate}
+                  onSelectType={teamProps.onSelectType}
+                  onActiveTypeSlotChange={teamProps.onActiveTypeSlotChange}
+                />
                 <span style={{ color: '#888' }}>→</span>
                 <span
                   style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}
