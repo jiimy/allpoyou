@@ -357,6 +357,44 @@
   opacity: 0.35;
 }
 
+.typePickerActionRow {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid #eee;
+}
+
+.typePickerActionBtn {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #444;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 2px;
+  cursor: pointer;
+  line-height: 1.3;
+
+  &:hover:not(:disabled) {
+    background: #f0f7ff;
+    border-color: #bcd;
+  }
+}
+
+.typePickerActionBtnDisabled,
+.typePickerActionBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.typeBadgeAddMode {
+  outline: 2px dashed #6390f0;
+  outline-offset: 2px;
+}
+
 .abilitySection {
   display: flex;
   flex-direction: column;

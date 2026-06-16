@@ -62,7 +62,38 @@ export type ActiveTypeSlot = {
   source: TypePickerSource;
   pokemon: number;
   typeIndex: number;
+  mode?: 'add';
 } | null;
+
+function typesEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((type, index) => type === b[index]);
+}
+
+function computeOriginalTypesFromTeam(
+  team: SavedTeam | undefined,
+  allPokemons: Pokemon[],
+): (string[] | null)[] {
+  const result = Array.from(
+    { length: TEAM_SLOT_COUNT },
+    () => null,
+  ) as (string[] | null)[];
+
+  if (!team) return result;
+
+  team.pokemons.forEach((slot, index) => {
+    if (!slot?.pokemonId) return;
+
+    const pokemon =
+      allPokemons.find((entry) => entry.id === slot.pokemonId) ??
+      allPokemons.find((entry) => entry.nameKo === slot.nameKo) ??
+      pokemonFromStoredSlot(slot);
+
+    result[index] = [...ensureStringArray(pokemon.types)];
+  });
+
+  return result;
+}
 
 /** 노력치 조절 동작: +1 / -1 / 최대로 / 0으로 */
 export type EvAdjustAction = 'inc' | 'dec' | 'max' | 'min';
@@ -264,6 +295,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   );
   const [activeMoveSlot, setActiveMoveSlot] = useState<ActiveMoveSlot>(null);
   const [activeTypeSlot, setActiveTypeSlot] = useState<ActiveTypeSlot>(null);
+  const [originalTypesBySlot, setOriginalTypesBySlot] = useState<
+    (string[] | null)[]
+  >(() => Array.from({ length: TEAM_SLOT_COUNT }, () => null));
   const [moveHighlightedIndex, setMoveHighlightedIndex] = useState(0);
   const [pokemonMovesCache, setPokemonMovesCache] = useState<
     Record<number, MoveDbEntry[]>
@@ -320,6 +354,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
         editorStateFromTeam(team, allPokemons),
         editorSetters,
       );
+      setOriginalTypesBySlot(computeOriginalTypesFromTeam(team, allPokemons));
     },
     [allPokemons, editorSetters],
   );
@@ -511,6 +546,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = null;
       return next;
     });
+    setOriginalTypesBySlot((prev) => {
+      if (!prev[index]) return prev;
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
     setSelectedAbilities((prev) => {
       if (!prev[index]) return prev;
       const next = [...prev];
@@ -583,13 +624,17 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveItemIndex(null);
       setActiveNatureIndex(null);
       setActiveMoveSlot(null);
-      setActiveTypeSlot((current) =>
-        current?.source === source &&
-        current?.pokemon === pokemonIndex &&
-        current?.typeIndex === typeIndex
+      setActiveTypeSlot((current) => {
+        const isSameSlot =
+          current?.source === source &&
+          current?.pokemon === pokemonIndex &&
+          (current.mode === 'add'
+            ? typeIndex === 0
+            : current.typeIndex === typeIndex);
+        return isSameSlot
           ? null
-          : { source, pokemon: pokemonIndex, typeIndex },
-      );
+          : { source, pokemon: pokemonIndex, typeIndex };
+      });
     },
     [],
   );
@@ -612,6 +657,74 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveTypeSlot(null);
     },
     [],
+  );
+
+  const handleRemoveType = useCallback(
+    (pokemonIndex: number, typeIndex: number) => {
+      setSelectedPokemons((prev) => {
+        const pokemon = prev[pokemonIndex];
+        if (!pokemon) return prev;
+
+        const types = ensureStringArray(pokemon.types);
+        if (types.length !== 2 || typeIndex >= types.length) return prev;
+
+        const nextTypes = types.filter((_, index) => index !== typeIndex);
+        const next = [...prev];
+        next[pokemonIndex] = { ...pokemon, types: nextTypes };
+        return next;
+      });
+      setActiveTypeSlot(null);
+    },
+    [],
+  );
+
+  const handleStartAddType = useCallback(
+    (pokemonIndex: number, source: TypePickerSource) => {
+      setActiveTypeSlot({
+        source,
+        pokemon: pokemonIndex,
+        typeIndex: 1,
+        mode: 'add',
+      });
+    },
+    [],
+  );
+
+  const handleAddType = useCallback(
+    (pokemonIndex: number, newType: string) => {
+      setSelectedPokemons((prev) => {
+        const pokemon = prev[pokemonIndex];
+        if (!pokemon) return prev;
+
+        const types = ensureStringArray(pokemon.types);
+        if (types.length !== 1 || types.includes(newType)) return prev;
+
+        const next = [...prev];
+        next[pokemonIndex] = { ...pokemon, types: [...types, newType] };
+        return next;
+      });
+      setActiveTypeSlot(null);
+    },
+    [],
+  );
+
+  const handleCancelTypes = useCallback(
+    (pokemonIndex: number) => {
+      const original = originalTypesBySlot[pokemonIndex];
+      if (!original) return;
+
+      setSelectedPokemons((prev) => {
+        const pokemon = prev[pokemonIndex];
+        if (!pokemon) return prev;
+        if (typesEqual(ensureStringArray(pokemon.types), original)) return prev;
+
+        const next = [...prev];
+        next[pokemonIndex] = { ...pokemon, types: [...original] };
+        return next;
+      });
+      setActiveTypeSlot(null);
+    },
+    [originalTypesBySlot],
   );
 
   const handleSelectAbility = useCallback(
@@ -991,6 +1104,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = pokemon;
       return next;
     });
+    setOriginalTypesBySlot((prev) => {
+      const next = [...prev];
+      next[index] = [...ensureStringArray(pokemon.types)];
+      return next;
+    });
     setSelectedAbilities((prev) => {
       const next = [...prev];
       next[index] = defaultAbility;
@@ -1111,6 +1229,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = null;
       return next;
     });
+    setOriginalTypesBySlot((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
     setSelectedAbilities((prev) => {
       const next = [...prev];
       next[index] = null;
@@ -1159,6 +1282,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     setActiveIndex((current) => (current === index ? null : current));
     setActiveNatureIndex((current) => (current === index ? null : current));
     setActiveMoveSlot((current) =>
+      current?.pokemon === index ? null : current,
+    );
+    setActiveTypeSlot((current) =>
       current?.pokemon === index ? null : current,
     );
   }, []);
@@ -1299,8 +1425,13 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     selectedEvs,
     onAdjustEv: handleAdjustEv,
     activeTypeSlot,
+    originalTypesBySlot,
     onTypeSlotActivate: handleTypeSlotActivate,
     onSelectType: handleSelectType,
+    onRemoveType: handleRemoveType,
+    onStartAddType: handleStartAddType,
+    onAddType: handleAddType,
+    onCancelTypes: handleCancelTypes,
     onActiveTypeSlotChange: setActiveTypeSlot,
   };
 

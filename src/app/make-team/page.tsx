@@ -599,10 +599,15 @@ const MakeTeam = () => {
                   source="recommendation"
                   pokemonIndex={idx}
                   types={ensureStringArray(pokemon.types)}
+                  originalTypes={teamProps.originalTypesBySlot[idx]}
                   activeTypeSlot={teamProps.activeTypeSlot}
                   isClient={teamProps.isClient}
                   onTypeSlotActivate={teamProps.onTypeSlotActivate}
                   onSelectType={teamProps.onSelectType}
+                  onRemoveType={teamProps.onRemoveType}
+                  onStartAddType={teamProps.onStartAddType}
+                  onAddType={teamProps.onAddType}
+                  onCancelTypes={teamProps.onCancelTypes}
                   onActiveTypeSlotChange={teamProps.onActiveTypeSlotChange}
                 />
                 <span style={{ color: '#888' }}>→</span>

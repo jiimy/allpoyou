@@ -212,6 +212,11 @@ export type TeamProps = {
     source: TypePickerSource,
   ) => void;
   onSelectType: (pokemonIndex: number, typeIndex: number, newType: string) => void;
+  originalTypesBySlot: (string[] | null)[];
+  onRemoveType: (pokemonIndex: number, typeIndex: number) => void;
+  onStartAddType: (pokemonIndex: number, source: TypePickerSource) => void;
+  onAddType: (pokemonIndex: number, newType: string) => void;
+  onCancelTypes: (pokemonIndex: number) => void;
   onActiveTypeSlotChange: (slot: ActiveTypeSlot) => void;
 };
 
@@ -281,6 +286,11 @@ const Team: React.FC<TeamProps> = ({
   activeTypeSlot,
   onTypeSlotActivate,
   onSelectType,
+  originalTypesBySlot,
+  onRemoveType,
+  onStartAddType,
+  onAddType,
+  onCancelTypes,
   onActiveTypeSlotChange,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
@@ -486,10 +496,15 @@ const Team: React.FC<TeamProps> = ({
                     source="team"
                     pokemonIndex={index}
                     types={ensureStringArray(selected.types)}
+                    originalTypes={originalTypesBySlot[index]}
                     activeTypeSlot={activeTypeSlot}
                     isClient={isClient}
                     onTypeSlotActivate={onTypeSlotActivate}
                     onSelectType={onSelectType}
+                    onRemoveType={onRemoveType}
+                    onStartAddType={onStartAddType}
+                    onAddType={onAddType}
+                    onCancelTypes={onCancelTypes}
                     onActiveTypeSlotChange={onActiveTypeSlotChange}
                   />
                 ) : null}
