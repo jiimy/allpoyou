@@ -98,7 +98,7 @@ function TypePickerDropdown({
             onRemoveType(pokemonIndex, typeIndex);
           }}
         >
-          없음
+          제거
         </button>
         <button
           type="button"
@@ -126,7 +126,7 @@ function TypePickerDropdown({
             onCancelTypes(pokemonIndex);
           }}
         >
-          취소
+          리셋
         </button>
       </li>
     </ul>

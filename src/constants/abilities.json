@@ -1068,40 +1068,40 @@
     "summary": "버드렉스의 긴장감과 레이스포스의 흑의울음 두 가지 특성을 겸비한다."
   },
   "268": {
-    "nameKo": "Lingering Aroma",
-    "summary": "Contact with the Pokémon changes the attacker's Ability to Lingering Aroma."
+    "nameKo": "가시지않는향기",
+    "summary": "이 특성을 가진 포켓몬을 접촉하는 기술로 공격한 상대 포켓몬은 특성이 가시지않는향기로 바뀐다."
   },
   "269": {
-    "nameKo": "Seed Sower",
-    "summary": "Turns the ground into Grassy Terrain when the Pokémon is hit by an attack."
+    "nameKo": "넘치는씨",
+    "summary": "공격을 받으면 필드를 그래스필드로 만든다."
   },
   "270": {
-    "nameKo": "Thermal Exchange",
-    "summary": "Boosts the Attack stat when the Pokémon is hit by a Fire-type move. The Pokémon also cannot be burned."
+    "nameKo": "열교환",
+    "summary": "불꽃 타입의 기술에 당하면 공격이 1랭크 올라간다. 단, 대미지는 입는다. 화상 상태에 걸리지 않는다."
   },
   "271": {
-    "nameKo": "Anger Shell",
-    "summary": "When an attack causes its HP to drop to half or less, the Pokémon gets angry. This lowers its Defense and Sp. Def stats but boosts its Attack, Sp. Atk, and Speed stats."
+    "nameKo": "분노의껍질",
+    "summary": "HP가 절반일 때 방어와 특수방어가 1랭크 떨어지고 공격과 특수공격, 스피드가 1랭크 올라간다."
   },
   "272": {
-    "nameKo": "Purifying Salt",
-    "summary": "The Pokémon's pure salt protects it from status conditions and halves the damage taken from Ghost-type moves."
+    "nameKo": "정화의소금",
+    "summary": "상태 이상에 걸리지 않으며 고스트 타입 기술의 데미지를 절반만 받는다."
   },
   "273": {
-    "nameKo": "Well-Baked Body",
-    "summary": "The Pokémon takes no damage when hit by Fire-type moves. Instead, its Defense stat is sharply boosted."
+    "nameKo": "노릇노릇바디",
+    "summary": "불꽃 타입 기술의 데미지를 입지 않는다. 방어가 2랭크 상승한다."
   },
   "274": {
-    "nameKo": "Wind Rider",
-    "summary": "Boosts the Pokémon's Attack stat if Tailwind takes effect or if the Pokémon is hit by a wind move. The Pokémon also takes no damage from wind moves."
+    "nameKo": "바람타기",
+    "summary": "풍이나 바람과 관련된 기술에 맞아도 데미지를 입지 않고 공격 1랭크가 올라간다."
   },
   "275": {
-    "nameKo": "Guard Dog",
-    "summary": "Boosts the Pokémon’s Attack stat if intimidated. Moves and items that would force the Pokémon to switch out also fail to work."
+    "nameKo": "파수견",
+    "summary": "위협을 받으면 공격이 올라간다. 포켓몬을 교체시키는 기술이나 도구의 효과를 받지 않는다."
   },
   "276": {
-    "nameKo": "Rocky Payload",
-    "summary": "Powers up Rock-type moves."
+    "nameKo": "바위나르기",
+    "summary": "바위 타입 기술의 위력을 50% 올려준다."
   },
   "277": {
     "nameKo": "Wind Power",
