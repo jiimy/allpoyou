@@ -51,6 +51,9 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
+  @include media-mo() { 
+    width: 100%;
+  }
 
   &:focus {
     outline: none;

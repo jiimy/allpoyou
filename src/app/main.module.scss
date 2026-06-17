@@ -2,6 +2,9 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 40px 60px 40px;
+  @include media-mo() { 
+    padding: 0;
+  }
 }
 
 .listWrap {
