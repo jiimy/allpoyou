@@ -23,6 +23,30 @@
   // background: #fff;
 }
 
+.cardSelectable {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+
+  &:hover {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6390f0;
+    outline-offset: 2px;
+  }
+}
+
+.cardSelected {
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
 .name {
   margin: 0;
   font-size: 15px;
@@ -51,6 +75,31 @@
   align-items: center;
   gap: 6px;
   color: #444;
+  font-size: 12px;
+}
+
+.pokemonItemSelectable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px 6px;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #f0f4ff;
+    color: #2563eb;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6390f0;
+    outline-offset: 1px;
+  }
+}
+
+.noPokemon {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  color: #888;
   font-size: 12px;
 }
 

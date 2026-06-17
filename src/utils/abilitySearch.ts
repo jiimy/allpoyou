@@ -54,6 +54,13 @@ function collectPokemonAbilities(pokemon: Pokemon): string[] {
   return [...pokemon.ability, ...pokemon.s_ability];
 }
 
+export function getPokemonsWithAbilityName(
+  pokemons: Pokemon[],
+  abilityName: string,
+): Pokemon[] {
+  return sortPokemons(getPokemonsWithAbility(pokemons, abilityName));
+}
+
 function getPokemonsWithAbility(pokemons: Pokemon[], abilityName: string): Pokemon[] {
   return pokemons.filter((pokemon) =>
     collectPokemonAbilities(pokemon).includes(abilityName),
