@@ -267,11 +267,15 @@
 
 @media (max-width: 1100px) {
   .listWrap {
+    margin-top: 0;
     grid-template-columns: 1fr;
   }
 
   .feed {
     padding: 16px;
+    @include media-mo() {
+      padding: 0
+    }
   }
 }
 

@@ -1,5 +1,3 @@
-// ModalFrame.tsx
-
 import React from "react";
 import ModalPortal from "./PortalModal";
 import classNames from 'classnames';
@@ -26,23 +24,36 @@ const ModalFrame = ({
   zindex,
   dimClick,
   modalType = 'modal',
-  onClick,  
+  onClick,
   className
 }: modalFrameType) => {
   return (
-    <ModalPortal>
-      <div className={classNames(s.modal, modalType === 'page' && s.page)} onClick={onClick}>
+    <ModalPortal setOnModal={setOnModal}>
+      <div
+        className={classNames(s.modal, modalType === 'page' && s.page)}
+        onClick={onClick}
+        style={zindex ? { zIndex: zindex } : undefined}
+      >
+        {isDim && (
+          <div
+            className={s.dim}
+            onClick={(e) => {
+              e.stopPropagation(); 
+              if (dimClick) setOnModal(false);
+            }}
+          />
+        )}
+
         <div className={s.modal_container}>
-          <div className={`${className} ${s.modal_content} `}>
+          <div className={`${className} ${s.modal_content}`}>
             {children}
             {onClose && (
               <div className={s.close} onClick={() => setOnModal(false)}>
-                <Close fill="#8C8C8C"/>
+                <Close fill="#8C8C8C" />
               </div>
             )}
           </div>
         </div>
-        {isDim && <div className={s.dim} onClick={() => (dimClick && setOnModal(false))}></div>}
       </div>
     </ModalPortal>
   );

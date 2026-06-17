@@ -4,6 +4,73 @@
   align-items: center;
   padding: 0 20px;
   height: 50px;
+  position: relative;
+  z-index: 20;
+
+  @include media-mo() {
+    justify-content: flex-end;
+    padding: 0 16px;
+
+    .menuToggle {
+      display: flex;
+    }
+
+    .backdrop {
+      display: block;
+    }
+
+    .menuList {
+      position: fixed;
+      top: 50px;
+      left: 0;
+      right: 0;
+      z-index: 21;
+      flex-direction: column;
+      gap: 0;
+      padding: 8px 0;
+      margin: 0;
+      background: var(--background);
+      border-bottom: 1px solid #e5e7eb;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0.2s ease;
+      pointer-events: none;
+    }
+
+    &.navOpen .menuList {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    &.navOpen .menuToggleBar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    &.navOpen .menuToggleBar:nth-child(2) {
+      opacity: 0;
+    }
+
+    &.navOpen .menuToggleBar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .menuList li {
+      width: 100%;
+    }
+
+    .link {
+      display: block;
+      padding: 14px 20px;
+    }
+  }
+
   ul {
     display: flex;
     gap: 20px;
@@ -12,6 +79,42 @@
       position: relative;
     }
   }
+}
+
+.menuToggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.menuToggleBar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: 50px;
+  padding: 0;
+  border: none;
+  background: rgb(0 0 0 / 30%);
+  cursor: pointer;
+  z-index: 19;
 }
 
 .link {

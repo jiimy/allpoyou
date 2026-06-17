@@ -42,7 +42,9 @@ export default function RootLayout({
         <TeamSessionBootstrap />
         <div className={s.main}>
           <Nav />
-          {children}
+          <div className={s.page}>
+            {children}
+          </div>
           <FloatingBtn />
         </div>
         <Footer />

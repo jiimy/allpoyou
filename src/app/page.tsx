@@ -4,6 +4,7 @@ import {
   getUserLikedTeamIds,
 } from '@/app/public-teams/actions';
 import { getCurrentUser } from '@/utils/auth/dal';
+import s from './main.module.scss';
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -13,7 +14,7 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 font-sans ">
+    <div>
       <PublicTeamFeed
         teams={teams}
         likedTeamIds={likedTeamIds}

@@ -111,7 +111,7 @@ export default function PublicTeamFeed({
           <SearchBar
             keyword={keyword}
             onKeywordChange={setKeyword}
-            placeholderType="pokemon"
+            placeholderType="main"
           />
         ) : null}
 

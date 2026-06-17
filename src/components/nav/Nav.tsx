@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Command from '../command/Command';
 import { useNavShortcuts } from './useNavShortcuts';
 import s from './nav.module.scss';
@@ -33,10 +34,59 @@ function isNavActive(pathname: string, href: string, exact?: boolean): boolean {
 const Nav = () => {
   useNavShortcuts();
   const pathname = usePathname() ?? '';
+  const [menuSession, setMenuSession] = useState<{ pathname: string } | null>(
+    null,
+  );
+  const menuOpen =
+    menuSession !== null && menuSession.pathname === pathname;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuSession(null);
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
-    <div className={s.nav}>
-      <ul>
+    <div className={`${s.nav} ${menuOpen ? s.navOpen : ''}`}>
+      <button
+        type="button"
+        className={s.menuToggle}
+        aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+        aria-expanded={menuOpen}
+        aria-controls="nav-menu"
+        onClick={() =>
+          setMenuSession((prev) =>
+            prev && prev.pathname === pathname ? null : { pathname },
+          )
+        }
+      >
+        <span className={s.menuToggleBar} />
+        <span className={s.menuToggleBar} />
+        <span className={s.menuToggleBar} />
+      </button>
+
+      {menuOpen ? (
+        <button
+          type="button"
+          className={s.backdrop}
+          aria-label="메뉴 닫기"
+          onClick={() => setMenuSession(null)}
+        />
+      ) : null}
+
+      <ul id="nav-menu" className={s.menuList}>
         {NAV_ITEMS.map((item) => {
           const active = isNavActive(pathname, item.href, item.exact);
 
@@ -46,6 +96,7 @@ const Nav = () => {
                 href={item.href}
                 className={`${s.link} ${active ? s.linkActive : ''}`}
                 aria-current={active ? 'page' : undefined}
+                onClick={() => setMenuSession(null)}
               >
                 {item.label}
                 {item.command ? <Command command={item.command} /> : null}

@@ -109,7 +109,7 @@
 .teamMetaActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -204,6 +204,9 @@
   display: flex;
   margin-bottom: 10px;
   gap: 8px;
+  @include media-mo() {
+    flex-direction: column;
+  }
   > div {
     width: 100%;
   }

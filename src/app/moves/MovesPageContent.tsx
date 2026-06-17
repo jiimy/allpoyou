@@ -337,7 +337,7 @@ export default function MovesPageContent() {
     : null;
 
   return (
-    <div className={s.page}>
+    <div>
       <SearchBar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}

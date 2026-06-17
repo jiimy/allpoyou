@@ -6,9 +6,10 @@ import s from './searchBar.module.scss';
 
 const DEBOUNCE_MS = 1000;
 
-type PlaceholderType = 'pokemon' | 'moves' | 'item' | 'ability';
+type PlaceholderType = 'main' | 'pokemon' | 'moves' | 'item' | 'ability';
 
 const PLACEHOLDER_BY_TYPE: Record<PlaceholderType, string> = {
+  main: '포켓몬 이름 검색',
   pokemon: '포켓몬 이름, 타입 검색',
   moves: '기술명, 설명, 포켓몬 이름 검색;',
   item: '도구명, 설명 검색',

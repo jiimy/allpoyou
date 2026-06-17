@@ -8,6 +8,7 @@ import {
 import { isTeamAlreadyPublished, isTeamPublishable, isTeamShareable } from '@/utils/teamShare';
 import type { TeamSaveStatus } from '@/hooks/useDebouncedTeamDbSync';
 import s from '@/app/make-team/maekTeam.module.scss';
+import { useMobile } from '@/hooks/useMobile';
 
 type TeamSelectorProps = {
   onSwitchTeam: (teamId: number) => void;
@@ -56,6 +57,7 @@ export default function TeamSelector({
     saveStatus === 'saved' ||
     saveStatus === 'error';
     // || showCountdown;
+  const isMobile = useMobile();
 
   const handlePublishClick = async () => {
     if (!onPublishTeam || publishPending || !publishable) return;
@@ -86,6 +88,40 @@ export default function TeamSelector({
         )}
       </div>
 
+      {isMobile() && isLoggedIn && (showPublishButton || showSaveIndicator) ? (
+        <div className={s.teamMetaActions}>
+          {showPublishButton ? (
+            <button
+              type="button"
+              className={s.teamShareBtn}
+              disabled={publishPending || !publishable}
+              onClick={handlePublishClick}
+              title={
+                !shareable
+                  ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공개할 수 있습니다.'
+                  : alreadyPublished
+                    ? '이미 동일한 포켓몬 구성으로 공개한 팀이 있습니다. 포켓몬 정보를 수정하면 다시 공개할 수 있습니다.'
+                    : '현재 팀 구성으로 다시 공개합니다.'
+              }
+            >
+              {publishPending ? '공개 중…' : '공개'}
+            </button>
+          ) : null}
+          {/* {showCountdown ? (
+            <span className={s.teamSaveStatus} aria-live="polite">
+              자동저장 남은 시간 {saveCountdownSec}초..
+            </span>
+          ) : null} */}
+          {saveStatus === 'saving' ||
+            saveStatus === 'error' ||
+            saveStatus === 'saved' ? (
+            <span className={saveStatusClass(saveStatus)} aria-live="polite">
+              {SAVE_STATUS_LABEL[saveStatus]}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       <label className={s.teamNameField}>
         <span className={s.teamNameLabel}>팀 이름</span>
         <input
@@ -97,7 +133,8 @@ export default function TeamSelector({
           maxLength={40}
         />
       </label>
-      {isLoggedIn && (showPublishButton || showSaveIndicator) ? (
+
+      {isLoggedIn && !isMobile() && (showPublishButton || showSaveIndicator) ? (
         <div className={s.teamMetaActions}>
           {showPublishButton ? (
             <button

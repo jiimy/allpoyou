@@ -52,10 +52,10 @@ const MyInfoPage = async () => {
           </div>
 
           <div className={s.section}>
-            <div className={s.sectionTitle}>내가 공유한 팀 빌드</div>
+            <div className={s.sectionTitle}>내가 공유한 팀</div>
             {myPublicTeams.length === 0 ? (
               <p className={s.placeholder}>
-                공개한 팀이 없습니다. 팀 만들기에서 [공개]를 눌러 전시장에 올려보세요.
+                공개한 팀이 없습니다.
               </p>
             ) : (
               <>
@@ -82,7 +82,7 @@ const MyInfoPage = async () => {
             <div className={s.sectionTitle}>내가 좋아요한 팀</div>
             {likedTeams.length === 0 ? (
               <p className={s.placeholder}>
-                좋아요한 팀이 없습니다. 홈에서 다른 사용자의 공개 팀에 좋아요를 눌러보세요.
+                좋아요한 팀이 없습니다.
               </p>
             ) : (
               <div className={`${teamS.feed} ${teamS.compactList} ${s.teamSection}`}>
