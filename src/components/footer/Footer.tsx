@@ -1,10 +1,12 @@
-import Image from 'next/image';
 import React from 'react';
+import s from './footer.module.scss';
 
 const Footer = () => {
   return (
-    <div>
-      {/* 사용 안내. 문의 할수있는곳 */}
+    <div className={s.footer}>
+      {/* 사용 안내. 문의 할수있는곳
+
+      <a href="https://buly.kr/7mDuxOD">사용 안내</a> */}
     </div>
   );
 };

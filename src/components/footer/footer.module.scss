@@ -1,0 +1,6 @@
+.footer {
+  height: 80px;
+  @include media-mo() { 
+    height: 60px;
+  }
+}

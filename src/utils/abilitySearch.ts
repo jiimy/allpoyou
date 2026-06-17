@@ -22,7 +22,7 @@ export const ALL_ABILITIES: AbilityListItem[] = Object.entries(
     summary: entry.summary,
   }))
   .filter((entry) => Number.isFinite(entry.id))
-  .sort((a, b) => a.id - b.id);
+  .sort((a, b) => a.nameKo.localeCompare(b.nameKo, 'ko'));
 
 const ABILITY_SUMMARY_BY_NAME = Object.fromEntries(
   ALL_ABILITIES.map((ability) => [ability.nameKo, ability.summary]),
@@ -114,7 +114,7 @@ export function filterAbilities(
         ability.summary.includes(q) ||
         abilityNamesFromPokemon.has(ability.nameKo),
     )
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => a.nameKo.localeCompare(b.nameKo, 'ko'))
     .map((ability) => {
       const matchedByText =
         ability.nameKo.includes(q) || ability.summary.includes(q);

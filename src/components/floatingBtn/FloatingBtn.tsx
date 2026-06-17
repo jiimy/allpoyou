@@ -20,6 +20,7 @@ import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { useNaturePickStore } from '@/store/NaturePickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
+import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
 
@@ -65,7 +66,8 @@ const FloatingBtn = () => {
     [isMakeTeamPage],
   );
 
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = useFloatingBtnStore((state) => state.isOpen);
+  const setIsOpen = useFloatingBtnStore((state) => state.setIsOpen);
   const [typeTableModalOpen, setTypeTableModalOpen] = useState(false);
   const [natureTableModalOpen, setNatureTableModalOpen] = useState(false);
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
@@ -106,7 +108,7 @@ const FloatingBtn = () => {
 
   const handleOutOfClick = useCallback(() => {
     setIsOpen(false);
-  }, []);
+  }, [setIsOpen]);
 
   useOutOfClick(containerRef, handleOutOfClick);
 

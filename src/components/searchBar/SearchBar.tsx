@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
+import { track } from '@vercel/analytics'; 
 import s from './searchBar.module.scss';
 
 const DEBOUNCE_MS = 1000;
@@ -46,10 +46,18 @@ export default function SearchBar({
 
     const timer = window.setTimeout(() => {
       onKeywordChange(inputValue);
+
+      const trimmedValue = inputValue.trim();
+      if (trimmedValue.length > 0) {
+        track('Search Submitted', {
+          category: placeholderType, 
+          keyword: trimmedValue,      
+        });
+      }
     }, DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [inputValue, keyword, onKeywordChange]);
+  }, [inputValue, keyword, onKeywordChange, placeholderType]); 
 
   const q = keyword.trim();
   const showPokemonHint = placeholderType === 'moves' && q.length > 0;
