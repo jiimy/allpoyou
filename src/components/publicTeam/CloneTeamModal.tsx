@@ -88,10 +88,10 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
     >
         <h2 className={s.title}>팀 복제</h2>
         <p className={s.subtitle}>
-          <span className={s.sourceName}>{sourceTitle}</span>
+          {/* <span className={s.sourceName}>{sourceTitle}</span>
           {team.ownerUsername ? ` · ${team.ownerUsername}` : null}
-          <br />
-          아래 슬롯 중 하나를 선택하면 해당 슬롯에 팀이 복제됩니다.
+          <br /> */}
+          해당 슬롯을 선택하면 팀이 복제됩니다.
         </p>
 
         <div className={s.preview}>
@@ -171,9 +171,9 @@ export default function CloneTeamModal({ team, onClose }: CloneTeamModalProps) {
               팀 만들기에서 보기
             </Link>
           ) : null}
-          <button type="button" className={s.cancelBtn} onClick={onClose}>
+          {/* <button type="button" className={s.cancelBtn} onClick={onClose}>
             닫기
-          </button>
+          </button> */}
         </div>
     </ModalFrame>
   );
