@@ -142,3 +142,33 @@
   //   border-radius: 1px;
   // }
 }
+
+.rememberPage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  font-size: 13px;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  @include media-mo() {
+    margin-left: auto;
+    margin-right: 8px;
+    font-size: 12px;
+  }
+}
+
+.rememberPageInput {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.rememberPageLabel {
+  line-height: 1;
+}

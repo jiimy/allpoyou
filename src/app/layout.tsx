@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/nav/Nav";
+import { LastVisitedPageBootstrap } from "@/components/nav/LastVisitedPageBootstrap";
 import FloatingBtn from "@/components/floatingBtn/FloatingBtn";
 import { TeamSessionBootstrap } from "@/components/team/TeamSessionBootstrap";
 import s from './main.module.scss'
@@ -40,6 +41,7 @@ export default function RootLayout({
     >
       <body className="" suppressHydrationWarning>
         <TeamSessionBootstrap />
+        <LastVisitedPageBootstrap />
         <div className={s.main}>
           <Nav />
           <div className={s.page}>
