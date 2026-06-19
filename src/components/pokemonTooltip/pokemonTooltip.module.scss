@@ -1,0 +1,15 @@
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  right: 0;
+  left: 0;
+  margin: auto;
+  width: fit-content;
+  ul {
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+}

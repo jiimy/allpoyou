@@ -14,6 +14,7 @@ import {
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 
 import s from '@/app/abilities/abilities.module.scss';
+import PokemonTooltip from '../pokemonTooltip/PokemonTooltip';
 
 type AbilitiesListProps = {
   keyword?: string;
@@ -91,6 +92,7 @@ function AbilityCard({
                   />
                 ) : null}
                 <span>{pokemon.nameKo}</span>
+                {/* <PokemonTooltip /> */}
               </li>
             );
           })}

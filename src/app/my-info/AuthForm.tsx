@@ -254,6 +254,7 @@ const AuthForm = () => {
         >
           로그인
         </button>
+        {/* 구글로그인 */}
         <button
           type="button"
           className={classNames(s.tab, { [s.active]: mode === 'signup' })}
