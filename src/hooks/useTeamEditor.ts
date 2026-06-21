@@ -49,6 +49,12 @@ import { isValidNature, searchNatures, type NatureEntry } from '@/utils/natureLi
 import { getMovesByIds, searchLearnableMoves } from '@/utils/movesDb';
 import { MOVES_BY_ID, getMoveById } from '@/utils/movesIndex';
 import { normalizePokemon, ensureStringArray } from '@/utils/pokemonNormalize';
+import {
+  computeBaseStatTotal,
+  pickBaseStats,
+  type BaseStatKey,
+  type PokemonBaseStats,
+} from '@/utils/pokemonBaseStats';
 import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
 
@@ -90,6 +96,31 @@ function computeOriginalTypesFromTeam(
       pokemonFromStoredSlot(slot);
 
     result[index] = [...ensureStringArray(pokemon.types)];
+  });
+
+  return result;
+}
+
+function computeOriginalBaseStatsFromTeam(
+  team: SavedTeam | undefined,
+  allPokemons: Pokemon[],
+): (PokemonBaseStats | null)[] {
+  const result = Array.from(
+    { length: TEAM_SLOT_COUNT },
+    () => null,
+  ) as (PokemonBaseStats | null)[];
+
+  if (!team) return result;
+
+  team.pokemons.forEach((slot, index) => {
+    if (!slot?.pokemonId) return;
+
+    const pokemon =
+      allPokemons.find((entry) => entry.id === slot.pokemonId) ??
+      allPokemons.find((entry) => entry.nameKo === slot.nameKo) ??
+      pokemonFromStoredSlot(slot);
+
+    result[index] = pickBaseStats(pokemon);
   });
 
   return result;
@@ -298,6 +329,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const [originalTypesBySlot, setOriginalTypesBySlot] = useState<
     (string[] | null)[]
   >(() => Array.from({ length: TEAM_SLOT_COUNT }, () => null));
+  const [originalBaseStatsBySlot, setOriginalBaseStatsBySlot] = useState<
+    (PokemonBaseStats | null)[]
+  >(() => Array.from({ length: TEAM_SLOT_COUNT }, () => null));
   const [moveHighlightedIndex, setMoveHighlightedIndex] = useState(0);
   const [pokemonMovesCache, setPokemonMovesCache] = useState<
     Record<number, MoveDbEntry[]>
@@ -355,6 +389,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
         editorSetters,
       );
       setOriginalTypesBySlot(computeOriginalTypesFromTeam(team, allPokemons));
+      setOriginalBaseStatsBySlot(
+        computeOriginalBaseStatsFromTeam(team, allPokemons),
+      );
     },
     [allPokemons, editorSetters],
   );
@@ -439,7 +476,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     selectedPokemons.forEach((pokemon) => {
       if (!pokemon) return;
       const pokemonId = pokemon.id;
-      if (pokemonMovesCache[pokemonId] || moveFetchInFlight.current.has(pokemonId)) {
+      if (pokemonId in pokemonMovesCache || moveFetchInFlight.current.has(pokemonId)) {
         return;
       }
       if (isMegaPokemonName(pokemon.nameKo) && allPokemons.length === 0) {
@@ -449,7 +486,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       const moveLookupId = resolveMoveLookupPokemonId(pokemon, allPokemons);
       moveFetchInFlight.current.add(pokemonId);
 
-      fetch(`/api/moves?pokemonId=${moveLookupId}`, { cache: 'no-store' })
+      const params = new URLSearchParams({
+        pokemonId: String(moveLookupId),
+        nameKo: pokemon.nameKo,
+      });
+
+      fetch(`/api/moves?${params.toString()}`, { cache: 'no-store' })
         .then(async (res) => {
           const body = (await res.json()) as {
             moveIds?: number[];
@@ -461,7 +503,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
             [pokemonId]: getMovesByIds(MOVES_BY_ID, body.moveIds ?? []),
           }));
         })
-        .catch(() => {
+        .catch((err) => {
+          console.warn(
+            `[useTeamEditor] 기술 목록 로드 실패 (pokemonId=${pokemonId}, nameKo=${pokemon.nameKo})`,
+            err,
+          );
           setPokemonMovesCache((prev) => ({ ...prev, [pokemonId]: [] }));
         })
         .finally(() => {
@@ -547,6 +593,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       return next;
     });
     setOriginalTypesBySlot((prev) => {
+      if (!prev[index]) return prev;
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    setOriginalBaseStatsBySlot((prev) => {
       if (!prev[index]) return prev;
       const next = [...prev];
       next[index] = null;
@@ -772,6 +824,35 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     },
     [],
   );
+
+  const handleUpdateBaseStat = useCallback(
+    (pokemonIndex: number, statKey: BaseStatKey, value: number) => {
+      setSelectedPokemons((prev) => {
+        const pokemon = prev[pokemonIndex];
+        if (!pokemon || pokemon[statKey] === value) return prev;
+
+        const nextStats = { ...pickBaseStats(pokemon), [statKey]: value };
+        nextStats.total = computeBaseStatTotal(nextStats);
+
+        const next = [...prev];
+        next[pokemonIndex] = { ...pokemon, ...nextStats };
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleResetBaseStats = useCallback((pokemonIndex: number) => {
+    setSelectedPokemons((prev) => {
+      const pokemon = prev[pokemonIndex];
+      const original = originalBaseStatsBySlot[pokemonIndex];
+      if (!pokemon || !original) return prev;
+
+      const next = [...prev];
+      next[pokemonIndex] = { ...pokemon, ...original };
+      return next;
+    });
+  }, [originalBaseStatsBySlot]);
 
   const handleSelectItem = useCallback((index: number, item: ItemKr) => {
     setSelectedItemIds((prev) => {
@@ -1109,6 +1190,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = [...ensureStringArray(pokemon.types)];
       return next;
     });
+    setOriginalBaseStatsBySlot((prev) => {
+      const next = [...prev];
+      next[index] = pickBaseStats(pokemon);
+      return next;
+    });
     setSelectedAbilities((prev) => {
       const next = [...prev];
       next[index] = defaultAbility;
@@ -1230,6 +1316,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       return next;
     });
     setOriginalTypesBySlot((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    setOriginalBaseStatsBySlot((prev) => {
       const next = [...prev];
       next[index] = null;
       return next;
@@ -1426,6 +1517,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onAdjustEv: handleAdjustEv,
     activeTypeSlot,
     originalTypesBySlot,
+    originalBaseStatsBySlot,
     onTypeSlotActivate: handleTypeSlotActivate,
     onSelectType: handleSelectType,
     onRemoveType: handleRemoveType,
@@ -1433,6 +1525,8 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onAddType: handleAddType,
     onCancelTypes: handleCancelTypes,
     onActiveTypeSlotChange: setActiveTypeSlot,
+    onUpdateBaseStat: handleUpdateBaseStat,
+    onResetBaseStats: handleResetBaseStats,
   };
 
   return {

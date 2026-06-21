@@ -138,11 +138,115 @@ function pokemonRowsWithMoveIds(
   return pokemon;
 }
 
+function extractMoveIds(moves: PokemonMoveLearnset[] | null | undefined): number[] {
+  return [
+    ...new Set(
+      (moves ?? [])
+        .map((entry) => entry.move_id)
+        .filter((id): id is number => typeof id === 'number'),
+    ),
+  ].sort((a, b) => a - b);
+}
+
+let cachedLocalPokemonMoves: PokemonMovesJsonRow[] | null = null;
+
+async function loadLocalPokemonMovesCache(): Promise<PokemonMovesJsonRow[]> {
+  if (cachedLocalPokemonMoves) return cachedLocalPokemonMoves;
+  cachedLocalPokemonMoves = await loadPokemonMovesJson();
+  return cachedLocalPokemonMoves;
+}
+
+function findLocalPokemonMoves(
+  rows: PokemonMovesJsonRow[],
+  pokemonId: number,
+  nameKo?: string | null,
+): PokemonMovesJsonRow | undefined {
+  const byId = rows.find((row) => row.id === pokemonId);
+  if (byId) return byId;
+
+  if (nameKo) {
+    const exact = rows.find((row) => row.name === nameKo);
+    if (exact) return exact;
+  }
+
+  return undefined;
+}
+
+async function resolvePokemonMoveIds(
+  supabase: ReturnType<typeof createClient>,
+  pokemonId: number,
+  nameKo?: string | null,
+): Promise<{
+  pokemon: { id: number; number: number; nameKo: string };
+  moveIds: number[];
+} | null> {
+  try {
+    const { data: byId, error: byIdError } = await supabase
+      .from(TABLE_NAME)
+      .select('id, number, nameKo, moves')
+      .eq('id', pokemonId)
+      .maybeSingle();
+
+    if (byIdError) {
+      throw new Error(byIdError.message);
+    }
+
+    if (byId) {
+      return {
+        pokemon: {
+          id: byId.id as number,
+          number: byId.number as number,
+          nameKo: byId.nameKo as string,
+        },
+        moveIds: extractMoveIds(byId.moves as PokemonMoveLearnset[]),
+      };
+    }
+
+    if (nameKo) {
+      const { data: byName, error: byNameError } = await supabase
+        .from(TABLE_NAME)
+        .select('id, number, nameKo, moves')
+        .eq('nameKo', nameKo)
+        .maybeSingle();
+
+      if (byNameError) {
+        throw new Error(byNameError.message);
+      }
+
+      if (byName) {
+        return {
+          pokemon: {
+            id: byName.id as number,
+            number: byName.number as number,
+            nameKo: byName.nameKo as string,
+          },
+          moveIds: extractMoveIds(byName.moves as PokemonMoveLearnset[]),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[GET /api/moves] Supabase lookup failed, using local JSON:', err);
+  }
+
+  const localRows = await loadLocalPokemonMovesCache();
+  const local = findLocalPokemonMoves(localRows, pokemonId, nameKo);
+  if (!local) return null;
+
+  return {
+    pokemon: {
+      id: local.id,
+      number: local.number,
+      nameKo: local.name,
+    },
+    moveIds: extractMoveIds(local.moves),
+  };
+}
+
 /**
  * GET /api/moves
  *
  * - ?pokemonName=이상해씨 — 포켓몬 이름으로 move_id 목록
- * - ?pokemonId=1 — 포켓몬 id로 move_id 목록
+ * - ?pokemonId=1 — 포켓몬 id로 move_id 목록 (nameKo와 함께 보내면 id 불일치 시 이름으로 fallback)
  * - ?moveId=433 또는 ?moveIds=433,434 — 해당 기술을 배울 수 있는 포켓몬 목록
  */
 export async function GET(request: NextRequest) {
@@ -150,6 +254,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const pokemonName = searchParams.get('pokemonName')?.trim();
     const pokemonIdParam = searchParams.get('pokemonId');
+    const nameKoParam = searchParams.get('nameKo')?.trim();
     const moveIds = parseMoveIdsParam(
       searchParams.get('moveId'),
       searchParams.get('moveIds'),
@@ -164,36 +269,19 @@ export async function GET(request: NextRequest) {
         return Response.json({ error: 'pokemonId가 올바르지 않습니다.' }, { status: 400 });
       }
 
-      const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select('id, number, nameKo, moves')
-        .eq('id', pokemonId)
-        .maybeSingle();
+      const resolved = await resolvePokemonMoveIds(
+        supabase,
+        pokemonId,
+        nameKoParam,
+      );
 
-      if (error) {
-        return Response.json({ error: error.message }, { status: 500 });
-      }
-
-      if (!data) {
+      if (!resolved) {
         return Response.json({ error: '포켓몬을 찾을 수 없습니다.' }, { status: 404 });
       }
 
-      const moves = (data.moves ?? []) as PokemonMoveLearnset[];
-      const moveIdList = [
-        ...new Set(
-          moves
-            .map((entry) => entry.move_id)
-            .filter((id): id is number => typeof id === 'number'),
-        ),
-      ].sort((a, b) => a - b);
-
       return Response.json({
-        pokemon: {
-          id: data.id as number,
-          number: data.number as number,
-          nameKo: data.nameKo as string,
-        },
-        moveIds: moveIdList,
+        pokemon: resolved.pokemon,
+        moveIds: resolved.moveIds,
       });
     }
 

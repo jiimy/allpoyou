@@ -282,6 +282,25 @@
   margin: 10px 0;
 }
 
+.statLabelWrap {
+  // font-size: 12px;
+  color: #666;
+  user-select: none;
+}
+
+.statLabelClickable {
+  cursor: pointer;
+
+  &:hover {
+    color: #6390f0;
+  }
+}
+
+.statLabelHighlight {
+  color: #e53935;
+  font-weight: 700;
+}
+
 .typesList {
   display: flex;
   gap: 4px;

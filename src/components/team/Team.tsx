@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import cn from 'classnames';
 import { useOutOfClick } from '@/hooks/useOutOfClick';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -30,6 +30,14 @@ import { getMoveTypeKo } from '@/utils/moveDisplay';
 import { getMoveById } from '@/utils/movesIndex';
 import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
 import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
+import StatCountModal from '@/components/team/statCountModal/StatCountModal';
+import {
+  BASE_STAT_LABEL,
+  getRowMaxStatKeys,
+  hasMaxStatChanged,
+  type BaseStatKey,
+  type PokemonBaseStats,
+} from '@/utils/pokemonBaseStats';
 import s from '@/app/make-team/maekTeam.module.scss';
 
 const MOVE_SLOT_PLACEHOLDERS = ['기술1', '기술2', '기술3', '기술4'] as const;
@@ -42,6 +50,8 @@ const ABILITY_SUMMARY_BY_NAME = Object.values(
   acc[entry.nameKo] = entry.summary;
   return acc;
 }, {});
+
+const STAT_LABEL_BY_KEY = BASE_STAT_LABEL;
 
 export function getAbilitySummary(abilityName: string | null): string | null {
   if (!abilityName) return null;
@@ -79,37 +89,6 @@ export function resolveMoveLookupPokemonId(
 
 export function isMegaPokemonName(nameKo: string): boolean {
   return nameKo.startsWith(MEGA_NAME_PREFIX);
-}
-
-const STAT_HIGHLIGHT_KEYS = ['H', 'A', 'B', 'C', 'D', 'S'] as const;
-const STAT_LABEL_BY_KEY: Record<(typeof STAT_HIGHLIGHT_KEYS)[number], string> = {
-  H: '체력',
-  A: '공격',
-  B: '방어',
-  C: '특공',
-  D: '특방',
-  S: '스피드',
-};
-
-function getRowMaxStatKeys(p: Pokemon): Set<(typeof STAT_HIGHLIGHT_KEYS)[number]> {
-  let max = -Infinity;
-  for (const key of STAT_HIGHLIGHT_KEYS) {
-    const v = p[key];
-    if (typeof v === 'number' && v > max) max = v;
-  }
-  if (max === -Infinity) return new Set();
-
-  const keys = new Set<(typeof STAT_HIGHLIGHT_KEYS)[number]>();
-  for (const key of STAT_HIGHLIGHT_KEYS) {
-    if (p[key] === max) keys.add(key);
-  }
-  return keys;
-}
-
-function getHighestStatLabel(p: Pokemon): string | null {
-  const keys = getRowMaxStatKeys(p);
-  if (keys.size === 0) return null;
-  return [...keys].map((key) => STAT_LABEL_BY_KEY[key]).join(' / ');
 }
 
 const PLACEHOLDERS = [
@@ -213,11 +192,18 @@ export type TeamProps = {
   ) => void;
   onSelectType: (pokemonIndex: number, typeIndex: number, newType: string) => void;
   originalTypesBySlot: (string[] | null)[];
+  originalBaseStatsBySlot: (PokemonBaseStats | null)[];
   onRemoveType: (pokemonIndex: number, typeIndex: number) => void;
   onStartAddType: (pokemonIndex: number, source: TypePickerSource) => void;
   onAddType: (pokemonIndex: number, newType: string) => void;
   onCancelTypes: (pokemonIndex: number) => void;
   onActiveTypeSlotChange: (slot: ActiveTypeSlot) => void;
+  onUpdateBaseStat: (
+    pokemonIndex: number,
+    statKey: BaseStatKey,
+    value: number,
+  ) => void;
+  onResetBaseStats: (pokemonIndex: number) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -287,15 +273,20 @@ const Team: React.FC<TeamProps> = ({
   onTypeSlotActivate,
   onSelectType,
   originalTypesBySlot,
+  originalBaseStatsBySlot,
   onRemoveType,
   onStartAddType,
   onAddType,
   onCancelTypes,
   onActiveTypeSlotChange,
+  onUpdateBaseStat,
+  onResetBaseStats,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
   );
+
+  const [statModalIndex, setStatModalIndex] = useState<number | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -451,6 +442,11 @@ const Team: React.FC<TeamProps> = ({
               ),
             )
           : new Set<string>();
+        const originalBaseStats = originalBaseStatsBySlot[index];
+        const maxStatChanged =
+          selected != null &&
+          hasMaxStatChanged(selected, originalBaseStats);
+        const maxStatKeys = selected ? getRowMaxStatKeys(selected) : new Set<BaseStatKey>();
         const pendingMoveLearnable =
           pendingMovePick != null &&
           selected != null &&
@@ -509,7 +505,38 @@ const Team: React.FC<TeamProps> = ({
                   />
                 ) : null}
               </div>
-              <div>{selected ? getHighestStatLabel(selected) : null}</div>
+              <div
+                className={cn(s.statLabelWrap, {
+                  [s.statLabelClickable]: selected != null,
+                })}
+                onClick={() => {
+                  if (selected) setStatModalIndex(index);
+                }}
+                role={selected ? 'button' : undefined}
+                tabIndex={selected ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (!selected) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setStatModalIndex(index);
+                  }
+                }}
+                aria-label={selected ? '종족값 조정' : undefined}
+              >
+                {selected
+                  ? [...maxStatKeys].map((key, i, arr) => (
+                      <span
+                        key={key}
+                        className={cn({
+                          [s.statLabelHighlight]: maxStatChanged,
+                        })}
+                      >
+                        {STAT_LABEL_BY_KEY[key]}
+                        {i < arr.length - 1 ? ' / ' : ''}
+                      </span>
+                    ))
+                  : null}
+              </div>
             </span>
             <div className={s.buildArea}>
               <div className={s.inputWrap}>
@@ -1029,6 +1056,21 @@ const Team: React.FC<TeamProps> = ({
           </div>
         );
       })}
+      {statModalIndex != null &&
+      selectedPokemons[statModalIndex] &&
+      originalBaseStatsBySlot[statModalIndex] ? (
+        <StatCountModal
+          setOnModal={(open) => {
+            if (!open) setStatModalIndex(null);
+          }}
+          pokemon={selectedPokemons[statModalIndex]!}
+          originalStats={originalBaseStatsBySlot[statModalIndex]!}
+          onUpdateStat={(statKey, value) =>
+            onUpdateBaseStat(statModalIndex, statKey, value)
+          }
+          onReset={() => onResetBaseStats(statModalIndex)}
+        />
+      ) : null}
     </div>
   );
 };
