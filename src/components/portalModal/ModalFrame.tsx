@@ -27,6 +27,10 @@ const ModalFrame = ({
   onClick,
   className
 }: modalFrameType) => {
+  const closeOnBackdrop = () => {
+    if (dimClick) setOnModal(false);
+  };
+
   return (
     <ModalPortal setOnModal={setOnModal}>
       <div
@@ -34,18 +38,12 @@ const ModalFrame = ({
         onClick={onClick}
         style={zindex ? { zIndex: zindex } : undefined}
       >
-        {isDim && (
+        {isDim && <div className={s.dim} aria-hidden />}
+        <div className={s.modal_container} onClick={closeOnBackdrop}>
           <div
-            className={s.dim}
-            onClick={(e) => {
-              e.stopPropagation(); 
-              if (dimClick) setOnModal(false);
-            }}
-          />
-        )}
-
-        <div className={s.modal_container}>
-          <div className={`${className} ${s.modal_content}`}>
+            className={`${className ?? ''} ${s.modal_content}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             {children}
             {onClose && (
               <div className={s.close} onClick={() => setOnModal(false)}>
