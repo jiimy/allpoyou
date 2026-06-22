@@ -1,12 +1,27 @@
+'use client';
+
 import React from 'react';
 import s from './pokemonTooltip.module.scss';
 
-const PokemonTooltip = () => {
+type PokemonTooltipProps = {
+  onViewInfo: (event: React.MouseEvent) => void;
+  onAddToTeam: (event: React.MouseEvent) => void;
+};
+
+const PokemonTooltip = ({ onViewInfo, onAddToTeam }: PokemonTooltipProps) => {
   return (
-    <div className={s.tooltip}>
+    <div className={s.tooltip} onClick={(e) => e.stopPropagation()}>
       <ul>
-        <li>기술 보기</li>
-        <li>팀에 추가</li>
+        <li>
+          <button type="button" className={s.tooltipBtn} onClick={onViewInfo}>
+            정보 보기
+          </button>
+        </li>
+        <li>
+          <button type="button" className={s.tooltipBtn} onClick={onAddToTeam}>
+            팀에 추가
+          </button>
+        </li>
       </ul>
     </div>
   );

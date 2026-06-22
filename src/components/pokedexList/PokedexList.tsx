@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { fetchPokemonList, filterPokemonList, type Pokemon } from '@/store/PokemonStore';
@@ -9,6 +9,8 @@ import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { formatAbilityTooltipText } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
+import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
 
 import s from './pokedex.module.scss';
 
@@ -17,27 +19,19 @@ const PAGE_SIZE = 16;
 function PokemonCard({
   pokemon,
   onSelect,
+  onViewInfo,
 }: {
   pokemon: Pokemon;
   onSelect: () => void;
+  onViewInfo: () => void;
 }) {
   const [imageError, setImageError] = useState(false);
   const imageUrl = getPokemonStaticImage(pokemon.images);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect();
-    }
-  };
-
   return (
     <article
-      className={`${s.card} ${s.cardSelectable}`}
-      role="button"
+      className={`${s.card} ${s.cardSelectable} pokemonTooltipHost`}
       tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
     >
       # {pokemon.number}
       <div className={s.imageWrap}>
@@ -124,6 +118,16 @@ function PokemonCard({
           </span>
         ) : null}
       </div>
+      <PokemonTooltip
+        onViewInfo={(event) => {
+          event.stopPropagation();
+          onViewInfo();
+        }}
+        onAddToTeam={(event) => {
+          event.stopPropagation();
+          onSelect();
+        }}
+      />
     </article>
   );
 }
@@ -137,6 +141,7 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [infoModalPokemon, setInfoModalPokemon] = useState<Pokemon | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
@@ -228,6 +233,7 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
               key={pokemon.id}
               pokemon={pokemon}
               onSelect={() => handlePokemonSelect(pokemon)}
+              onViewInfo={() => setInfoModalPokemon(pokemon)}
             />
           ))
         ) : (
@@ -235,6 +241,15 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
         )}
         {hasMore ? <div ref={sentinelRef} className={s.sentinel} aria-hidden /> : null}
       </div>
+
+      {infoModalPokemon ? (
+        <SelectPokeModal
+          pokemon={infoModalPokemon}
+          setOnModal={(open) => {
+            if (!open) setInfoModalPokemon(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }

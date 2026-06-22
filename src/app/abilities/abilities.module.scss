@@ -85,7 +85,8 @@
   padding: 4px 6px;
   transition: background 0.15s, color 0.15s;
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     background: #f0f4ff;
     color: #2563eb;
   }

@@ -12,6 +12,7 @@ import {
   getPokemonsWithAbilityName,
 } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 
 import s from '@/app/abilities/abilities.module.scss';
 import PokemonTooltip from '../pokemonTooltip/PokemonTooltip';
@@ -27,6 +28,7 @@ function AbilityCard({
   selected,
   onSelect,
   onPokemonSelect,
+  onPokemonViewInfo,
 }: {
   nameKo: string;
   summary: string;
@@ -34,22 +36,12 @@ function AbilityCard({
   selected: boolean;
   onSelect: () => void;
   onPokemonSelect: (pokemon: Pokemon) => void;
+  onPokemonViewInfo: (pokemon: Pokemon) => void;
 }) {
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onSelect();
-    }
-  };
-
-  const handlePokemonKeyDown = (
-    event: KeyboardEvent<HTMLElement>,
-    pokemon: Pokemon,
-  ) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      onPokemonSelect(pokemon);
     }
   };
 
@@ -73,14 +65,9 @@ function AbilityCard({
             return (
               <li
                 key={pokemon.id}
-                className={`${s.pokemonItem} ${s.pokemonItemSelectable}`}
-                role="button"
+                className={`${s.pokemonItem} ${s.pokemonItemSelectable} pokemonTooltipHost`}
                 tabIndex={0}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onPokemonSelect(pokemon);
-                }}
-                onKeyDown={(event) => handlePokemonKeyDown(event, pokemon)}
+                onClick={(event) => event.stopPropagation()}
               >
                 {imageUrl ? (
                   <Image
@@ -92,7 +79,16 @@ function AbilityCard({
                   />
                 ) : null}
                 <span>{pokemon.nameKo}</span>
-                {/* <PokemonTooltip /> */}
+                <PokemonTooltip
+                  onViewInfo={(event) => {
+                    event.stopPropagation();
+                    onPokemonViewInfo(pokemon);
+                  }}
+                  onAddToTeam={(event) => {
+                    event.stopPropagation();
+                    onPokemonSelect(pokemon);
+                  }}
+                />
               </li>
             );
           })}
@@ -108,6 +104,7 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [infoModalPokemon, setInfoModalPokemon] = useState<Pokemon | null>(null);
   const [selection, setSelection] = useState<{
     abilityId: number;
     keyword: string;
@@ -164,6 +161,10 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
     setTeamModalOpen(true);
   };
 
+  const handlePokemonViewInfo = (pokemon: Pokemon) => {
+    setInfoModalPokemon(pokemon);
+  };
+
   if (loading) {
     return <p className={s.status}>특성 목록을 불러오는 중…</p>;
   }
@@ -199,6 +200,7 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
                 selected={isSelected}
                 onSelect={() => handleAbilitySelect(ability.id)}
                 onPokemonSelect={handlePokemonSelect}
+                onPokemonViewInfo={handlePokemonViewInfo}
               />
             );
           })
@@ -206,6 +208,15 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
           <p className={s.empty}>검색 결과가 없습니다.</p>
         )}
       </div>
+
+      {infoModalPokemon ? (
+        <SelectPokeModal
+          pokemon={infoModalPokemon}
+          setOnModal={(open) => {
+            if (!open) setInfoModalPokemon(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }

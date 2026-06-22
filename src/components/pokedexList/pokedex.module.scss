@@ -34,16 +34,14 @@
 }
 
 .cardSelectable {
-  cursor: pointer;
+  position: relative;
+  cursor: default;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     border-color: #333;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-
-  &:active {
-    transform: scale(0.98);
   }
 
   &:focus-visible {

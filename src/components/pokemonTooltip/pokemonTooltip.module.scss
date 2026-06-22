@@ -1,15 +1,54 @@
 .tooltip {
   position: absolute;
-  background: rgba(0, 0, 0, 0.2);
-  color: white;
-  right: 0;
-  left: 0;
-  margin: auto;
-  width: fit-content;
+  // bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: max-content;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+
   ul {
     display: flex;
-    gap: 8px;
-    padding: 6px 8px;
-    white-space: nowrap;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+  }
+
+  li {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+:global(.pokemonTooltipHost:hover) .tooltip,
+:global(.pokemonTooltipHost:focus-within) .tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tooltipBtn {
+  display: block;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
   }
 }
