@@ -233,6 +233,7 @@ function editorStateFromTeam(
         ensureStringArray(slot.types).length > 0
           ? ensureStringArray(slot.types)
           : ensureStringArray(pokemon.types),
+      ...(slot.baseStats ?? {}),
     };
     state.selectedAbilities[index] = abilityName;
     state.abilitySummaries[index] = getAbilitySummary(abilityName);
@@ -963,6 +964,38 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     });
   }, [originalBaseStatsBySlot]);
 
+  const commitBaseStatsForSlot = useCallback(
+    (_pokemonIndex: number) => {
+      if (!editorReady || isHydratingFromStore) return;
+
+      const existing =
+        usePokemonTeamStore.getState().getActiveTeam()?.pokemons ?? [];
+      const pokemons = buildPokemonsFromEditor(
+        selectedPokemons,
+        selectedAbilities,
+        selectedItemIds,
+        existing,
+        selectedMoveIds,
+        selectedNatures,
+        selectedEvs,
+        originalBaseStatsBySlot,
+      );
+      syncActiveTeamPokemons(pokemons);
+    },
+    [
+      editorReady,
+      isHydratingFromStore,
+      selectedPokemons,
+      selectedAbilities,
+      selectedItemIds,
+      selectedMoveIds,
+      selectedNatures,
+      selectedEvs,
+      originalBaseStatsBySlot,
+      syncActiveTeamPokemons,
+    ],
+  );
+
   const handleSelectItem = useCallback((index: number, item: ItemKr) => {
     setSelectedItemIds((prev) => {
       const next = [...prev];
@@ -1394,6 +1427,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
           selectedMoveIds,
           selectedNatures,
           selectedEvs,
+          originalBaseStatsBySlot,
         );
         syncActiveTeamPokemons(pokemons);
       }
@@ -1416,6 +1450,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       selectedMoveIds,
       selectedNatures,
       selectedEvs,
+      originalBaseStatsBySlot,
       syncActiveTeamPokemons,
       setActiveTeamId,
       loadTeamIntoEditor,
@@ -1660,6 +1695,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onActiveTypeSlotChange: setActiveTypeSlot,
     onUpdateBaseStat: handleUpdateBaseStat,
     onResetBaseStats: handleResetBaseStats,
+    onCommitBaseStats: commitBaseStatsForSlot,
   };
 
   return {

@@ -34,6 +34,7 @@ import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
 import StatCountModal from '@/components/team/statCountModal/StatCountModal';
 import {
   BASE_STAT_LABEL,
+  areBaseStatsModified,
   getRowMaxStatKeys,
   hasMaxStatChanged,
   type BaseStatKey,
@@ -217,6 +218,7 @@ export type TeamProps = {
     value: number,
   ) => void;
   onResetBaseStats: (pokemonIndex: number) => void;
+  onCommitBaseStats: (pokemonIndex: number) => void;
 };
 
 const Team: React.FC<TeamProps> = ({
@@ -303,6 +305,7 @@ const Team: React.FC<TeamProps> = ({
   onActiveTypeSlotChange,
   onUpdateBaseStat,
   onResetBaseStats,
+  onCommitBaseStats,
 }) => {
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
@@ -335,6 +338,7 @@ const Team: React.FC<TeamProps> = ({
       selectedMoveIds,
       selectedNatures,
       selectedEvs,
+      originalBaseStatsBySlot,
     );
     syncActiveTeamPokemons(pokemons);
   }, [
@@ -346,6 +350,7 @@ const Team: React.FC<TeamProps> = ({
     selectedMoveIds,
     selectedNatures,
     selectedEvs,
+    originalBaseStatsBySlot,
     syncActiveTeamPokemons,
   ]);
 
@@ -1207,7 +1212,18 @@ const Team: React.FC<TeamProps> = ({
       originalBaseStatsBySlot[statModalIndex] ? (
         <StatCountModal
           setOnModal={(open) => {
-            if (!open) setStatModalIndex(null);
+            if (!open && statModalIndex != null) {
+              const pokemon = selectedPokemons[statModalIndex];
+              const original = originalBaseStatsBySlot[statModalIndex];
+              if (
+                pokemon &&
+                original &&
+                areBaseStatsModified(pokemon, original)
+              ) {
+                onCommitBaseStats(statModalIndex);
+              }
+              setStatModalIndex(null);
+            }
           }}
           pokemon={selectedPokemons[statModalIndex]!}
           originalStats={originalBaseStatsBySlot[statModalIndex]!}

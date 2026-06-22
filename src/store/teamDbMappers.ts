@@ -1,4 +1,8 @@
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import {
+  parsePokemonBaseStats,
+  type PokemonBaseStats,
+} from '@/utils/pokemonBaseStats';
 
 export const TEAM_SLOT_COUNT = 6;
 export const MAX_TEAMS = 5;
@@ -25,6 +29,7 @@ export type TeamPokemonSlot = {
   teraType: string | null;
   moves: number[];
   evs: TeamPokemonEvs | null;
+  baseStats?: PokemonBaseStats | null;
 };
 
 export type SavedTeam = {
@@ -93,6 +98,7 @@ function normalizePokemonSlot(slot: unknown): TeamPokemonSlot | null {
       raw.evs && typeof raw.evs === 'object'
         ? (raw.evs as TeamPokemonEvs)
         : null,
+    baseStats: parsePokemonBaseStats(raw.baseStats),
   };
 }
 

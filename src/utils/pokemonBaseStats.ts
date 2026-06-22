@@ -17,6 +17,29 @@ export const BASE_STAT_LABEL: Record<BaseStatKey, string> = {
 
 export type PokemonBaseStats = Pick<Pokemon, BaseStatKey | 'total'>;
 
+function isValidBaseStatValue(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+export function parsePokemonBaseStats(value: unknown): PokemonBaseStats | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  const stats = {} as PokemonBaseStats;
+
+  for (const key of BASE_STAT_KEYS) {
+    if (!isValidBaseStatValue(raw[key])) return null;
+    stats[key] = raw[key];
+  }
+
+  if (isValidBaseStatValue(raw.total)) {
+    stats.total = raw.total;
+  } else {
+    stats.total = computeBaseStatTotal(stats);
+  }
+
+  return stats;
+}
+
 export function pickBaseStats(p: Pick<Pokemon, BaseStatKey | 'total'>): PokemonBaseStats {
   return { H: p.H, A: p.A, B: p.B, C: p.C, D: p.D, S: p.S, total: p.total };
 }

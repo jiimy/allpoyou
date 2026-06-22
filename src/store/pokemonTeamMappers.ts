@@ -5,6 +5,11 @@ import type {
   TeamPokemonSlot,
 } from '@/store/PokemonTeamStore';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import {
+  areBaseStatsModified,
+  pickBaseStats,
+  type PokemonBaseStats,
+} from '@/utils/pokemonBaseStats';
 
 type AbilityEntry = { nameKo: string; summary: string };
 
@@ -46,6 +51,7 @@ export function buildTeamPokemonSlot(
   existing?: TeamPokemonSlot | null,
   nature?: string | null,
   evs?: TeamPokemonEvs | null,
+  baseStats?: PokemonBaseStats | null,
 ): TeamPokemonSlot {
   const resolvedAbility = abilityName ?? getDefaultAbilityName(pokemon);
   const abilityId = getAbilityIdByNameKo(resolvedAbility);
@@ -64,6 +70,12 @@ export function buildTeamPokemonSlot(
       : sameAsExisting
         ? (existing?.evs ?? null)
         : null;
+  const resolvedBaseStats =
+    baseStats !== undefined
+      ? baseStats
+      : sameAsExisting
+        ? (existing?.baseStats ?? null)
+        : null;
 
   return {
     pokemonId: pokemon.id,
@@ -77,6 +89,7 @@ export function buildTeamPokemonSlot(
     teraType: sameAsExisting ? (existing?.teraType ?? null) : null,
     moves: resolvedMoves,
     evs: resolvedEvs,
+    baseStats: resolvedBaseStats,
   };
 }
 
@@ -88,6 +101,7 @@ export function buildPokemonsFromEditor(
   selectedMoveIds?: (number | null)[][],
   selectedNatures?: (string | null)[],
   selectedEvs?: (TeamPokemonEvs | null)[],
+  originalBaseStatsBySlot?: (PokemonBaseStats | null)[],
 ): (TeamPokemonSlot | null)[] {
   return selectedPokemons.map((pokemon, index) => {
     if (!pokemon) return null;
@@ -96,6 +110,14 @@ export function buildPokemonsFromEditor(
     const moves = selectedMoveIds
       ? selectedMoveIds[index].filter((id): id is number => id != null)
       : null;
+    const originalBaseStats = originalBaseStatsBySlot?.[index] ?? null;
+    const baseStats =
+      originalBaseStats == null
+        ? undefined
+        : areBaseStatsModified(pokemon, originalBaseStats)
+          ? pickBaseStats(pokemon)
+          : null;
+
     return buildTeamPokemonSlot(
       pokemon,
       abilityName,
@@ -104,6 +126,7 @@ export function buildPokemonsFromEditor(
       existingSlots[index] ?? null,
       selectedNatures ? (selectedNatures[index] ?? null) : undefined,
       selectedEvs ? (selectedEvs[index] ?? null) : undefined,
+      baseStats,
     );
   });
 }

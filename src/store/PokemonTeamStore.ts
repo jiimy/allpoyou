@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import {
+  parsePokemonBaseStats,
+  type PokemonBaseStats,
+} from '@/utils/pokemonBaseStats';
 
 export const TEAM_SLOT_COUNT = 6;
 export const MAX_TEAMS = 5;
@@ -36,6 +40,8 @@ export type TeamPokemonSlot = {
   teraType: string | null;
   moves: number[];
   evs: TeamPokemonEvs | null;
+  /** 종족값 커스텀 시에만 저장 (미설정이면 dex 기본값) */
+  baseStats?: PokemonBaseStats | null;
 };
 
 export type SavedTeam = {
@@ -162,6 +168,7 @@ function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
         teraType: slot.teraType ?? null,
         moves: Array.isArray(slot.moves) ? slot.moves : [],
         evs: slot.evs ?? null,
+        baseStats: parsePokemonBaseStats(slot.baseStats),
       } satisfies TeamPokemonSlot;
     });
 
