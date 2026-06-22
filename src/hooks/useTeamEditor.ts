@@ -46,6 +46,10 @@ import { useMovePickStore } from '@/store/MovePickStore';
 import { useNaturePickStore } from '@/store/NaturePickStore';
 import { getItemNameKoById, searchHeldItems } from '@/utils/itemSearch';
 import { isValidNature, searchNatures, type NatureEntry } from '@/utils/natureList';
+import {
+  searchAbilities,
+  type AbilityListItem,
+} from '@/utils/abilitySearch';
 import { getMovesByIds, searchLearnableMoves } from '@/utils/movesDb';
 import { MOVES_BY_ID, getMoveById } from '@/utils/movesIndex';
 import { normalizePokemon, ensureStringArray } from '@/utils/pokemonNormalize';
@@ -154,6 +158,10 @@ function createEmptyEditorState() {
       { length: TEAM_SLOT_COUNT },
       () => null,
     ) as (string | null)[],
+    abilityPickerSearchValues: Array.from(
+      { length: TEAM_SLOT_COUNT },
+      () => '',
+    ),
     selectedItemIds: Array.from(
       { length: TEAM_SLOT_COUNT },
       () => null,
@@ -243,6 +251,7 @@ function editorStateFromTeam(
     state.selectedMoveIds[index] = moveIds;
     state.moveSearchValues[index] = moveSearches;
     state.selectedEvs[index] = slot.evs ?? createEmptyEvs();
+    state.abilityPickerSearchValues[index] = '';
   });
 
   return state;
@@ -255,6 +264,7 @@ function applyEditorState(
     setSelectedPokemons: Dispatch<SetStateAction<(Pokemon | null)[]>>;
     setSelectedAbilities: Dispatch<SetStateAction<(string | null)[]>>;
     setAbilitySummaries: Dispatch<SetStateAction<(string | null)[]>>;
+    setAbilityPickerSearchValues: Dispatch<SetStateAction<string[]>>;
     setSelectedItemIds: Dispatch<SetStateAction<(number | null)[]>>;
     setItemSearchValues: Dispatch<SetStateAction<string[]>>;
     setSelectedNatures: Dispatch<SetStateAction<(string | null)[]>>;
@@ -268,6 +278,7 @@ function applyEditorState(
   setters.setSelectedPokemons(state.selectedPokemons);
   setters.setSelectedAbilities(state.selectedAbilities);
   setters.setAbilitySummaries(state.abilitySummaries);
+  setters.setAbilityPickerSearchValues(state.abilityPickerSearchValues);
   setters.setSelectedItemIds(state.selectedItemIds);
   setters.setItemSearchValues(state.itemSearchValues);
   setters.setSelectedNatures(state.selectedNatures);
@@ -294,6 +305,13 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const [abilitySummaries, setAbilitySummaries] = useState<(string | null)[]>(
     () => Array.from({ length: TEAM_SLOT_COUNT }, () => null),
   );
+  const [abilityPickerSearchValues, setAbilityPickerSearchValues] = useState<
+    string[]
+  >(() => Array.from({ length: TEAM_SLOT_COUNT }, () => ''));
+  const [activeAbilityIndex, setActiveAbilityIndex] = useState<number | null>(
+    null,
+  );
+  const [abilityHighlightedIndex, setAbilityHighlightedIndex] = useState(0);
   const [selectedItemIds, setSelectedItemIds] = useState<(number | null)[]>(
     () => Array.from({ length: TEAM_SLOT_COUNT }, () => null),
   );
@@ -369,6 +387,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setSelectedPokemons,
       setSelectedAbilities,
       setAbilitySummaries,
+      setAbilityPickerSearchValues,
       setSelectedItemIds,
       setItemSearchValues,
       setSelectedNatures,
@@ -547,6 +566,23 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     selectedMoveIds,
   ]);
 
+  const abilitySuggestions: AbilityListItem[] = useMemo(() => {
+    if (activeAbilityIndex === null) return [];
+    const pokemon = selectedPokemons[activeAbilityIndex];
+    if (!pokemon) return [];
+
+    const keyword =
+      abilityPickerSearchValues[activeAbilityIndex]?.trim() ?? '';
+    const nativeNames = new Set([
+      ...ensureStringArray(pokemon.ability),
+      ...ensureStringArray(pokemon.s_ability),
+    ]);
+
+    return searchAbilities(keyword, 50).filter(
+      (ability) => !nativeNames.has(ability.nameKo),
+    );
+  }, [activeAbilityIndex, selectedPokemons, abilityPickerSearchValues]);
+
   const searchKeyword =
     activeIndex !== null ? values[activeIndex].trim() : '';
 
@@ -614,6 +650,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       if (!prev[index]) return prev;
       const next = [...prev];
       next[index] = null;
+      return next;
+    });
+    setAbilityPickerSearchValues((prev) => {
+      if (!prev[index]) return prev;
+      const next = [...prev];
+      next[index] = '';
       return next;
     });
     setSelectedItemIds((prev) => {
@@ -792,8 +834,75 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
         next[index] = summary;
         return next;
       });
+      setAbilityPickerSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = '';
+        return next;
+      });
+      setActiveAbilityIndex(null);
     },
     [],
+  );
+
+  const handleAbilitySectionActivate = useCallback((index: number) => {
+    setActiveIndex(null);
+    setActiveItemIndex(null);
+    setActiveNatureIndex(null);
+    setActiveMoveSlot(null);
+    setActiveTypeSlot(null);
+    setActiveAbilityIndex(index);
+    setAbilityHighlightedIndex(0);
+  }, []);
+
+  const handleAbilityPickerSearchChange = useCallback(
+    (index: number, value: string) => {
+      setActiveAbilityIndex(index);
+      setAbilityHighlightedIndex(0);
+      setAbilityPickerSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = value;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleAbilityKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+      const dropdownOpen =
+        activeAbilityIndex === index &&
+        selectedPokemons[index] != null &&
+        abilitySuggestions.length > 0;
+
+      if (!dropdownOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setAbilityHighlightedIndex(
+          (prev) => (prev + 1) % abilitySuggestions.length,
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setAbilityHighlightedIndex(
+          (prev) =>
+            (prev - 1 + abilitySuggestions.length) % abilitySuggestions.length,
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const picked = abilitySuggestions[abilityHighlightedIndex];
+        if (picked) handleSelectAbility(index, picked.nameKo);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setActiveAbilityIndex(null);
+      }
+    },
+    [
+      activeAbilityIndex,
+      selectedPokemons,
+      abilitySuggestions,
+      abilityHighlightedIndex,
+      handleSelectAbility,
+    ],
   );
 
   const handleAdjustEv = useCallback(
@@ -883,6 +992,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       if (applyPendingItemToSlot(index)) return;
       setActiveIndex(null);
       setActiveTypeSlot(null);
+      setActiveAbilityIndex(null);
       setActiveItemIndex(index);
       setItemHighlightedIndex(0);
     },
@@ -951,6 +1061,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
+      setActiveAbilityIndex(null);
       setActiveNatureIndex(index);
       setNatureHighlightedIndex(0);
     },
@@ -1087,6 +1198,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
+      setActiveAbilityIndex(null);
       setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
       setMoveHighlightedIndex(0);
     },
@@ -1205,6 +1317,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = getAbilitySummary(defaultAbility);
       return next;
     });
+    setAbilityPickerSearchValues((prev) => {
+      const next = [...prev];
+      next[index] = '';
+      return next;
+    });
     setSelectedItemIds((prev) => {
       const next = [...prev];
       next[index] = null;
@@ -1288,6 +1405,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveNatureIndex(null);
       setActiveMoveSlot(null);
       setActiveTypeSlot(null);
+      setActiveAbilityIndex(null);
     },
     [
       activeTeamId,
@@ -1335,6 +1453,11 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = null;
       return next;
     });
+    setAbilityPickerSearchValues((prev) => {
+      const next = [...prev];
+      next[index] = '';
+      return next;
+    });
     setSelectedItemIds((prev) => {
       const next = [...prev];
       next[index] = null;
@@ -1372,6 +1495,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     });
     setActiveIndex((current) => (current === index ? null : current));
     setActiveNatureIndex((current) => (current === index ? null : current));
+    setActiveAbilityIndex((current) => (current === index ? null : current));
     setActiveMoveSlot((current) =>
       current?.pokemon === index ? null : current,
     );
@@ -1476,6 +1600,15 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onKeyDown: handleKeyDown,
     onSelect: handleSelect,
     onSelectAbility: handleSelectAbility,
+    abilityPickerSearchValues,
+    activeAbilityIndex,
+    abilitySuggestions,
+    abilityHighlightedIndex,
+    onAbilitySectionActivate: handleAbilitySectionActivate,
+    onAbilityPickerSearchChange: handleAbilityPickerSearchChange,
+    onActiveAbilityIndexChange: setActiveAbilityIndex,
+    onAbilityHighlightedIndexChange: setAbilityHighlightedIndex,
+    onAbilityKeyDown: handleAbilityKeyDown,
     onItemSearchChange: handleItemSearchChange,
     onSelectItem: handleSelectItem,
     onClearItem: handleClearItem,

@@ -426,6 +426,7 @@
   border-top: none;
   justify-content: center;
   padding: 0px 8px;
+  position: relative;
   ~ div {
     display: flex;
     align-items: center;
@@ -434,6 +435,73 @@
     min-height: 45px;
     padding: 0px 8px;
   }
+}
+
+.abilityDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.abilityNativeList,
+.abilitySearchList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    padding: 8px 10px;
+    color: #333;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fff;
+
+    &:hover,
+    &.dropdownItemHighlighted {
+      background: #f0f7ff;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.abilityDropdownDivider {
+  height: 1px;
+  margin: 0;
+  background: #ddd;
+}
+
+.abilityDropdownSearch {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.abilityDropdownEmpty {
+  display: block;
+  padding: 8px 10px;
+  color: #888;
+  cursor: default;
+  border-bottom: none;
 }
 
 .fieldLabel {

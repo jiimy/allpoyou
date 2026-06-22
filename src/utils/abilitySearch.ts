@@ -73,6 +73,20 @@ function sortPokemons(pokemons: Pokemon[]): Pokemon[] {
   );
 }
 
+export function searchAbilities(keyword: string, limit = 50): AbilityListItem[] {
+  const q = keyword.trim();
+  if (!q) return ALL_ABILITIES.slice(0, limit);
+
+  const result: AbilityListItem[] = [];
+  for (const ability of ALL_ABILITIES) {
+    if (ability.nameKo.includes(q) || ability.summary.includes(q)) {
+      result.push(ability);
+      if (result.length >= limit) break;
+    }
+  }
+  return result;
+}
+
 /** 포켓몬 이름, 특성 이름, 특성 설명으로 특성 목록을 필터링합니다. */
 export function filterAbilities(
   abilities: AbilityListItem[],

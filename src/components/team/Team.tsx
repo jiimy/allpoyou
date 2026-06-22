@@ -20,6 +20,7 @@ import {
 } from '@/store/PokemonTeamStore';
 import type { ItemKr } from '@/types/item';
 import type { MoveDbEntry } from '@/types/move';
+import type { AbilityListItem } from '@/utils/abilitySearch';
 import type {
   ActiveMoveSlot,
   ActiveTypeSlot,
@@ -126,6 +127,18 @@ export type TeamProps = {
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, index: number) => void;
   onSelect: (index: number, item: Pokemon) => void;
   onSelectAbility: (index: number, abilityName: string) => void;
+  abilityPickerSearchValues: string[];
+  activeAbilityIndex: number | null;
+  abilitySuggestions: AbilityListItem[];
+  abilityHighlightedIndex: number;
+  onAbilitySectionActivate: (index: number) => void;
+  onAbilityPickerSearchChange: (index: number, value: string) => void;
+  onActiveAbilityIndexChange: (index: number | null) => void;
+  onAbilityHighlightedIndexChange: (index: number) => void;
+  onAbilityKeyDown: (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => void;
   onItemSearchChange: (index: number, value: string) => void;
   onSelectItem: (index: number, item: ItemKr) => void;
   onClearItem: (index: number) => void;
@@ -230,6 +243,15 @@ const Team: React.FC<TeamProps> = ({
   onKeyDown,
   onSelect,
   onSelectAbility,
+  abilityPickerSearchValues,
+  activeAbilityIndex,
+  abilitySuggestions,
+  abilityHighlightedIndex,
+  onAbilitySectionActivate,
+  onAbilityPickerSearchChange,
+  onActiveAbilityIndexChange,
+  onAbilityHighlightedIndexChange,
+  onAbilityKeyDown,
   onItemSearchChange,
   onSelectItem,
   onClearItem,
@@ -292,10 +314,12 @@ const Team: React.FC<TeamProps> = ({
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
   const typePickerWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const abilityInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const natureInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const moveInputWrapRefs = useRef<(HTMLDivElement | null)[][]>([]);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const itemDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const abilityDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const natureDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
 
@@ -334,11 +358,13 @@ const Team: React.FC<TeamProps> = ({
     onActiveNatureIndexChange(null);
     onActiveMoveSlotChange(null);
     onActiveTypeSlotChange(null);
+    onActiveAbilityIndexChange(null);
   }, [
     onActiveItemIndexChange,
     onActiveNatureIndexChange,
     onActiveMoveSlotChange,
     onActiveTypeSlotChange,
+    onActiveAbilityIndexChange,
   ]);
 
   useOutOfClick(wrapperRef, handleOutsideClick);
@@ -357,6 +383,12 @@ const Team: React.FC<TeamProps> = ({
       return;
     }
 
+    if (activeAbilityIndex !== null) {
+      activeFieldDropdownRef.current =
+        abilityInputWrapRefs.current[activeAbilityIndex] ?? null;
+      return;
+    }
+
     if (activeMoveSlot !== null) {
       activeFieldDropdownRef.current =
         moveInputWrapRefs.current[activeMoveSlot.pokemon]?.[
@@ -372,7 +404,7 @@ const Team: React.FC<TeamProps> = ({
     }
 
     activeFieldDropdownRef.current = null;
-  }, [activeItemIndex, activeNatureIndex, activeMoveSlot, activeTypeSlot]);
+  }, [activeItemIndex, activeNatureIndex, activeAbilityIndex, activeMoveSlot, activeTypeSlot]);
 
   useEffect(() => {
     itemRefs.current = [];
@@ -400,6 +432,15 @@ const Team: React.FC<TeamProps> = ({
     const el = natureDropdownRefs.current[natureHighlightedIndex];
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [natureHighlightedIndex, natureSuggestions]);
+
+  useEffect(() => {
+    abilityDropdownRefs.current = [];
+  }, [abilitySuggestions]);
+
+  useEffect(() => {
+    const el = abilityDropdownRefs.current[abilityHighlightedIndex];
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, [abilityHighlightedIndex, abilitySuggestions]);
 
   useEffect(() => {
     moveDropdownRefs.current = [];
@@ -471,7 +512,7 @@ const Team: React.FC<TeamProps> = ({
                   alt={selected.nameKo}
                   width={150}
                   height={150}
-                  className="object-contain max-h-full w-full h-full"
+                  className="object-contain w-full h-full max-h-full"
                   priority
                 />
               ) : null}
@@ -551,6 +592,7 @@ const Team: React.FC<TeamProps> = ({
                     onActiveNatureIndexChange(null);
                     onActiveMoveSlotChange(null);
                     onActiveTypeSlotChange(null);
+                    onActiveAbilityIndexChange(null);
                     onActiveIndexChange(index);
                     onHighlightedIndexChange(0);
                   }}
@@ -620,33 +662,137 @@ const Team: React.FC<TeamProps> = ({
               </div>
             </div>
             <div className={s.abilitySection}>
-              {hasAbilities && selected && currentAbility ? (
-                <select
-                  className={s.abilitySelect}
-                  value={currentAbility}
-                  onChange={(e) => onSelectAbility(index, e.target.value)}
-                  aria-label="특성 선택"
-                  title={abilitySummary ?? ''}
+              {selected ? (
+                <div
+                  className={s.inputWrap}
+                  ref={(el) => {
+                    abilityInputWrapRefs.current[index] = el;
+                  }}
                 >
-                  {regularAbilities.map((abilityName) => (
-                    <option
-                      key={`ability-${abilityName}`}
-                      value={abilityName}
-                      title={abilitySummary ?? ''}
-                    >
-                      {abilityName}
-                    </option>
-                  ))}
-                  {hiddenAbilities.map((abilityName) => (
-                    <option
-                      key={`s-ability-${abilityName}`}
-                      value={abilityName}
-                      title={abilitySummary ?? ''}
-                    >
-                      🔓 {abilityName}
-                    </option>
-                  ))}
-                </select>
+                  <input
+                    type="text"
+                    className={s.fieldInput}
+                    placeholder="특성 선택"
+                    value={currentAbility ?? ''}
+                    readOnly
+                    onFocus={() => onAbilitySectionActivate(index)}
+                    title={abilitySummary ?? ''}
+                    aria-label="특성 선택"
+                    suppressHydrationWarning
+                  />
+                  {isClient &&
+                  activeAbilityIndex === index &&
+                  selected != null ? (
+                    <div className={s.abilityDropdown}>
+                      {hasAbilities ? (
+                        <ul className={s.abilityNativeList}>
+                          {regularAbilities.map((abilityName) => {
+                            const isSelected = currentAbility === abilityName;
+                            const summary =
+                              getAbilitySummary(abilityName) ?? '';
+                            return (
+                              <li
+                                key={`native-ability-${abilityName}`}
+                                className={cn({
+                                  [s.dropdownItemHighlighted]: isSelected,
+                                })}
+                                title={summary}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  onSelectAbility(index, abilityName);
+                                }}
+                              >
+                                <span>{abilityName}</span>
+                              </li>
+                            );
+                          })}
+                          {hiddenAbilities.map((abilityName) => {
+                            const isSelected = currentAbility === abilityName;
+                            const summary =
+                              getAbilitySummary(abilityName) ?? '';
+                            return (
+                              <li
+                                key={`native-s-ability-${abilityName}`}
+                                className={cn({
+                                  [s.dropdownItemHighlighted]: isSelected,
+                                })}
+                                title={summary}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  onSelectAbility(index, abilityName);
+                                }}
+                              >
+                                <span>🔓 {abilityName}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                      {hasAbilities ? (
+                        <div
+                          className={s.abilityDropdownDivider}
+                          role="separator"
+                        />
+                      ) : null}
+                      <div className={s.abilityDropdownSearch}>
+                        <input
+                          type="text"
+                          className={s.fieldInput}
+                          placeholder="특성 검색"
+                          value={abilityPickerSearchValues[index]}
+                          onChange={(e) =>
+                            onAbilityPickerSearchChange(
+                              index,
+                              e.target.value,
+                            )
+                          }
+                          onKeyDown={(e) => onAbilityKeyDown(e, index)}
+                          autoComplete="off"
+                          data-1p-ignore
+                          data-lpignore="true"
+                          data-form-type="other"
+                          aria-label="특성 검색"
+                          autoFocus
+                          suppressHydrationWarning
+                        />
+                      </div>
+                      <ul className={s.abilitySearchList}>
+                        {abilitySuggestions.length === 0 && (
+                          <li className={s.abilityDropdownEmpty}>
+                            검색 결과 없음
+                          </li>
+                        )}
+                        {abilitySuggestions.map((ability, i) => {
+                          const isHighlighted = i === abilityHighlightedIndex;
+                          return (
+                            <li
+                              key={ability.id}
+                              className={cn({
+                                [s.dropdownItemHighlighted]: isHighlighted,
+                              })}
+                              title={ability.summary}
+                              ref={(el) => {
+                                abilityDropdownRefs.current[i] = el;
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                onSelectAbility(index, ability.nameKo);
+                              }}
+                              onMouseEnter={() =>
+                                onAbilityHighlightedIndexChange(i)
+                              }
+                            >
+                              <span>{ability.nameKo}</span>
+                              {/* <span className={s.itemDropdownDesc}>
+                                {ability.summary}
+                              </span> */}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <span>특성</span>
               )}
