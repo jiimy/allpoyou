@@ -7,11 +7,19 @@ import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import type { Pokemon } from '@/store/PokemonStore';
 import type { MoveDbEntry } from '@/types/move';
 import { getAbilitySummary } from '@/utils/abilitySearch';
-import { getMoveTypeKo } from '@/utils/moveDisplay';
+import { getMoveStatsTitle, getMoveTypeKo } from '@/utils/moveDisplay';
 import { getMovesByIds } from '@/utils/movesDb';
 import { MOVES_BY_ID } from '@/utils/movesIndex';
+import {
+  fetchPokemonList,
+  getCachedPokemonList,
+} from '@/store/PokemonStore';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import {
+  getMoveLookupNameKo,
+  resolveMoveLookupPokemonId,
+} from '@/utils/pokemonName';
 import {
   BASE_STAT_KEYS,
   BASE_STAT_LABEL,
@@ -44,16 +52,32 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
 
   useEffect(() => {
     let cancelled = false;
-    setMovesLoading(true);
-    setMovesError(null);
-    setMoves([]);
+    // setMovesLoading(true);
+    // setMovesError(null);
+    // setMoves([]);
 
-    const params = new URLSearchParams({
-      pokemonId: String(pokemon.id),
-      nameKo: pokemon.nameKo,
-    });
+    const loadMoves = async () => {
+      let pokemonList = getCachedPokemonList();
+      if (pokemonList.length === 0) {
+        try {
+          pokemonList = await fetchPokemonList();
+        } catch {
+          /* id/nameKo fallback은 캐시 없이도 동작 */
+        }
+      }
 
-    fetch(`/api/moves?${params.toString()}`, { cache: 'no-store' })
+      const lookupNameKo = getMoveLookupNameKo(pokemon.nameKo);
+      const lookupId = resolveMoveLookupPokemonId(pokemon, pokemonList);
+
+      const params = new URLSearchParams({
+        pokemonId: String(lookupId),
+        nameKo: lookupNameKo,
+      });
+
+      return fetch(`/api/moves?${params.toString()}`, { cache: 'no-store' });
+    };
+
+    loadMoves()
       .then(async (res) => {
         const body = (await res.json()) as {
           moveIds?: number[];
@@ -187,8 +211,11 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               {moves.map((move) => {
                 const typeKo = getMoveTypeKo(move.type);
                 return (
-                  <li key={move.id} className={s.moveItem}>
+                  <li key={move.id} className={s.moveItem} 
+                  // title={getMoveStatsTitle(move)}
+                  >
                     <span className={s.moveName}>{move.koreanName}</span>
+                    <span className={s.moveStats}>{getMoveStatsTitle(move)}</span>
                     <span
                       className={s.moveTypeBadge}
                       style={{ background: TYPE_COLOR[typeKo] ?? '#999' }}

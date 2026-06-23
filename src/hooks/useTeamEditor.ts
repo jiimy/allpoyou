@@ -13,6 +13,7 @@ import {
 import {
   getAbilitySummary,
   getDefaultAbility,
+  getMoveLookupNameKo,
   isMegaPokemonName,
   resolveMoveLookupPokemonId,
   type TeamProps,
@@ -508,7 +509,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
 
       const params = new URLSearchParams({
         pokemonId: String(moveLookupId),
-        nameKo: pokemon.nameKo,
+        nameKo: getMoveLookupNameKo(pokemon.nameKo),
       });
 
       fetch(`/api/moves?${params.toString()}`, { cache: 'no-store' })

@@ -26,3 +26,38 @@ export function getBaseEnglishNameForDex(englishName: string): string {
 export function isMegaDisplayName(displayName: string): boolean {
   return displayName.startsWith('메가 ');
 }
+
+const MEGA_NAME_PREFIX = '메가 ';
+const MEGA_XY_SUFFIXES = [' X', ' Y', ' Z'] as const;
+
+/**
+ * 기술 목록 조회용 한글 이름.
+ * `메가 ` 접두사와 ` X`/` Y`/` Z` 접미사를 제거합니다.
+ * 예: 메가 리자몽 X → 리자몽, 메가 메가니움 → 메가니움
+ */
+export function getMoveLookupNameKo(nameKo: string): string {
+  let name = nameKo;
+  if (name.startsWith(MEGA_NAME_PREFIX)) {
+    name = name.slice(MEGA_NAME_PREFIX.length);
+  }
+  for (const suffix of MEGA_XY_SUFFIXES) {
+    if (name.endsWith(suffix)) {
+      return name.slice(0, -suffix.length);
+    }
+  }
+  return name;
+}
+
+/** 배울 수 있는 기술 조회에 사용할 포켓몬 id (메가/X/Y/Z 폼 → 일반 형태) */
+export function resolveMoveLookupPokemonId(
+  pokemon: { id: number; nameKo: string },
+  pokemonList: { id: number; nameKo: string }[],
+): number {
+  const lookupName = getMoveLookupNameKo(pokemon.nameKo);
+  if (lookupName === pokemon.nameKo) {
+    return pokemon.id;
+  }
+
+  const baseForm = pokemonList.find((entry) => entry.nameKo === lookupName);
+  return baseForm?.id ?? pokemon.id;
+}
