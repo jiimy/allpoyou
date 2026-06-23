@@ -1,9 +1,11 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import SearchBar from '@/components/searchBar/SearchBar';
 import type { MoveDamageClassFilter } from '@/constants/moveFilters';
+import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 import type { MoveDbEntry } from '@/types/move';
 import { buildMovesIndex, getMovesByIds } from '@/utils/movesDb';
 import { useMovePickStore } from '@/store/MovePickStore';
@@ -42,15 +44,32 @@ type PokemonMovesCacheEntry = {
   error: string | null;
 };
 
+function parseMoveIdParam(raw: string | null): number | null {
+  if (!raw) return null;
+  const id = Number.parseInt(raw, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
 export default function MovesPageContent() {
-  const [keyword, setKeyword] = useState('');
+  const searchParams = useSearchParams();
+  const { replaceParams } = useUrlQueryParams();
+  const initialMoveId = parseMoveIdParam(searchParams.get('moveId'));
+  const initialMove =
+    initialMoveId != null ? (movesById.get(initialMoveId) ?? null) : null;
+  const initialKeyword =
+    initialMove?.koreanName ?? searchParams.get('q')?.trim() ?? '';
+  const initialLearnable =
+    searchParams.get('learnable') === '1' || initialMove != null;
+
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [activeType, setActiveType] = useState<string | 'all'>('all');
   const [activeDamageClass, setActiveDamageClass] =
     useState<MoveDamageClassFilter>('all');
   const [pokemonSearch, setPokemonSearch] = useState<PokemonSearchState | null>(
     null,
   );
-  const [showLearnablePokemon, setShowLearnablePokemon] = useState(false);
+  const [showLearnablePokemon, setShowLearnablePokemon] =
+    useState(initialLearnable);
   const [learnableCache, setLearnableCache] = useState<
     Record<string, LearnableCacheEntry>
   >({});
@@ -92,18 +111,23 @@ export default function MovesPageContent() {
 
   const moveIdsKey = moveIdsByNameMatch.join(',');
 
-  const handleKeywordChange = useCallback((value: string) => {
-    setKeyword(value);
-    setSelectedPokemon(null);
-    if (!value.trim()) {
-      setPokemonSearch(null);
-      setShowLearnablePokemon(false);
-      setPokemonMovesCache({});
-      setPokemonMovesLoadingId(null);
-      setLearnableCache({});
-      setLearnableLoadingKey(null);
-    }
-  }, []);
+  const handleKeywordChange = useCallback(
+    (value: string) => {
+      setKeyword(value);
+      setSelectedPokemon(null);
+      replaceParams({ moveId: null, learnable: null });
+
+      if (!value.trim()) {
+        setPokemonSearch(null);
+        setShowLearnablePokemon(false);
+        setPokemonMovesCache({});
+        setPokemonMovesLoadingId(null);
+        setLearnableCache({});
+        setLearnableLoadingKey(null);
+      }
+    },
+    [replaceParams],
+  );
 
   const handleShowLearnablePokemonChange = useCallback((checked: boolean) => {
     setShowLearnablePokemon(checked);

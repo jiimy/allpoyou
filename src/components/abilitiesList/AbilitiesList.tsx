@@ -13,6 +13,7 @@ import {
 } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
+import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from '@/app/abilities/abilities.module.scss';
 import PokemonTooltip from '../pokemonTooltip/PokemonTooltip';
@@ -101,18 +102,24 @@ function AbilityCard({
 }
 
 export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
+  const { replaceParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [infoModalPokemon, setInfoModalPokemon] = useState<Pokemon | null>(null);
-  const [selection, setSelection] = useState<{
-    abilityId: number;
-    keyword: string;
-  } | null>(null);
   const setPendingPokemon = usePokemonPickStore(
     (state) => state.setPendingPokemon,
   );
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+
+  const urlAbilityId = parseIntParam('abilityId');
+  const urlPokemonId = parseIntParam('pokemonId');
+  const trimmedKeyword = keyword.trim();
+  const selectedAbilityId = urlAbilityId;
+
+  const infoModalPokemon = useMemo(() => {
+    if (urlPokemonId == null || loading) return null;
+    return pokemons.find((entry) => entry.id === urlPokemonId) ?? null;
+  }, [urlPokemonId, pokemons, loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,21 +146,23 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
     };
   }, []);
 
-  const trimmedKeyword = keyword.trim();
-  const selectedAbilityId =
-    selection?.keyword === trimmedKeyword ? selection.abilityId : null;
-
   const filteredAbilities = useMemo(
     () => filterAbilities(ALL_ABILITIES, pokemons, keyword),
     [pokemons, keyword],
   );
 
   const handleAbilitySelect = (abilityId: number) => {
-    setSelection((prev) =>
-      prev?.abilityId === abilityId && prev.keyword === trimmedKeyword
-        ? null
-        : { abilityId, keyword: trimmedKeyword },
-    );
+    const isDeselect = urlAbilityId === abilityId;
+
+    if (isDeselect) {
+      replaceParams({ abilityId: null, pokemonId: null });
+      return;
+    }
+
+    replaceParams({
+      abilityId: String(abilityId),
+      pokemonId: null,
+    });
   };
 
   const handlePokemonSelect = (pokemon: Pokemon) => {
@@ -162,7 +171,11 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
   };
 
   const handlePokemonViewInfo = (pokemon: Pokemon) => {
-    setInfoModalPokemon(pokemon);
+    replaceParams({ pokemonId: String(pokemon.id) });
+  };
+
+  const handleCloseInfoModal = () => {
+    replaceParams({ pokemonId: null });
   };
 
   if (loading) {
@@ -213,7 +226,7 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
         <SelectPokeModal
           pokemon={infoModalPokemon}
           setOnModal={(open) => {
-            if (!open) setInfoModalPokemon(null);
+            if (!open) handleCloseInfoModal();
           }}
         />
       ) : null}

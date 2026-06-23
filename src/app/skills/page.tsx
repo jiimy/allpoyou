@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 
-import MovesPageContent from './MovesPageContent';
+import MovesPageContent from '@/app/moves/MovesPageContent';
 
-const MovesPage = () => {
+const SkillsPage = () => {
   return (
     <Suspense fallback={null}>
       <MovesPageContent />
@@ -10,4 +10,4 @@ const MovesPage = () => {
   );
 };
 
-export default MovesPage;
+export default SkillsPage;

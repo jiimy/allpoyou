@@ -11,6 +11,7 @@ import { formatAbilityTooltipText } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
+import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from './pokedex.module.scss';
 
@@ -137,18 +138,32 @@ type PokedexListProps = {
 };
 
 export default function PokedexList({ keyword = '' }: PokedexListProps) {
+  const { replaceParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [infoModalPokemon, setInfoModalPokemon] = useState<Pokemon | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
 
+  const urlPokemonId = parseIntParam('pokemonId');
+  const infoModalPokemon = useMemo(() => {
+    if (urlPokemonId == null || loading) return null;
+    return pokemons.find((entry) => entry.id === urlPokemonId) ?? null;
+  }, [urlPokemonId, pokemons, loading]);
+
   const handlePokemonSelect = (pokemon: Pokemon) => {
     setPendingPokemon(pokemon);
     setTeamModalOpen(true);
+  };
+
+  const handlePokemonViewInfo = (pokemon: Pokemon) => {
+    replaceParams({ pokemonId: String(pokemon.id) });
+  };
+
+  const handleCloseInfoModal = () => {
+    replaceParams({ pokemonId: null });
   };
 
   useEffect(() => {
@@ -233,7 +248,7 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
               key={pokemon.id}
               pokemon={pokemon}
               onSelect={() => handlePokemonSelect(pokemon)}
-              onViewInfo={() => setInfoModalPokemon(pokemon)}
+              onViewInfo={() => handlePokemonViewInfo(pokemon)}
             />
           ))
         ) : (
@@ -246,7 +261,7 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
         <SelectPokeModal
           pokemon={infoModalPokemon}
           setOnModal={(open) => {
-            if (!open) setInfoModalPokemon(null);
+            if (!open) handleCloseInfoModal();
           }}
         />
       ) : null}

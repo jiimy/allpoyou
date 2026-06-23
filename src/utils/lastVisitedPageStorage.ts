@@ -65,6 +65,7 @@ export function isValidLastVisitedPath(path: string): boolean {
     '/abilities',
     '/items',
     '/moves',
+    '/skills',
     '/make-team',
     '/my-info',
     '/nature',

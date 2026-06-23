@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useCallback, useEffect, useState } from 'react';
 import ModalFrame from '@/components/portalModal/ModalFrame';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -42,9 +43,17 @@ type SelectPokeModalProps = {
 };
 
 const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
+  const router = useRouter();
   const [moves, setMoves] = useState<MoveDbEntry[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
   const [movesError, setMovesError] = useState<string | null>(null);
+
+  const handleMoveSelect = useCallback(
+    (move: MoveDbEntry) => {
+      router.push(`/skills?moveId=${move.id}&learnable=1`);
+    },
+    [router],
+  );
 
   const imageUrl = getPokemonStaticImage(pokemon.images);
   const regularAbilities = ensureStringArray(pokemon.ability);
@@ -199,7 +208,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         </section>
 
         <section>
-          <h3 className={s.sectionTitle}>배울 수 있는 기술</h3>
+          <h3 className={s.sectionTitle}>배울 수 있는 기술 <p>항목 클릭시 기술 페이지로 이동되며 배울수있는 포켓몬이 검색됩니다.</p></h3>
           {movesLoading ? (
             <p className={s.statusText}>기술 목록 불러오는 중…</p>
           ) : movesError ? (
@@ -211,8 +220,18 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               {moves.map((move) => {
                 const typeKo = getMoveTypeKo(move.type);
                 return (
-                  <li key={move.id} className={s.moveItem} 
-                  // title={getMoveStatsTitle(move)}
+                  <li
+                    key={move.id}
+                    className={s.moveItem}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleMoveSelect(move)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleMoveSelect(move);
+                      }
+                    }}
                   >
                     <span className={s.moveName}>{move.koreanName}</span>
                     <span className={s.moveStats}>{getMoveStatsTitle(move)}</span>
