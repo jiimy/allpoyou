@@ -80,7 +80,7 @@ export const typeChart: Record<Type, Record<Type, number>> = {
     dragon: 1,
     dark: 1,
     steel: 0.5,
-    fairy: 0
+    fairy: 1
   },
   electric: {
     electric: 0.5, ground: 2,

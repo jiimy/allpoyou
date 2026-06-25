@@ -4,14 +4,33 @@
   grid-template-columns: repeat(auto-fill, minmax(calc(110px + 16px), 1fr));
 }
 .item {
-  border: 1px solid black;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f8f8f8;
+  }
 }
 .is_selected {
-  color: red;
+  color: #fff;
 }
 
 .type_result {
+  margin-top: 8px;
+
+  p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+  }
+
   .type_area {
     display: grid;
     gap: 8px;

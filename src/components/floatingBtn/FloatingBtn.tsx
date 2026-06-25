@@ -9,6 +9,9 @@ import { fetchPokemonList, getCachedPokemonList } from '@/store/PokemonStore';
 import TypeTableModal, {
   useTypeTableModalShortcut,
 } from '@/components/portalModal/typeTableModal/TypeTableModal';
+import TypeCalcModal, {
+  useTypeCalcModalShortcut,
+} from '@/components/portalModal/typeCalcModal/TypeCalcModal';
 import TeamModal, {
   useTeamModalShortcut,
 } from '@/components/portalModal/teamModal/TeamModal';
@@ -29,6 +32,10 @@ type FloatingMenuItem = {
   label: string;
   href?: string;
   onClick?: () => void;
+};
+const TYPE_CALC_ITEM: FloatingMenuItem = {
+  id: 'type-calc',
+  label: '타입 계산기',
 };
 
 const TYPE_TABLE_ITEM: FloatingMenuItem = {
@@ -62,13 +69,17 @@ const FloatingBtn = () => {
   const isMakeTeamPage = isMakeTeamPath(pathname ?? '');
 
   const menuItems = useMemo(
-    () => (isMakeTeamPage ? [TYPE_TABLE_ITEM] : [TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM]),
+    () =>
+      isMakeTeamPage
+        ? [TYPE_TABLE_ITEM, TYPE_CALC_ITEM]
+        : [TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM],
     [isMakeTeamPage],
   );
 
   const isOpen = useFloatingBtnStore((state) => state.isOpen);
   const setIsOpen = useFloatingBtnStore((state) => state.setIsOpen);
   const [typeTableModalOpen, setTypeTableModalOpen] = useState(false);
+  const [typeCalcModalOpen, setTypeCalcModalOpen] = useState(false);
   const [natureTableModalOpen, setNatureTableModalOpen] = useState(false);
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
@@ -103,6 +114,7 @@ const FloatingBtn = () => {
   );
 
   useTypeTableModalShortcut(setTypeTableModalOpen);
+  useTypeCalcModalShortcut(setTypeCalcModalOpen);
   useTeamModalShortcut(handleTeamModalOpenChange);
   useNatureTableModalShortcut(setNatureTableModalOpen);
 
@@ -115,6 +127,9 @@ const FloatingBtn = () => {
   const handleItemClick = (item: FloatingMenuItem) => {
     if (item.id === 'type-table') {
       setTypeTableModalOpen(true);
+    }
+    if (item.id === 'type-calc') {
+      setTypeCalcModalOpen(true);
     }
     if (item.id === 'team') {
       handleTeamModalOpenChange(true);
@@ -130,6 +145,9 @@ const FloatingBtn = () => {
     <>
       {typeTableModalOpen && (
         <TypeTableModal setOnModal={setTypeTableModalOpen} dimClick />
+      )}
+      {typeCalcModalOpen && (
+        <TypeCalcModal setOnModal={setTypeCalcModalOpen} dimClick />
       )}
       {teamModalOpen && (
         <TeamModal setOnModal={handleTeamModalOpenChange} dimClick />
@@ -164,6 +182,7 @@ const FloatingBtn = () => {
                   onClick={() => handleItemClick(item)}
                 >
                   {item.label}
+                  {item.id === 'type-calc' && <Command command="+V" />}
                   {item.id === 'type-table' && <Command command="+F" />}
                   {item.id === 'team' && <Command command="+D" />}
                   {item.id === 'nature' && <Command command="+C" />}
