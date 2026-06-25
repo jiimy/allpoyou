@@ -18,6 +18,9 @@
   max-height: calc(100vh - 120px);
   overflow-y: auto;
   padding-right: 4px;
+  &:global([class*="typePicker"]) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .title {
