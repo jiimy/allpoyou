@@ -48,7 +48,7 @@ export const typeTranslation: Record<string, string> = {
 // 타입 상성 테이블 정의
 export const typeChart: Record<Type, Record<Type, number>> = {
   normal: {
-    fighting: 2, ghost: 1,
+    fighting: 2, ghost: 0,
     normal: 1, fire: 1, water: 1, electric: 1, grass: 1, ice: 1, poison: 1, ground: 1, flying: 1, psychic: 1, bug: 1, rock: 1, dragon: 1, dark: 1, steel: 1, fairy: 1
   },
   fire: {
@@ -106,7 +106,7 @@ export const typeChart: Record<Type, Record<Type, number>> = {
     normal: 1,
     ice: 2,
     fighting: 1,
-    ground: 1,
+    ground: 0.5,
     psychic: 1,
     rock: 1,
     ghost: 1,
@@ -118,7 +118,7 @@ export const typeChart: Record<Type, Record<Type, number>> = {
     normal: 1,
     electric: 1,
     grass: 1,
-    fighting: 1,
+    fighting: 2,
     poison: 1,
     ground: 1,
     flying: 1,
@@ -128,7 +128,7 @@ export const typeChart: Record<Type, Record<Type, number>> = {
     ghost: 1,
     dragon: 1,
     dark: 1,
-    fairy: 0
+    fairy: 1
   },
   fighting: {
     fighting: 1, flying: 2, psychic: 2, ghost: 1,
@@ -184,13 +184,13 @@ export const typeChart: Record<Type, Record<Type, number>> = {
     normal: 1,
     fire: 1,
     water: 1,
-    grass: 1,
-    fighting: 1,
+    grass: 0.5,
+    fighting: 0.5,
     poison: 1,
     ground: 0,
     flying: 1,
     psychic: 1,
-    bug: 1,
+    bug: 0.5,
     ghost: 1,
     dragon: 1,
     dark: 1,

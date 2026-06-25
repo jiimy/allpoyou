@@ -56,11 +56,6 @@ const TypeCalcModal = ({
   const setSelected = mode === 'attack' ? setAttackSelected : setDefenseSelected;
   const maxSelection = mode === 'attack' ? 1 : 2;
 
-  const hint =
-    mode === 'attack'
-      ? '공격 타입을 선택하면 각 방어 타입에 대한 데미지 배율을 보여줍니다.'
-      : '방어 타입을 1~2개 선택하면 공격 타입별 데미지 배율을 보여줍니다.';
-
   return (
     <ModalFrame
       setOnModal={setOnModal}
@@ -97,15 +92,25 @@ const TypeCalcModal = ({
           </button>
         </div>
 
-        {/* <p className={s.hint}>{hint}</p> */}
         <div className={s.typeWrap}>
-          <TypePicker
-            selected={selected}
-            onChange={setSelected}
-            maxSelection={maxSelection}
-          />
-
-          <TypeResult mode={mode} select={selected} />
+          <div className={s.pickerPanel}>
+            <p className={s.panelLabel}>타입 선택</p>
+            <TypePicker
+              selected={selected}
+              onChange={setSelected}
+              maxSelection={maxSelection}
+              className={s.pickerGrid}
+            />
+          </div>
+          <div className={s.resultPanel}>
+            {/* <p className={s.panelLabel}>결과</p> */}
+            <TypeResult
+              mode={mode}
+              select={selected}
+              className={s.resultContent}
+              typeAreaClassName={s.resultGrid}
+            />
+          </div>
         </div>
       </div>
     </ModalFrame>

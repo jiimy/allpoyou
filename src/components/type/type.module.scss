@@ -34,7 +34,6 @@
   .type_area {
     display: grid;
     gap: 8px;
-    grid-template-columns: repeat(auto-fill, minmax(calc(110px + 16px), 1fr));
   }
   span {
     display: inline-flex;

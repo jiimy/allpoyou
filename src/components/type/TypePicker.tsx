@@ -12,6 +12,7 @@ type TypePickerProps = {
   selected: string[];
   onChange: (selected: string[]) => void;
   maxSelection?: number;
+  className?: string;
 };
 
 const ALL_TYPES = Object.keys(typeChart);
@@ -20,6 +21,7 @@ const TypePicker = ({
   selected,
   onChange,
   maxSelection = 2,
+  className,
 }: TypePickerProps) => {
   const onClick = (value: string) => {
     if (selected.includes(value)) {
@@ -41,7 +43,7 @@ const TypePicker = ({
   };
 
   return (
-    <div className={s.typeSelect}>
+    <div className={classNames(s.typeSelect, className)}>
       {ALL_TYPES.map((type) => {
         const label = typeTranslation[type];
         const isSelected = selected.includes(type);

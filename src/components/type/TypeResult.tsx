@@ -1,5 +1,6 @@
 'use client';
 
+import classNames from 'classnames';
 import React, { useMemo } from 'react';
 
 import { ALL_POKEMON_TYPES_KO } from '@/constants/pokemonTypeColor';
@@ -15,13 +16,20 @@ import s from './type.module.scss';
 type TypeResultProps = {
   mode: 'attack' | 'defense';
   select?: string[];
+  className?: string;
+  typeAreaClassName?: string;
 };
 
 const DEFAULT_RESULT = Object.fromEntries(
   ALL_POKEMON_TYPES_KO.map((type) => [type, 1]),
 );
 
-const TypeResult = ({ mode, select = [] }: TypeResultProps) => {
+const TypeResult = ({
+  mode,
+  select = [],
+  className,
+  typeAreaClassName,
+}: TypeResultProps) => {
   const result = useMemo(() => {
     if (select.length === 0 || !select[0]) {
       return DEFAULT_RESULT;
@@ -35,13 +43,13 @@ const TypeResult = ({ mode, select = [] }: TypeResultProps) => {
   const data = useGroupByValue(result);
 
   return (
-    <div className={s.type_result}>
+    <div className={classNames(s.type_result, className)}>
       {data.map((group, index) => {
         const [key, values] = Object.entries(group)[0];
         return (
           <div key={index}>
             <p>{key}</p>
-            <div className={s.type_area}>
+            <div className={classNames(s.type_area, typeAreaClassName)}>
               {values.map((value) => (
                 <span
                   key={value}

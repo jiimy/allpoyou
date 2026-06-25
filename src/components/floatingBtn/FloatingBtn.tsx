@@ -71,8 +71,8 @@ const FloatingBtn = () => {
   const menuItems = useMemo(
     () =>
       isMakeTeamPage
-        ? [TYPE_TABLE_ITEM]
-        : [TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM],
+        ? [TYPE_CALC_ITEM, TYPE_TABLE_ITEM]
+        : [TYPE_CALC_ITEM, TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM],
     [isMakeTeamPage],
   );
 
