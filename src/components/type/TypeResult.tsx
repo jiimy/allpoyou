@@ -47,7 +47,7 @@ const TypeResult = ({
       {data.map((group, index) => {
         const [key, values] = Object.entries(group)[0];
         return (
-          <div key={index}>
+          <div key={index} className={s.typeResultItem}>
             <p>{key}</p>
             <div className={classNames(s.type_area, typeAreaClassName)}>
               {values.map((value) => (

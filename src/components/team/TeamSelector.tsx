@@ -1,18 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import cn from 'classnames';
 import {
   MAX_TEAMS,
+  type SavedTeam,
   usePokemonTeamStore,
 } from '@/store/PokemonTeamStore';
 import { isTeamAlreadyPublished, isTeamPublishable, isTeamShareable } from '@/utils/teamShare';
 import type { TeamSaveStatus } from '@/hooks/useDebouncedTeamDbSync';
-import s from '@/app/make-team/maekTeam.module.scss';
 import { useMobile } from '@/hooks/useMobile';
+import s from '@/app/make-team/maekTeam.module.scss';
 
 type TeamSelectorProps = {
   onSwitchTeam: (teamId: number) => void;
   onPublishTeam?: (teamId: number) => void | Promise<void>;
+  getActiveTeamForPublish?: () => SavedTeam | undefined;
   saveStatus?: TeamSaveStatus;
   // saveCountdownSec?: number | null;
   publishError?: string | null;
@@ -29,6 +32,7 @@ const SAVE_STATUS_LABEL = {
 export default function TeamSelector({
   onSwitchTeam,
   onPublishTeam,
+  getActiveTeamForPublish,
   saveStatus = 'idle',
   // saveCountdownSec = null,
   publishError = null,
@@ -39,12 +43,16 @@ export default function TeamSelector({
   const teams = usePokemonTeamStore((state) => state.teams);
   const setTeamName = usePokemonTeamStore((state) => state.setTeamName);
   const activeTeam = teams.find((team) => team.teamId === activeTeamId);
-  const shareable = isTeamShareable(activeTeam);
+  const teamForPublish = getActiveTeamForPublish?.() ?? activeTeam;
+  const shareable = isTeamShareable(teamForPublish);
   const alreadyPublished = isTeamAlreadyPublished(
-    activeTeam,
+    teamForPublish,
     publishedPokemonDataList,
   );
-  const publishable = isTeamPublishable(activeTeam, publishedPokemonDataList);
+  const publishable = isTeamPublishable(
+    teamForPublish,
+    publishedPokemonDataList,
+  );
   const [publishPending, setPublishPending] = useState(false);
   const showPublishButton = isLoggedIn;
   // const showCountdown =
@@ -69,6 +77,12 @@ export default function TeamSelector({
     }
   };
 
+  const publishButtonTitle = !shareable
+    ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공개할 수 있습니다.'
+    : alreadyPublished
+      ? '이미 동일한 포켓몬 구성으로 공개한 팀이 있습니다. 포켓몬 정보를 수정하면 다시 공개할 수 있습니다.'
+      : '현재 팀 구성을 공개합니다.';
+
   return (
     <div className={s.teamSelector}>
       <div className={s.teamTabs} role="tablist" aria-label="팀 선택">
@@ -88,30 +102,21 @@ export default function TeamSelector({
         )}
       </div>
 
-      {isMobile() && isLoggedIn && (showPublishButton || showSaveIndicator) ? (
+      {isMobile && isLoggedIn && (showPublishButton || showSaveIndicator) ? (
         <div className={s.teamMetaActions}>
           {showPublishButton ? (
             <button
               type="button"
-              className={s.teamShareBtn}
+              className={cn(s.teamShareBtn, {
+                [s.teamShareBtnActive]: publishable,
+              })}
               disabled={publishPending || !publishable}
               onClick={handlePublishClick}
-              title={
-                !shareable
-                  ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공개할 수 있습니다.'
-                  : alreadyPublished
-                    ? '이미 동일한 포켓몬 구성으로 공개한 팀이 있습니다. 포켓몬 정보를 수정하면 다시 공개할 수 있습니다.'
-                    : '현재 팀 구성으로 다시 공개합니다.'
-              }
+              title={publishButtonTitle}
             >
               {publishPending ? '공개 중…' : '공개'}
             </button>
           ) : null}
-          {/* {showCountdown ? (
-            <span className={s.teamSaveStatus} aria-live="polite">
-              자동저장 남은 시간 {saveCountdownSec}초..
-            </span>
-          ) : null} */}
           {saveStatus === 'saving' ||
             saveStatus === 'error' ||
             saveStatus === 'saved' ? (
@@ -134,30 +139,21 @@ export default function TeamSelector({
         />
       </label>
 
-      {isLoggedIn && !isMobile() && (showPublishButton || showSaveIndicator) ? (
+      {isLoggedIn && !isMobile && (showPublishButton || showSaveIndicator) ? (
         <div className={s.teamMetaActions}>
           {showPublishButton ? (
             <button
               type="button"
-              className={s.teamShareBtn}
+              className={cn(s.teamShareBtn, {
+                [s.teamShareBtnActive]: publishable,
+              })}
               disabled={publishPending || !publishable}
               onClick={handlePublishClick}
-              title={
-                !shareable
-                  ? '팀 이름과 6마리·도구·성격·기술4·노력치66을 모두 채워야 공개할 수 있습니다.'
-                  : alreadyPublished
-                    ? '이미 동일한 포켓몬 구성으로 공개한 팀이 있습니다. 포켓몬 정보를 수정하면 다시 공개할 수 있습니다.'
-                    : '현재 팀 구성으로 다시 공개합니다.'
-              }
+              title={publishButtonTitle}
             >
               {publishPending ? '공개 중…' : '공개'}
             </button>
           ) : null}
-          {/* {showCountdown ? (
-            <span className={s.teamSaveStatus} aria-live="polite">
-              자동저장 남은 시간 {saveCountdownSec}초..
-            </span>
-          ) : null} */}
           {saveStatus === 'saving' ||
           saveStatus === 'error' ||
           saveStatus === 'saved' ? (

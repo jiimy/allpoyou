@@ -321,24 +321,41 @@ export function useDebouncedTeamDbSync({
     dbHasTeamData,
   ]);
 
+  const refreshPublishedPokemonDataList = useCallback(async () => {
+    if (!loggedInUserId) {
+      setPublishedPokemonDataList([]);
+      return;
+    }
+
+    const data = await loadUserPublishedPokemonData();
+    setPublishedPokemonDataList(data);
+  }, [loggedInUserId]);
+
   useEffect(() => {
     if (!authReady || !loggedInUserId) {
       setPublishedPokemonDataList([]);
       return;
     }
 
-    let cancelled = false;
+    void refreshPublishedPokemonDataList();
+  }, [authReady, loggedInUserId, refreshPublishedPokemonDataList]);
 
-    void loadUserPublishedPokemonData().then((data) => {
-      if (!cancelled) {
-        setPublishedPokemonDataList(data);
-      }
-    });
+  useEffect(() => {
+    if (!authReady || !loggedInUserId) return;
+
+    const handleRefresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      void refreshPublishedPokemonDataList();
+    };
+
+    window.addEventListener('focus', handleRefresh);
+    document.addEventListener('visibilitychange', handleRefresh);
 
     return () => {
-      cancelled = true;
+      window.removeEventListener('focus', handleRefresh);
+      document.removeEventListener('visibilitychange', handleRefresh);
     };
-  }, [authReady, loggedInUserId]);
+  }, [authReady, loggedInUserId, refreshPublishedPokemonDataList]);
 
   useEffect(() => {
     if (!loggedInUserId || !teamsSourceReady) return;
@@ -375,9 +392,16 @@ export function useDebouncedTeamDbSync({
   }, [loggedInUserId, teamsSourceReady, scheduleSave]);
 
   const publishTeamPublic = useCallback(async (teamId: number) => {
+    const freshPublished = await loadUserPublishedPokemonData();
+    setPublishedPokemonDataList(freshPublished);
+
     const state = usePokemonTeamStore.getState();
     const team = state.teams.find((entry) => entry.teamId === teamId);
-    if (!team || !isTeamPublishable(team, publishedPokemonDataList)) return;
+    if (!team || !isTeamPublishable(team, freshPublished)) {
+      throw new Error(
+        '공개 조건을 다시 확인해 주세요. 동일한 포켓몬 구성으로 이미 공개한 팀이 있거나 필수 항목이 비어 있을 수 있습니다.',
+      );
+    }
 
     const result = await publishTeamToDb(teamId, team);
 
@@ -388,7 +412,7 @@ export function useDebouncedTeamDbSync({
 
     setPublishedPokemonDataList((prev) => [...prev, team.pokemons]);
     showSavedFlash();
-  }, [publishedPokemonDataList, showSavedFlash]);
+  }, [showSavedFlash]);
 
   return {
     teamsSourceReady,

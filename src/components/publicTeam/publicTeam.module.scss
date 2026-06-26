@@ -110,6 +110,17 @@
   gap: 4px;
 }
 
+.likeStatUnpublish {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  &:hover .likeIcon {
+    transform: scale(1.06);
+  }
+}
+
 .likeError {
   margin: 0;
   font-size: 11px;
@@ -189,6 +200,13 @@
 
 .slotImage {
   object-fit: contain;
+}
+
+.slotImagePlaceholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background: #f3f4f6;
 }
 
 .slotTypes {

@@ -71,6 +71,7 @@ const MyInfoPage = async () => {
                     showLikeCount
                     showSearch={false}
                     enableTeamClone
+                    enableUnpublish
                     emptyMessage="공개한 팀이 없습니다."
                   />
                 </div>

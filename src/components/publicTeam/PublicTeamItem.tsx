@@ -33,6 +33,8 @@ type PublicTeamItemProps = {
   ) => void;
   onSnapshotRemoved?: (likeRowId: string) => void;
   onTeamSelect?: (team: PublicTeam) => void;
+  enableUnpublish?: boolean;
+  onUnpublishRequest?: (team: PublicTeam) => void;
 };
 
 export default function PublicTeamItem({
@@ -45,6 +47,8 @@ export default function PublicTeamItem({
   onLikeChange,
   onSnapshotRemoved,
   onTeamSelect,
+  enableUnpublish = false,
+  onUnpublishRequest,
 }: PublicTeamItemProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +151,25 @@ export default function PublicTeamItem({
                 height={32}
                 className={cn(s.likeIcon, {
                   [s.likeIconActive]: optimisticLike.liked,
+                })}
+              />
+            </button>
+          ) : enableUnpublish && isOwnTeam ? (
+            <button
+              type="button"
+              className={cn(s.likeStat, s.likeStatUnpublish)}
+              onClick={() => onUnpublishRequest?.(team)}
+              aria-label={`받은 좋아요 ${optimisticLike.likeCount}개 · 비공개로 변경`}
+              title="클릭하면 비공개로 변경할 수 있습니다"
+            >
+              <span className={s.likeCount}>{optimisticLike.likeCount}</span>
+              <Image
+                src={LIKE_ICON}
+                alt=""
+                width={32}
+                height={32}
+                className={cn(s.likeIcon, {
+                  [s.likeIconActive]: optimisticLike.likeCount > 0,
                 })}
               />
             </button>

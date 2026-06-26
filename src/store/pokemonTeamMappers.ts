@@ -89,6 +89,9 @@ export function buildTeamPokemonSlot(
     teraType: sameAsExisting ? (existing?.teraType ?? null) : null,
     moves: resolvedMoves,
     evs: resolvedEvs,
+    images: sameAsExisting
+      ? (existing?.images?.length ? existing.images : pokemon.images)
+      : pokemon.images,
     baseStats: resolvedBaseStats,
   };
 }

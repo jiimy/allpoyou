@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchBar from '@/components/searchBar/SearchBar';
 import { teamMatchesPokemonQuery } from '@/utils/publicTeamDisplay';
 import type { PublicTeam } from '@/app/public-teams/actions';
+import CanclePublicTeam from '@/components/portalModal/cancelPublicTeamModal/CanclePublicTeam';
 import PublicTeamItem from './PublicTeamItem';
 import CloneTeamModal from './CloneTeamModal';
 import s from './publicTeam.module.scss';
@@ -19,6 +20,7 @@ type PublicTeamFeedProps = {
   showLikeCount?: boolean;
   showSearch?: boolean;
   enableTeamClone?: boolean;
+  enableUnpublish?: boolean;
 };
 
 function getLikeTargetId(team: PublicTeam): string {
@@ -34,10 +36,15 @@ export default function PublicTeamFeed({
   showLikeCount = false,
   showSearch = true,
   enableTeamClone = false,
+  enableUnpublish = false,
 }: PublicTeamFeedProps) {
   const [keyword, setKeyword] = useState('');
   const [teams, setTeams] = useState(initialTeams);
   const [cloneTarget, setCloneTarget] = useState<PublicTeam | null>(null);
+  const [unpublishTarget, setUnpublishTarget] = useState<PublicTeam | null>(
+    null,
+  );
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [likedMap, setLikedMap] = useState(() => new Set(likedTeamIds));
   const [likeCounts, setLikeCounts] = useState(() =>
     Object.fromEntries(
@@ -104,6 +111,20 @@ export default function PublicTeamFeed({
     setTeams((prev) => prev.filter((team) => team.id !== likeRowId));
   };
 
+  const handleUnpublishRequest = (team: PublicTeam) => {
+    setUnpublishTarget(team);
+    setShowUnpublishModal(true);
+  };
+
+  const handleUnpublishClose = () => {
+    setShowUnpublishModal(false);
+    setUnpublishTarget(null);
+  };
+
+  const handleUnpublished = (teamId: string) => {
+    setTeams((prev) => prev.filter((team) => team.id !== teamId));
+  };
+
   return (
     <div className={s.publicTeamFeed}>
       <div className={s.feed}>
@@ -150,6 +171,8 @@ export default function PublicTeamFeed({
                   onTeamSelect={
                     enableTeamClone ? (selectedTeam) => setCloneTarget(selectedTeam) : undefined
                   }
+                  enableUnpublish={enableUnpublish}
+                  onUnpublishRequest={handleUnpublishRequest}
                 />
               );
             })}
@@ -161,6 +184,15 @@ export default function PublicTeamFeed({
       </div>
       {cloneTarget ? (
         <CloneTeamModal team={cloneTarget} onClose={() => setCloneTarget(null)} />
+      ) : null}
+      {showUnpublishModal && unpublishTarget ? (
+        <CanclePublicTeam
+          setOnModal={setShowUnpublishModal}
+          dimClick
+          team={unpublishTarget}
+          onDismiss={handleUnpublishClose}
+          onUnpublished={handleUnpublished}
+        />
       ) : null}
     </div>
   );

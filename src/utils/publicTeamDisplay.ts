@@ -13,10 +13,6 @@ const EV_SHORT_LABEL: Record<EvStatKey, string> = {
   S: 'S',
 };
 
-export function getPokemonPngUrl(pokemonId: number): string {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
-}
-
 export function formatInvestedEvs(evs: TeamPokemonEvs | null): string {
   if (!evs) return '';
 
@@ -36,7 +32,7 @@ export type ResolvedPokemonSlot = {
   nature: string | null;
   moves: string[];
   evsText: string;
-  imageUrl: string;
+  images: string[];
 };
 
 export function resolvePokemonSlot(
@@ -55,7 +51,7 @@ export function resolvePokemonSlot(
       .map((id) => getMoveById(id)?.koreanName ?? null)
       .filter((name): name is string => Boolean(name)),
     evsText: formatInvestedEvs(slot.evs),
-    imageUrl: getPokemonPngUrl(slot.pokemonId),
+    images: slot.images ?? [],
   };
 }
 

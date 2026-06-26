@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { getCurrentUser } from '@/utils/auth/dal';
 import { createAdminClient } from '@/utils/supabase/admin';
 import {
@@ -7,6 +9,7 @@ import {
   type TeamPokemonSlot,
 } from '@/store/teamDbMappers';
 import { normalizeDbId } from '@/utils/teamDb';
+import { areTeamPokemonsEqual } from '@/utils/teamShare';
 
 export type PublicTeam = {
   /** 목록 key (public_teams.id 또는 team_likes.id) */
@@ -361,24 +364,106 @@ export async function removeLikedTeamSnapshot(
   return { ok: true, liked: false, likeCount: 0 };
 }
 
-/** 내가 발행한 public_teams 게시물 삭제 */
-export async function deletePublicTeam(
+export type UnpublishResult = { ok: true } | { error: string };
+
+/** 내가 공개한 팀을 비공개로 전환 (전시 게시물 삭제 + teams.is_public 해제) */
+export async function unpublishPublicTeam(
   publicTeamId: string,
-): Promise<ToggleLikeResult> {
+): Promise<UnpublishResult> {
   const user = await getCurrentUser();
   if (!user) return { error: '로그인이 필요합니다.' };
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+
+  const { data: post, error: postError } = await supabase
+    .from('public_teams')
+    .select('id, author_id, pokemon_data')
+    .eq('id', publicTeamId)
+    .maybeSingle();
+
+  if (postError || !post) {
+    return { error: '팀을 찾을 수 없습니다.' };
+  }
+
+  if (normalizeDbId(post.author_id) !== user.id) {
+    return { error: '권한이 없습니다.' };
+  }
+
+  const pokemonData = post.pokemon_data;
+
+  const { error: deleteError } = await supabase
     .from('public_teams')
     .delete()
     .eq('id', publicTeamId)
     .eq('author_id', user.id);
 
-  if (error) {
-    console.error('[deletePublicTeam]', error);
-    return { error: '게시물 삭제에 실패했습니다.' };
+  if (deleteError) {
+    console.error('[unpublishPublicTeam]', deleteError);
+    return { error: '비공개 처리에 실패했습니다.' };
   }
 
+  const { data: remainingPosts, error: remainingError } = await supabase
+    .from('public_teams')
+    .select('pokemon_data')
+    .eq('author_id', user.id);
+
+  if (remainingError) {
+    console.error('[unpublishPublicTeam] remaining lookup', remainingError);
+  } else {
+    const stillPublished = (remainingPosts ?? []).some((row) =>
+      areTeamPokemonsEqual(
+        parsePokemonsFromJson(pokemonData, ''),
+        row.pokemon_data,
+      ),
+    );
+
+    if (!stillPublished) {
+      const { data: teamRows, error: teamsError } = await supabase
+        .from('teams')
+        .select('team_slot, pokemon_data')
+        .eq('user_id', user.id)
+        .eq('is_public', true);
+
+      if (teamsError) {
+        console.error('[unpublishPublicTeam] teams lookup', teamsError);
+      } else {
+        for (const row of teamRows ?? []) {
+          if (
+            areTeamPokemonsEqual(
+              parsePokemonsFromJson(row.pokemon_data, ''),
+              pokemonData,
+            )
+          ) {
+            const { error: flagError } = await supabase
+              .from('teams')
+              .update({
+                is_public: false,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', user.id)
+              .eq('team_slot', row.team_slot);
+
+            if (flagError) {
+              console.error('[unpublishPublicTeam] is_public flag', flagError);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  revalidatePath('/my-info');
+  revalidatePath('/');
+  revalidatePath('/make-team');
+
+  return { ok: true };
+}
+
+/** @deprecated unpublishPublicTeam 사용 */
+export async function deletePublicTeam(
+  publicTeamId: string,
+): Promise<ToggleLikeResult> {
+  const result = await unpublishPublicTeam(publicTeamId);
+  if ('error' in result) return result;
   return { ok: true, liked: false, likeCount: 0 };
 }

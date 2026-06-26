@@ -40,6 +40,8 @@ export type TeamPokemonSlot = {
   teraType: string | null;
   moves: number[];
   evs: TeamPokemonEvs | null;
+  /** [공식 일러스트 PNG, Showdown 애니 GIF] */
+  images?: string[];
   /** 종족값 커스텀 시에만 저장 (미설정이면 dex 기본값) */
   baseStats?: PokemonBaseStats | null;
 };
@@ -168,6 +170,7 @@ function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
         teraType: slot.teraType ?? null,
         moves: Array.isArray(slot.moves) ? slot.moves : [],
         evs: slot.evs ?? null,
+        images: Array.isArray(slot.images) ? slot.images : undefined,
         baseStats: parsePokemonBaseStats(slot.baseStats),
       } satisfies TeamPokemonSlot;
     });

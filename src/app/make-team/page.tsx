@@ -368,6 +368,7 @@ const MakeTeam = () => {
     allPokemons,
     handleSelect,
     switchActiveTeam,
+    getActiveTeamForPublish,
   } = useTeamEditor({
     teamsSourceReady:
       authReady && (!loggedInUserId || teamsSourceReady),
@@ -462,6 +463,7 @@ const MakeTeam = () => {
       <TeamSelector
         onSwitchTeam={switchActiveTeam}
         onPublishTeam={handlePublishTeam}
+        getActiveTeamForPublish={getActiveTeamForPublish}
         saveStatus={saveStatus}
         // saveCountdownSec={saveCountdownSec}
         publishError={publishError}

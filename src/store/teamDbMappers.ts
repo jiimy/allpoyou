@@ -29,6 +29,7 @@ export type TeamPokemonSlot = {
   teraType: string | null;
   moves: number[];
   evs: TeamPokemonEvs | null;
+  images?: string[];
   baseStats?: PokemonBaseStats | null;
 };
 
@@ -98,6 +99,9 @@ function normalizePokemonSlot(slot: unknown): TeamPokemonSlot | null {
       raw.evs && typeof raw.evs === 'object'
         ? (raw.evs as TeamPokemonEvs)
         : null,
+    images: Array.isArray(raw.images)
+      ? raw.images.filter((url): url is string => typeof url === 'string')
+      : undefined,
     baseStats: parsePokemonBaseStats(raw.baseStats),
   };
 }

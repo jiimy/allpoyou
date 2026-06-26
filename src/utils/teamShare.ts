@@ -104,6 +104,9 @@ function parsePublishedPokemonData(raw: unknown): SavedTeam['pokemons'] {
         record.evs && typeof record.evs === 'object'
           ? (record.evs as TeamPokemonSlot['evs'])
           : null,
+      images: Array.isArray(record.images)
+        ? record.images.filter((url): url is string => typeof url === 'string')
+        : undefined,
     } satisfies TeamPokemonSlot;
   });
 }

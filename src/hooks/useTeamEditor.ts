@@ -1699,6 +1699,42 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onCommitBaseStats: commitBaseStatsForSlot,
   };
 
+  const getActiveTeamForPublish = useCallback((): SavedTeam | undefined => {
+    const { activeTeamId: currentTeamId, teams } =
+      usePokemonTeamStore.getState();
+    const teamMeta = teams.find((entry) => entry.teamId === currentTeamId);
+    if (!teamMeta) return undefined;
+
+    if (!editorReady || isHydratingFromStore) {
+      return teamMeta;
+    }
+
+    return {
+      teamId: currentTeamId,
+      teamName: teamMeta.teamName,
+      pokemons: buildPokemonsFromEditor(
+        selectedPokemons,
+        selectedAbilities,
+        selectedItemIds,
+        teamMeta.pokemons,
+        selectedMoveIds,
+        selectedNatures,
+        selectedEvs,
+        originalBaseStatsBySlot,
+      ),
+    };
+  }, [
+    editorReady,
+    isHydratingFromStore,
+    selectedPokemons,
+    selectedAbilities,
+    selectedItemIds,
+    selectedMoveIds,
+    selectedNatures,
+    selectedEvs,
+    originalBaseStatsBySlot,
+  ]);
+
   return {
     teamProps,
     pokemonListError,
@@ -1707,5 +1743,6 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     handleSelect,
     switchActiveTeam,
     activeTeamId,
+    getActiveTeamForPublish,
   };
 }
