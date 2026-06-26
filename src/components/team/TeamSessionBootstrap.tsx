@@ -41,7 +41,7 @@ export function TeamSessionBootstrap() {
 
     if (!userId) {
       disableLoggedInTeamSession();
-      void usePokemonTeamStore.persist?.rehydrate().then(() => {
+      void Promise.resolve(usePokemonTeamStore.persist?.rehydrate()).then(() => {
         if (cancelled) return;
         usePokemonTeamStore.setState({ serverTeamsLoadedAt: null });
       });
