@@ -604,7 +604,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
 
   const itemSuggestions: ItemKr[] = useMemo(() => {
     if (activeItemIndex === null) return [];
-    return searchHeldItems(itemSearchKeyword, 50);
+    return searchHeldItems(itemSearchKeyword);
   }, [activeItemIndex, itemSearchKeyword]);
 
   const natureSearchKeyword =

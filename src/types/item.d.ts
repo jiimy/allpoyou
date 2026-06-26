@@ -13,4 +13,6 @@ export type ItemKr = {
   categoryEn: string;
   /** 한글 카테고리 */
   categoryKo: string;
+  /** 검색/선택 목록에서 제외 여부 */
+  except?: boolean;
 };

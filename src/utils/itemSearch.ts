@@ -7,13 +7,13 @@ const ALL_ITEMS = itemsData as ItemKr[];
 const HELD_CATEGORIES =
   ITEM_GROUPS.find((group) => group.id === 'held')?.categories ?? [];
 
-export const HELD_ITEMS: ItemKr[] = ALL_ITEMS.filter((item) =>
-  HELD_CATEGORIES.includes(item.categoryKo),
+export const HELD_ITEMS: ItemKr[] = ALL_ITEMS.filter(
+  (item) => HELD_CATEGORIES.includes(item.categoryKo) && !item.except,
 );
 
-export function searchHeldItems(keyword: string, limit = 50): ItemKr[] {
+export function searchHeldItems(keyword: string): ItemKr[] {
   const q = keyword.trim();
-  if (!q) return HELD_ITEMS.slice(0, limit);
+  if (!q) return HELD_ITEMS;
 
   const qLower = q.toLowerCase();
   return HELD_ITEMS.filter(
@@ -21,7 +21,7 @@ export function searchHeldItems(keyword: string, limit = 50): ItemKr[] {
       item.nameKo.includes(q) ||
       item.description.includes(q) ||
       item.name.toLowerCase().includes(qLower),
-  ).slice(0, limit);
+  );
 }
 
 export function getItemNameKoById(id: number | null): string | null {

@@ -501,7 +501,8 @@
     "description": "급소 명중률이 크게 올라간다. 한 번밖에 쓸 수 없다. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 1000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 57,
@@ -510,7 +511,8 @@
     "description": "배틀 중인 포켓몬의 공격을 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 1000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 58,
@@ -519,7 +521,8 @@
     "description": "배틀 중인 포켓몬의 방어를 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 2000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 59,
@@ -528,7 +531,8 @@
     "description": "배틀 중인 포켓몬의 스피드를 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 1000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 60,
@@ -537,7 +541,8 @@
     "description": "배틀 중인 포켓몬의 명중률을 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 1000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 61,
@@ -546,7 +551,8 @@
     "description": "배틀 중인 포켓몬의 특수공격을 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 1000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 62,
@@ -555,7 +561,8 @@
     "description": "배틀 중인 포켓몬의 특수방어를 올리는 도구. 포켓몬을 볼에 넣어버리면 원래대로 되돌아간다.",
     "cost": 2000,
     "categoryEn": "stat-boosts",
-    "categoryKo": "stat-boosts"
+    "categoryKo": "stat-boosts",
+    "except": true
   },
   {
     "id": 63,
@@ -1734,7 +1741,8 @@
     "description": "지니게 한 포켓몬은 야생 포켓몬과의 배틀에서 반드시 도망칠 수 있다.",
     "cost": 4000,
     "categoryEn": "held-items",
-    "categoryKo": "held-items"
+    "categoryKo": "held-items",
+    "except": true
   },
   {
     "id": 206,
