@@ -22,7 +22,7 @@ import { TeamLinkPrompt } from '@/components/team/TeamLinkPrompt';
 import TeamSelector from '@/components/team/TeamSelector';
 import { useDebouncedTeamDbSync } from '@/hooks/useDebouncedTeamDbSync';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
-import { getLoggedInUserId } from '@/app/make-team/actions';
+import { useLoggedInUserId } from '@/hooks/useLoggedInUserId';
 import { TEAM_SLOT_COUNT } from '@/store/PokemonTeamStore';
 import s from './maekTeam.module.scss';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
@@ -334,16 +334,8 @@ const TEAM_SIZE = TEAM_SLOT_COUNT;
 const MakeTeam = () => {
   "use no memo";
 
-  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const { userId: loggedInUserId, authReady } = useLoggedInUserId();
   const [publishError, setPublishError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getLoggedInUserId().then((userId) => {
-      setLoggedInUserId(userId);
-      setAuthReady(true);
-    });
-  }, []);
 
   const {
     teamsSourceReady,

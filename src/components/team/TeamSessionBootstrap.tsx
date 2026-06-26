@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getLoggedInUserId, loadUserTeamsFromDb } from '@/app/make-team/actions';
+
+import { loadUserTeamsFromDb } from '@/app/make-team/actions';
+import { useLoggedInUserId } from '@/hooks/useLoggedInUserId';
 import {
   createDefaultTeams,
   disableLoggedInTeamSession,
@@ -30,34 +32,42 @@ function applyDbResult(
 
 /** 로그인 시 persist 없이 메모리 스토어 부트스트랩 (모달·팀 만들기 공유) */
 export function TeamSessionBootstrap() {
+  const { userId, authReady } = useLoggedInUserId();
+
   useEffect(() => {
+    if (!authReady) return;
+
     let cancelled = false;
 
-    (async () => {
-      const userId = await getLoggedInUserId();
-      if (cancelled) return;
-
-      if (userId) {
-        enableLoggedInTeamSession();
-
-        if (!isSessionTeamBootstrapped()) {
-          applyDbResult(await loadUserTeamsFromDb());
-          if (cancelled) return;
-          markSessionTeamBootstrapped();
-        }
-        return;
-      }
-
+    if (!userId) {
       disableLoggedInTeamSession();
-      await usePokemonTeamStore.persist?.rehydrate();
+      void usePokemonTeamStore.persist?.rehydrate().then(() => {
+        if (cancelled) return;
+        usePokemonTeamStore.setState({ serverTeamsLoadedAt: null });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    enableLoggedInTeamSession();
+
+    if (isSessionTeamBootstrapped()) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (async () => {
+      applyDbResult(await loadUserTeamsFromDb());
       if (cancelled) return;
-      usePokemonTeamStore.setState({ serverTeamsLoadedAt: null });
+      markSessionTeamBootstrapped();
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authReady, userId]);
 
   return null;
 }

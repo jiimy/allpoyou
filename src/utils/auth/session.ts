@@ -1,37 +1,51 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import { SignJWT, jwtVerify } from 'jose';
+import { decodeJwt, SignJWT, jwtVerify } from 'jose';
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30; // 30일
+/** 만료 7일 전부터 JWT·쿠키를 갱신합니다. */
+const SESSION_REFRESH_BEFORE_SEC = 60 * 60 * 24 * 7;
 
 export type SessionPayload = {
   userId: string;
   user_id: string;
 };
 
-const secretKey = process.env.JWT_SECRET;
-const encodedKey = new TextEncoder().encode(secretKey);
-
 function assertSecret() {
-  if (!secretKey) {
+  if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET 환경변수가 설정되지 않았습니다.');
   }
 }
 
-/** payload 를 JWT 로 서명합니다. (HS256, 7일 만료) */
-export async function encryptSession(payload: SessionPayload): Promise<string> {
+function getEncodedKey() {
   assertSecret();
-  // id 타입(uuid/정수)과 무관하게 항상 문자열로 저장합니다.
+  return new TextEncoder().encode(process.env.JWT_SECRET!);
+}
+
+function shouldRefreshSession(token: string): boolean {
+  try {
+    const { exp } = decodeJwt(token);
+    if (typeof exp !== 'number') return true;
+
+    const remaining = exp - Math.floor(Date.now() / 1000);
+    return remaining < SESSION_REFRESH_BEFORE_SEC;
+  } catch {
+    return false;
+  }
+}
+
+/** payload 를 JWT 로 서명합니다. (HS256, 30일 만료) */
+export async function encryptSession(payload: SessionPayload): Promise<string> {
   return new SignJWT({
     userId: String(payload.userId),
     user_id: payload.user_id,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
-    .sign(encodedKey);
+    .setExpirationTime(`${SESSION_MAX_AGE_SEC}s`)
+    .sign(getEncodedKey());
 }
 
 /** JWT 를 검증하고 payload 를 반환합니다. 실패 시 null. */
@@ -40,7 +54,7 @@ export async function decryptSession(
 ): Promise<SessionPayload | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, encodedKey, {
+    const { payload } = await jwtVerify(token, getEncodedKey(), {
       algorithms: ['HS256'],
     });
     const { userId, user_id } = payload as {
@@ -73,15 +87,22 @@ export async function createSession(payload: SessionPayload): Promise<void> {
   });
 }
 
-/** 현재 요청의 세션 payload 를 반환합니다. */
+/** 현재 요청의 세션 payload 를 반환합니다. 유효하면 만료 전 갱신합니다. */
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  return decryptSession(token);
+  const payload = await decryptSession(token);
+  if (!payload || !token) return null;
+
+  if (shouldRefreshSession(token)) {
+    await createSession(payload);
+  }
+
+  return payload;
 }
 
 /** 세션 쿠키를 삭제합니다. (로그아웃) */
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete({ name: SESSION_COOKIE, path: '/' });
 }
