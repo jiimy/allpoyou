@@ -50,7 +50,7 @@ const LoginForm = () => {
         />
       </div>
       {state?.error && <p className={s.formError}>{state.error}</p>}
-      소셜로그인 위치
+      {/* 소셜로그인 위치 */}
       <button className={s.submit} type="submit" disabled={pending}>
         {pending ? '로그인 중...' : '로그인'}
       </button>
