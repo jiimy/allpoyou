@@ -41,7 +41,7 @@
   },
   "11": {
     "nameKo": "저수",
-    "summary": "물을 받으면 회복한다."
+    "summary": "물 타입의 공격을 무효화하고, 물 타입의 공격을 맞으면 체력이 25% 회복된다."
   },
   "12": {
     "nameKo": "둔감",
@@ -1104,136 +1104,136 @@
     "summary": "바위 타입 기술의 위력을 50% 올려준다."
   },
   "277": {
-    "nameKo": "Wind Power",
-    "summary": "The Pokémon becomes charged when it is hit by a wind move, boosting the power of the next Electric-type move the Pokémon uses."
+    "nameKo": "풍력발전",
+    "summary": "바람과 관련된 기술을 맞으면 '충전' 상태가 되어 다음 전기 타입 기술의 위력이 2배가 된다."
   },
   "278": {
     "nameKo": "Zero to Hero",
     "summary": "The Pokémon transforms into its Hero Form when it switches out."
   },
   "279": {
-    "nameKo": "Commander",
-    "summary": "When the Pokémon enters a battle, it goes inside the mouth of an ally Dondozo if one is on the field. The Pokémon then issues commands from there."
+    "nameKo": "사령탑",
+    "summary": "배틀에 나갈 때 아군 싸리용이 어써러샤의 입으로 들어가 지시를 내린다."
   },
   "280": {
-    "nameKo": "Electromorphosis",
-    "summary": "The Pokémon becomes charged when it takes damage, boosting the power of the next Electric-type move the Pokémon uses."
+    "nameKo": "전기로바꾸기",
+    "summary": "공격을 받으면 '충전' 상태가 되어 다음 전기 타입 기술의 위력이 2배가 된다."
   },
   "281": {
-    "nameKo": "Protosynthesis",
-    "summary": "Boosts the Pokémon's most proficient stat in harsh sunlight or if the Pokémon is holding Booster Energy."
+    "nameKo": "고대활성",
+    "summary": "쾌청 날씨이거나 '부스터에너지'를 지니고 있을 때, 자신의 가장 높은 능력치가 상승한다."
   },
   "282": {
-    "nameKo": "Quark Drive",
-    "summary": "Boosts the Pokémon's most proficient stat on Electric Terrain or if the Pokémon is holding Booster Energy."
+    "nameKo": "쿼크차지",
+    "summary": "일렉트릭필드이거나 '부스터에너지'를 지니고 있을 때, 자신의 가장 높은 능력치가 상승한다."
   },
   "283": {
-    "nameKo": "Good as Gold",
-    "summary": "A body of pure, solid gold gives the Pokémon full immunity to other Pokémon's status moves."
+    "nameKo": "황금몸",
+    "summary": "상대방이 쓰는 모든 변화기를 완전히 무시한다."
   },
   "284": {
-    "nameKo": "Vessel of Ruin",
-    "summary": "The power of the Pokémon's ruinous vessel lowers the Sp. Atk stats of all Pokémon except itself."
+    "nameKo": "재앙의그릇",
+    "summary": "자신을 제외한 모든 포켓몬의 특수공격을 떨어뜨린다."
   },
   "285": {
-    "nameKo": "Sword of Ruin",
-    "summary": "The power of the Pokémon's ruinous sword lowers the Defense stats of all Pokémon except itself."
+    "nameKo": "재앙의검",
+    "summary": "자신을 제외한 모든 포켓몬의 방어를 떨어뜨린다."
   },
   "286": {
-    "nameKo": "Tablets of Ruin",
-    "summary": "The power of the Pokémon's ruinous wooden tablets lowers the Attack stats of all Pokémon except itself."
+    "nameKo": "재앙의목간",
+    "summary": "자신을 제외한 모든 포켓몬의 공격을 떨어뜨린다."
   },
   "287": {
-    "nameKo": "Beads of Ruin",
-    "summary": "The power of the Pokémon's ruinous beads lowers the Sp. Def stats of all Pokémon except itself."
+    "nameKo": "재앙의구슬",
+    "summary": "자신을 제외한 모든 포켓몬의 특수방어를 떨어뜨린다."
   },
   "288": {
-    "nameKo": "Orichalcum Pulse",
-    "summary": "Turns the sunlight harsh when the Pokémon enters a battle. The ancient pulse thrumming through the Pokémon also boosts its Attack stat in harsh sunlight."
+    "nameKo": "진홍빛고동",
+    "summary": "배틀에 나올 때 날씨를 쾌청으로 만든다. 쾌청 상태에서는 자신의 공격이 상승한다."
   },
   "289": {
-    "nameKo": "Hadron Engine",
-    "summary": "Turns the ground into Electric Terrain when the Pokémon enters a battle. The futuristic engine within the Pokémon also boosts its Sp. Atk stat on Electric Terrain."
+    "nameKo": "하드론엔진",
+    "summary": "배틀에 나올 때 필드를 '일렉트릭필드'로 만든다. 일렉트릭필드 위에서는 자신의 특수공격이 상승한다."
   },
   "290": {
-    "nameKo": "Opportunist",
-    "summary": "If an opponent's stat is boosted, the Pokémon seizes the opportunity to boost the same stat for itself."
+    "nameKo": "편승",
+    "summary": "상대 포켓몬의 능력치가 올라가면 본인도 똑같이 그 능력치를 올린다."
   },
   "291": {
-    "nameKo": "Cud Chew",
-    "summary": "When the Pokémon eats a Berry, it will regurgitate that Berry at the end of the next turn and eat it one more time."
+    "nameKo": "되새김길",
+    "summary": "나무열매를 먹으면, 다음 턴 종료 시에 그 나무열매를 한 번 더 먹는다."
   },
   "292": {
-    "nameKo": "Sharpness",
-    "summary": "Powers up slicing moves."
+    "nameKo": "예리함",
+    "summary": "베기 속성의 기술의 위력이 1.5배 상승한다."
   },
   "293": {
-    "nameKo": "Supreme Overlord",
-    "summary": "When the Pokémon enters a battle, its Attack and Sp. Atk stats are slightly boosted for each of the allies in its party that have already been defeated."
+    "nameKo": "총대장",
+    "summary": "배틀에 나올 때 이미 쓰러진 아군 포켓몬의 수만큼 자신의 공격과 특수공격이 상승한다."
   },
   "294": {
-    "nameKo": "Costar",
-    "summary": "When the Pokémon enters a battle, it copies an ally's stat changes."
+    "nameKo": "협연",
+    "summary": "배틀에 나올 때 아군의 능력치 변화를 그대로 복사한다."
   },
   "295": {
-    "nameKo": "Toxic Debris",
-    "summary": "Scatters poison spikes at the feet of the opposing team when the Pokémon takes damage from physical moves."
+    "nameKo": "독치장",
+    "summary": "물리 공격을 받으면 상대 필드에 '독압정'을 뿌린다."
   },
   "296": {
-    "nameKo": "Armor Tail",
-    "summary": "The mysterious tail covering the Pokémon's head makes opponents unable to use priority moves against the Pokémon or its allies."
+    "nameKo": "테일아머",
+    "summary": "상대 포켓몬은 선공기를 쓸 수 없다."
   },
   "297": {
-    "nameKo": "Earth Eater",
-    "summary": "If hit by a Ground-type move, the Pokémon has its HP restored instead of taking damage."
+    "nameKo": "흙먹기",
+    "summary": "땅 타입 기술을 맞으면 데미지를 입지 않고 체력을 회복한다."
   },
   "298": {
-    "nameKo": "Mycelium Might",
-    "summary": "The Pokémon will always act more slowly when using status moves, but these moves will be unimpeded by the Ability of the target."
+    "nameKo": "균사의힘",
+    "summary": "변화기를 쓸 때 무조건 후공하게 되지만, 상대의 특성을 무시하고 변화기를 적중시킨다."
   },
   "299": {
     "nameKo": "심안",
-    "summary": "The Pokémon ignores changes to opponents' evasiveness, its accuracy can't be lowered, and it can hit Ghost types with Normal-type and Fighting-type moves"
+    "summary": "노말타입과 격투타입 기술을 고스트타입에게 맞힐 수 있다. 상대의 회피율 변화를 무시하고 명중률도 떨어지지 않는다."
   },
   "300": {
     "nameKo": "감미로운꿀",
-    "summary": "Lowers the evasion of opposing Pokémon by 1 stage when first sent into battle"
+    "summary": "등장 시 상대의 회피율을 1단계 떨어트린다."
   },
   "301": {
     "nameKo": "대접",
-    "summary": "When the Pokémon enters a battle, it showers its ally with hospitality, restoring a small amount of the ally's HP"
+    "summary": "필드에 등장하면 같은 편의 HP를 조금 회복시킨다."
   },
   "302": {
     "nameKo": "독사슬",
-    "summary": "The power of the Pokémon's toxic chain may badly poison any target the Pokémon hits with a move"
+    "summary": "공격이 명중하면 상대를 30%의 확률로 맹독 상태로 만든다. "
   },
   "303": {
     "nameKo": "초상투영",
-    "summary": "The Pokémon's heart fills with memories, causing the Mask to shine and one of the Pokémon's stats to be boosted."
+    "summary": "오거폰이 테라스탈시 이 특성으로 변한다. 자신의 능력 중 하나가 1랭크 오르며 쓰고 있는 가면에 따라 오르는 능력이 다르다. 벽록의 가면-스피드, 우물의 가면-특수방어, 화덕의 가면-공격, 주춧돌의 가면-방어"
   },
   "304": {
     "nameKo": "테라체인지",
-    "summary": "When the Pokémon enters a battle, it absorbs the energy around itself and transforms into its Terastal Form."
+    "summary": "테라파고스가 포켓몬 배틀을 하면 테라스탈폼으로 폼체인지한다. 트레이스, 화학의힘, 리시버의 효과를 받지 않는다."
   },
   "305": {
     "nameKo": "테라셸",
-    "summary": "The Pokémon's shell contains the powers of each type. All damage-dealing moves that hit the Pokémon when its HP is full will not be very effective."
+    "summary": " HP가 100%일 경우 상대방이 사용하는 기술의 데미지가 반감된다."
   },
   "306": {
     "nameKo": "제로포밍",
-    "summary": "When Terapagos changes into its Stellar Form, it uses its hidden powers to eliminate all effects of weather and terrain, reducing them to zero."
+    "summary": "날씨와 필드를 모두 없앤다."
   },
   "307": {
     "nameKo": "독조종",
-    "summary": "Pokémon poisoned by Pecharunt's moves will also become confused."
+    "summary": "공격에 상대방이 독, 맹독 상태가 되면 혼란 상태로 만든다."
   },
   "308": {
-    "nameKo": "Piercing Drill",
-    "summary": "When the Pokémon uses contact moves, it can hit even targets that are protecting themselves, dealing 1/4 of the damage that the move would otherwise deal. Everything aside from the target's protective effects is still triggered."
+    "nameKo": "관통드릴",
+    "summary": ": 방어를 무시하고 타격하는 대신, 공격의 피해량은 원래 데미지의 1/4로 감소하여 적용한다."
   },
   "309": {
-    "nameKo": "Dragonize",
-    "summary": "The Pokémon's Normal-type moves become Dragon-type moves and their power is boosted by 20%."
+    "nameKo": "드래곤스킨",
+    "summary": "노말 타입 기술이 드래곤 타입이 되고 위력이 1.2배 상승한다. "
   },
   "310": {
     "nameKo": "Mega Sol",

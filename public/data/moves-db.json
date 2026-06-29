@@ -646,7 +646,8 @@
     "damage_class": "special",
     "power": 110,
     "accuracy": 70,
-    "pp": 5
+    "pp": 5,
+    "note": "바람"
   },
   "psybeam": {
     "id": 60,
