@@ -4,11 +4,14 @@ import { cache } from 'react';
 
 import { createAdminClient } from '@/utils/supabase/admin';
 import { getSession } from '@/utils/auth/session';
+import { isGoogleLinked } from '@/utils/auth/googleUser';
+import { setGoogleLinkCookie } from '@/utils/auth/googleLink';
 
 export type CurrentUser = {
   id: string;
   user_id: string;
   createdAt: string;
+  isGoogleLinked: boolean;
 };
 
 /**
@@ -23,7 +26,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, user_id, created_at')
+    .select('id, user_id, created_at, security_question')
     .eq('id', session.userId)
     .maybeSingle();
 
@@ -33,5 +36,6 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     id: String(data.id),
     user_id: data.user_id as string,
     createdAt: data.created_at as string,
+    isGoogleLinked: isGoogleLinked(data.security_question as string),
   };
 });

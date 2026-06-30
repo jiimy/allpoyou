@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { getCurrentUser } from '@/utils/auth/dal';
+import { getGoogleLinkFlash } from '@/utils/auth/googleLink';
 import PublicTeamFeed from '@/components/publicTeam/PublicTeamFeed';
 import {
   getLikedTeamsForUser,
@@ -9,6 +10,8 @@ import {
 } from '@/app/public-teams/actions';
 import { logout } from './actions';
 import AuthForm from './AuthForm';
+import GoogleLinkButton from '@/components/loginButton/GoogleLinkButton';
+import GoogleLinkFlashMessage from '@/components/loginButton/GoogleLinkFlashMessage';
 import s from './myInfo.module.scss';
 import teamS from '@/components/publicTeam/publicTeam.module.scss';
 
@@ -23,10 +26,11 @@ const MyInfoPage = async () => {
     );
   }
 
-  const [myPublicTeams, likedTeams, likedTeamIds] = await Promise.all([
+  const [myPublicTeams, likedTeams, likedTeamIds, linkFlash] = await Promise.all([
     getMyPublicTeamsWithLikes(),
     getLikedTeamsForUser(),
     getUserLikedTeamIds(user.id),
+    getGoogleLinkFlash(),
   ]);
 
   const joinedAt = new Date(user.createdAt).toLocaleDateString('ko-KR');
@@ -39,24 +43,37 @@ const MyInfoPage = async () => {
     <div className={s.wrapWide}>
       <div className={s.card}>
         <div className={s.profile}>
+          {linkFlash && (
+            <GoogleLinkFlashMessage
+              flash={linkFlash}
+              successClassName={s.formMessage}
+              errorClassName={s.formError}
+            />
+          )}
           <div className={s.profileHead}>
             <div>
               <div className={s.user_id}>{user.user_id}</div>
-              <div className={s.meta}>가입일 {joinedAt}</div>
+              <div className={s.meta}>
+                가입일 {joinedAt}
+                {user.isGoogleLinked && ' · Google 연동됨'}
+              </div>
             </div>
-            <form action={logout}>
-              <button className={s.logout} type="submit">
-                로그아웃
-              </button>
-            </form>
+            <div className={s.googleLink}>
+              {!user.isGoogleLinked && (
+                <GoogleLinkButton className={s.linkBtn} />
+              )}
+              <form action={logout}>
+                <button className={s.logout} type="submit">
+                  로그아웃
+                </button>
+              </form>
+            </div>
           </div>
 
           <div className={s.section}>
             <div className={s.sectionTitle}>내가 공유한 팀</div>
             {myPublicTeams.length === 0 ? (
-              <p className={s.placeholder}>
-                공개한 팀이 없습니다.
-              </p>
+              <p className={s.placeholder}>공개한 팀이 없습니다.</p>
             ) : (
               <>
                 <p className={s.summary}>
@@ -82,9 +99,7 @@ const MyInfoPage = async () => {
           <div className={s.section}>
             <div className={s.sectionTitle}>내가 좋아요한 팀</div>
             {likedTeams.length === 0 ? (
-              <p className={s.placeholder}>
-                좋아요한 팀이 없습니다.
-              </p>
+              <p className={s.placeholder}>좋아요한 팀이 없습니다.</p>
             ) : (
               <div className={`${teamS.feed} ${teamS.compactList} ${s.teamSection}`}>
                 <PublicTeamFeed

@@ -13,6 +13,7 @@ import {
 } from './actions';
 import { SECURITY_QUESTION } from './constants';
 import s from './myInfo.module.scss';
+import GoogleLoginButton from '@/components/loginButton/GoogleLoginButton';
 
 type Mode = 'login' | 'signup' | 'reset';
 
@@ -50,10 +51,13 @@ const LoginForm = () => {
         />
       </div>
       {state?.error && <p className={s.formError}>{state.error}</p>}
-      {/* 소셜로그인 위치 */}
       <button className={s.submit} type="submit" disabled={pending}>
         {pending ? '로그인 중...' : '로그인'}
       </button>
+      <div className={s.divider}>
+        <span>또는</span>
+      </div>
+      <GoogleLoginButton />
     </form>
   );
 };
@@ -255,7 +259,6 @@ const AuthForm = () => {
         >
           로그인
         </button>
-        {/* 구글로그인 */}
         <button
           type="button"
           className={classNames(s.tab, { [s.active]: mode === 'signup' })}

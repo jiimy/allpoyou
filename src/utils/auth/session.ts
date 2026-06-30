@@ -101,8 +101,22 @@ export async function getSession(): Promise<SessionPayload | null> {
   return payload;
 }
 
-/** 세션 쿠키를 삭제합니다. (로그아웃) */
+/** 앱 세션 + NextAuth 쿠키를 삭제합니다. (로그아웃) */
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete({ name: SESSION_COOKIE, path: '/' });
+
+  cookieStore.delete(SESSION_COOKIE);
+
+  const nextAuthCookies = [
+    'next-auth.session-token',
+    '__Secure-next-auth.session-token',
+    'next-auth.callback-url',
+    '__Secure-next-auth.callback-url',
+    'next-auth.csrf-token',
+    '__Host-next-auth.csrf-token',
+  ];
+
+  for (const name of nextAuthCookies) {
+    cookieStore.delete(name);
+  }
 }

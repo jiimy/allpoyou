@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { hash, compare } from 'bcrypt-ts';
 
 import { createAdminClient } from '@/utils/supabase/admin';
-import { createSession, deleteSession } from '@/utils/auth/session';
+import { createSession, deleteSession, getSession } from '@/utils/auth/session';
+import { isGoogleLinked, getPasswordResetQuestion } from '@/utils/auth/googleUser';
+import { setGoogleLinkCookie, deleteGoogleLinkFlashCookie } from '@/utils/auth/googleLink';
 import { SECURITY_QUESTION, MIN_PASSWORD_LENGTH } from './constants';
 
 const SALT_ROUNDS = 10;
@@ -154,6 +156,37 @@ export async function logout(): Promise<void> {
   redirect('/my-info');
 }
 
+/** Google 계정 연동 준비 (연동 의도 쿠키 설정) */
+export async function prepareGoogleLink(): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) {
+    return { error: '로그인이 필요합니다.' };
+  }
+
+  const supabase = createAdminClient();
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('security_question')
+    .eq('id', session.userId)
+    .maybeSingle();
+
+  if (error || !user) {
+    return { error: '사용자 정보를 찾을 수 없습니다.' };
+  }
+
+  if (isGoogleLinked(user.security_question as string)) {
+    return { error: '이미 Google 계정과 연동되어 있습니다.' };
+  }
+
+  await setGoogleLinkCookie(session.userId);
+  return {};
+}
+
+/** Google 연동 flash 쿠키 삭제 (Server Action) */
+export async function dismissGoogleLinkFlash(): Promise<void> {
+  await deleteGoogleLinkFlashCookie();
+}
+
 /** 비밀번호 찾기 1단계: 아이디로 보안 질문 조회 */
 export async function lookupSecurityQuestion(
   _prev: ResetState,
@@ -184,7 +217,7 @@ export async function lookupSecurityQuestion(
 
   return {
     step: 'reset',
-    question: user.security_question as string,
+    question: getPasswordResetQuestion(user.security_question as string),
   };
 }
 
