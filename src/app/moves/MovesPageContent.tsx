@@ -50,26 +50,36 @@ function parseMoveIdParam(raw: string | null): number | null {
   return Number.isFinite(id) ? id : null;
 }
 
+function getKeywordFromParams(searchParams: URLSearchParams): string {
+  const moveId = parseMoveIdParam(searchParams.get('moveId'));
+  const move =
+    moveId != null ? (movesById.get(moveId) ?? null) : null;
+  return move?.koreanName ?? searchParams.get('q')?.trim() ?? '';
+}
+
+function getShowLearnableFromParams(searchParams: URLSearchParams): boolean {
+  const moveId = parseMoveIdParam(searchParams.get('moveId'));
+  return searchParams.get('learnable') === '1' || moveId != null;
+}
+
+function hasSearchParams(searchParams: URLSearchParams): boolean {
+  return (
+    Boolean(searchParams.get('q')?.trim()) ||
+    searchParams.get('moveId') != null
+  );
+}
+
 export default function MovesPageContent() {
   const searchParams = useSearchParams();
-  const { replaceParams } = useUrlQueryParams();
-  const initialMoveId = parseMoveIdParam(searchParams.get('moveId'));
-  const initialMove =
-    initialMoveId != null ? (movesById.get(initialMoveId) ?? null) : null;
-  const initialKeyword =
-    initialMove?.koreanName ?? searchParams.get('q')?.trim() ?? '';
-  const initialLearnable =
-    searchParams.get('learnable') === '1' || initialMove != null;
-
-  const [keyword, setKeyword] = useState(initialKeyword);
+  const { replaceParams, pushParams } = useUrlQueryParams();
+  const keyword = getKeywordFromParams(searchParams);
+  const showLearnablePokemon = getShowLearnableFromParams(searchParams);
   const [activeType, setActiveType] = useState<string | 'all'>('all');
   const [activeDamageClass, setActiveDamageClass] =
     useState<MoveDamageClassFilter>('all');
   const [pokemonSearch, setPokemonSearch] = useState<PokemonSearchState | null>(
     null,
   );
-  const [showLearnablePokemon, setShowLearnablePokemon] =
-    useState(initialLearnable);
   const [learnableCache, setLearnableCache] = useState<
     Record<string, LearnableCacheEntry>
   >({});
@@ -96,6 +106,26 @@ export default function MovesPageContent() {
     [setPendingMove, setTeamModalOpen],
   );
 
+  const handleMoveSearch = useCallback(
+    (move: MoveDbEntry) => {
+      const name = move.koreanName;
+      const currentQ = searchParams.get('q')?.trim() ?? '';
+      const currentMoveId = searchParams.get('moveId');
+
+      if (currentQ === name && currentMoveId === String(move.id)) {
+        return;
+      }
+
+      setSelectedPokemon(null);
+      pushParams({
+        q: name,
+        moveId: String(move.id),
+        learnable: '1',
+      });
+    },
+    [pushParams, searchParams],
+  );
+
   const moveIdsByNameMatch = useMemo(() => {
     const q = keyword.trim();
     if (!q) return [];
@@ -113,26 +143,36 @@ export default function MovesPageContent() {
 
   const handleKeywordChange = useCallback(
     (value: string) => {
-      setKeyword(value);
-      setSelectedPokemon(null);
-      replaceParams({ moveId: null, learnable: null });
+      const trimmed = value.trim();
+      const updates = {
+        q: trimmed || null,
+        moveId: null,
+        learnable: null,
+      };
 
-      if (!value.trim()) {
-        setPokemonSearch(null);
-        setShowLearnablePokemon(false);
-        setPokemonMovesCache({});
-        setPokemonMovesLoadingId(null);
-        setLearnableCache({});
-        setLearnableLoadingKey(null);
+      setSelectedPokemon(null);
+
+      if (!trimmed) {
+        replaceParams(updates);
+        return;
       }
+
+      if (!hasSearchParams(searchParams)) {
+        pushParams(updates);
+      } else {
+        replaceParams(updates);
+      }
+    },
+    [pushParams, replaceParams, searchParams],
+  );
+
+  const handleShowLearnablePokemonChange = useCallback(
+    (checked: boolean) => {
+      setSelectedPokemon(null);
+      replaceParams({ learnable: checked ? '1' : null });
     },
     [replaceParams],
   );
-
-  const handleShowLearnablePokemonChange = useCallback((checked: boolean) => {
-    setShowLearnablePokemon(checked);
-    setSelectedPokemon(null);
-  }, []);
 
   const handleSelectPokemon = useCallback(
     (pokemon: PokemonLearner) => {
@@ -148,6 +188,21 @@ export default function MovesPageContent() {
     },
     [selectedPokemon, pokemonMovesCache],
   );
+
+  useEffect(() => {
+    setSelectedPokemon(null);
+    setPokemonMovesLoadingId(null);
+  }, [keyword]);
+
+  useEffect(() => {
+    if (keyword.trim()) return;
+
+    setPokemonSearch(null);
+    setPokemonMovesCache({});
+    setPokemonMovesLoadingId(null);
+    setLearnableCache({});
+    setLearnableLoadingKey(null);
+  }, [keyword]);
 
   useEffect(() => {
     const q = keyword.trim();
@@ -401,6 +456,7 @@ export default function MovesPageContent() {
         }
         pokemonMovesError={selectedPokemonMoves?.error ?? null}
         onMoveClick={handleMoveClick}
+        onMoveSearch={handleMoveSearch}
       />
     </div>
   );

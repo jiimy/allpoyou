@@ -13,25 +13,29 @@ import {
   formatMoveStat,
   getDamageClassLabel,
   getMoveTypeKo,
+  sortMovesByKoreanName,
 } from '@/utils/moveDisplay';
 
 import s from './moves.module.scss';
+import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
 
 const PAGE_SIZE = 30;
 
 function MoveRow({
   move,
   onMoveClick,
+  onMoveSearch,
 }: {
   move: MoveDbEntry;
   onMoveClick?: (move: MoveDbEntry) => void;
+  onMoveSearch?: (move: MoveDbEntry) => void;
 }) {
   const typeKo = getMoveTypeKo(move.type);
   const clickable = onMoveClick != null;
 
   return (
     <li
-      className={`${s.item} ${clickable ? s.itemClickable : ''}`}
+      className={`${s.item} ${clickable ? s.itemClickable : ''} pokemonTooltipHost`}
       role={clickable ? 'button' : undefined}
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? () => onMoveClick?.(move) : undefined}
@@ -46,6 +50,18 @@ function MoveRow({
           : undefined
       }
     >
+      <PokemonTooltip
+        viewInfoLabel="기술검색"
+        addToTeamLabel="기술부여"
+        onViewInfo={(event) => {
+          event.stopPropagation();
+          onMoveSearch?.(move);
+        }}
+        onAddToTeam={(event) => {
+          event.stopPropagation();
+          onMoveClick?.(move);
+        }}
+      />
       <h3 className={s.name}>{move.koreanName}</h3>
       <p className={s.description}>{move.description}</p>
       <p className={s.meta}>
@@ -100,6 +116,7 @@ type MoveListProps = {
   pokemonMovesLoading: boolean;
   pokemonMovesError: string | null;
   onMoveClick?: (move: MoveDbEntry) => void;
+  onMoveSearch?: (move: MoveDbEntry) => void;
 };
 
 export default function MoveList({
@@ -123,6 +140,7 @@ export default function MoveList({
   pokemonMovesLoading,
   pokemonMovesError,
   onMoveClick,
+  onMoveSearch,
 }: MoveListProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [pokemonMovesVisibleCount, setPokemonMovesVisibleCount] =
@@ -135,27 +153,34 @@ export default function MoveList({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pokemonMovesSentinelRef = useRef<HTMLDivElement>(null);
 
-  const visibleMoves = useMemo(
-    () => moves.slice(0, visibleCount),
-    [moves, visibleCount],
+  const sortedMoves = useMemo(
+    () => sortMovesByKoreanName(moves),
+    [moves],
   );
 
-  const hasMore = visibleCount < moves.length;
+  const visibleMoves = useMemo(
+    () => sortedMoves.slice(0, visibleCount),
+    [sortedMoves, visibleCount],
+  );
+
+  const hasMore = visibleCount < sortedMoves.length;
 
   const filteredPokemonMoves = useMemo(
     () =>
-      pokemonMoves.filter((move) => {
-        if (pokemonMovesType !== 'all' && move.type !== pokemonMovesType) {
-          return false;
-        }
-        if (
-          pokemonMovesDamageClass !== 'all' &&
-          move.damage_class !== pokemonMovesDamageClass
-        ) {
-          return false;
-        }
-        return true;
-      }),
+      sortMovesByKoreanName(
+        pokemonMoves.filter((move) => {
+          if (pokemonMovesType !== 'all' && move.type !== pokemonMovesType) {
+            return false;
+          }
+          if (
+            pokemonMovesDamageClass !== 'all' &&
+            move.damage_class !== pokemonMovesDamageClass
+          ) {
+            return false;
+          }
+          return true;
+        }),
+      ),
     [pokemonMoves, pokemonMovesType, pokemonMovesDamageClass],
   );
 
@@ -195,7 +220,7 @@ export default function MoveList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, moves.length));
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedMoves.length));
         }
       },
       { rootMargin: '240px' },
@@ -203,7 +228,7 @@ export default function MoveList({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [moves.length, hasMore]);
+  }, [sortedMoves.length, hasMore]);
 
   useEffect(() => {
     const sentinel = pokemonMovesSentinelRef.current;
@@ -335,7 +360,12 @@ export default function MoveList({
       ) : (
         <ul className={s.list}>
           {visibleMoves.map((move) => (
-            <MoveRow key={move.id} move={move} onMoveClick={onMoveClick} />
+            <MoveRow
+              key={move.id}
+              move={move}
+              onMoveClick={onMoveClick}
+              onMoveSearch={onMoveSearch}
+            />
           ))}
         </ul>
       )}
@@ -418,6 +448,7 @@ export default function MoveList({
                       key={move.id}
                       move={move}
                       onMoveClick={onMoveClick}
+                      onMoveSearch={onMoveSearch}
                     />
                   ))}
                 </ul>

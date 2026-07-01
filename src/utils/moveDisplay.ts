@@ -22,6 +22,12 @@ export function formatMoveStat(value: number | null): string {
   return value === null ? '-' : String(value);
 }
 
+export function sortMovesByKoreanName(moves: MoveDbEntry[]): MoveDbEntry[] {
+  return [...moves].sort((a, b) =>
+    a.koreanName.localeCompare(b.koreanName, 'ko'),
+  );
+}
+
 /** 기술 분류·위력·명중률을 title/tooltip용 한 줄 문자열로 반환 */
 export function getMoveStatsTitle(
   move: Pick<MoveDbEntry, 'damage_class' | 'power' | 'accuracy'>,

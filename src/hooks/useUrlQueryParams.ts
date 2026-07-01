@@ -8,8 +8,11 @@ export function useUrlQueryParams() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const replaceParams = useCallback(
-    (updates: Record<string, string | null | undefined>) => {
+  const applyParams = useCallback(
+    (
+      updates: Record<string, string | null | undefined>,
+      method: 'push' | 'replace',
+    ) => {
       const next = new URLSearchParams(searchParams.toString());
 
       for (const [key, value] of Object.entries(updates)) {
@@ -21,9 +24,25 @@ export function useUrlQueryParams() {
       }
 
       const qs = next.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      const navigate = method === 'push' ? router.push : router.replace;
+      navigate(href, { scroll: false });
     },
     [pathname, router, searchParams],
+  );
+
+  const replaceParams = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      applyParams(updates, 'replace');
+    },
+    [applyParams],
+  );
+
+  const pushParams = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      applyParams(updates, 'push');
+    },
+    [applyParams],
   );
 
   const getParam = useCallback(
@@ -41,5 +60,5 @@ export function useUrlQueryParams() {
     [searchParams],
   );
 
-  return { searchParams, replaceParams, getParam, parseIntParam };
+  return { searchParams, replaceParams, pushParams, getParam, parseIntParam };
 }
