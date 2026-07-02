@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ModalFrame from '@/components/portalModal/ModalFrame';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -14,6 +14,7 @@ import { MOVES_BY_ID } from '@/utils/movesIndex';
 import {
   fetchPokemonList,
   getCachedPokemonList,
+  getPokemonByNameKo,
 } from '@/store/PokemonStore';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
@@ -42,11 +43,80 @@ type SelectPokeModalProps = {
   setOnModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+type EvolutionTarget = {
+  nameKo: string;
+  pokemon: Pokemon | null;
+};
+
+function enrichPokemon(entry: Pokemon, list: Pokemon[]): Pokemon {
+  return (
+    list.find((item) => item.id === entry.id) ??
+    list.find((item) => item.name === entry.name) ??
+    entry
+  );
+}
+
+function resolveEvolutionPokemon(nameKo: string, list: Pokemon[]): Pokemon | undefined {
+  return getPokemonByNameKo(nameKo) ?? list.find((entry) => entry.nameKo === nameKo);
+}
+
 const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const router = useRouter();
+  const [activePokemon, setActivePokemon] = useState(pokemon);
+  const [prevPokemonProp, setPrevPokemonProp] = useState(pokemon);
+  const [pokemonList, setPokemonList] = useState<Pokemon[]>(() =>
+    getCachedPokemonList(),
+  );
   const [moves, setMoves] = useState<MoveDbEntry[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
   const [movesError, setMovesError] = useState<string | null>(null);
+
+  if (prevPokemonProp !== pokemon) {
+    setPrevPokemonProp(pokemon);
+    setActivePokemon(enrichPokemon(pokemon, pokemonList));
+    setMovesLoading(true);
+    setMovesError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchPokemonList(true)
+      .then((list) => {
+        if (cancelled) return;
+        setPokemonList(list);
+        setActivePokemon((current) => enrichPokemon(current, list));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pokemon.id, pokemon.name]);
+
+  const prevEvolutionNames = ensureStringArray(activePokemon.prevEvolutions);
+  const nextEvolutionNames = ensureStringArray(activePokemon.nextEvolutions);
+
+  const prevEvolutionTargets = useMemo((): EvolutionTarget[] => {
+    return prevEvolutionNames.map((nameKo) => ({
+      nameKo,
+      pokemon: resolveEvolutionPokemon(nameKo, pokemonList) ?? null,
+    }));
+  }, [prevEvolutionNames, pokemonList]);
+
+  const nextEvolutionTargets = useMemo((): EvolutionTarget[] => {
+    return nextEvolutionNames.map((nameKo) => ({
+      nameKo,
+      pokemon: resolveEvolutionPokemon(nameKo, pokemonList) ?? null,
+    }));
+  }, [nextEvolutionNames, pokemonList]);
+
+  const handleEvolutionSelect = useCallback((target: Pokemon | null) => {
+    if (!target) return;
+    setActivePokemon(target);
+    setMovesLoading(true);
+    setMovesError(null);
+  }, []);
 
   const handleMoveSelect = useCallback(
     (move: MoveDbEntry) => {
@@ -55,28 +125,28 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     [router],
   );
 
-  const imageUrl = getPokemonStaticImage(pokemon.images);
-  const regularAbilities = ensureStringArray(pokemon.ability);
-  const hiddenAbilities = ensureStringArray(pokemon.s_ability);
+  const imageUrl = getPokemonStaticImage(activePokemon.images);
+  const regularAbilities = ensureStringArray(activePokemon.ability);
+  const hiddenAbilities = ensureStringArray(activePokemon.s_ability);
+  const showEvolutionNav =
+    prevEvolutionNames.length > 0 || nextEvolutionNames.length > 0;
 
   useEffect(() => {
     let cancelled = false;
-    // setMovesLoading(true);
-    // setMovesError(null);
-    // setMoves([]);
 
     const loadMoves = async () => {
-      let pokemonList = getCachedPokemonList();
-      if (pokemonList.length === 0) {
+      let list = pokemonList;
+      if (list.length === 0) {
         try {
-          pokemonList = await fetchPokemonList();
+          list = await fetchPokemonList();
+          if (!cancelled) setPokemonList(list);
         } catch {
           /* id/nameKo fallback은 캐시 없이도 동작 */
         }
       }
 
-      const lookupNameKo = getMoveLookupNameKo(pokemon.nameKo);
-      const lookupId = resolveMoveLookupPokemonId(pokemon, pokemonList);
+      const lookupNameKo = getMoveLookupNameKo(activePokemon.nameKo);
+      const lookupId = resolveMoveLookupPokemonId(activePokemon, list);
 
       const params = new URLSearchParams({
         pokemonId: String(lookupId),
@@ -113,7 +183,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     return () => {
       cancelled = true;
     };
-  }, [pokemon.id, pokemon.nameKo]);
+  }, [activePokemon, pokemonList]);
 
   return (
     <ModalFrame
@@ -129,7 +199,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
             {imageUrl ? (
               <Image
                 src={imageUrl}
-                alt={pokemon.nameKo}
+                alt={activePokemon.nameKo}
                 width={96}
                 height={96}
                 className={s.image}
@@ -137,10 +207,10 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
             ) : null}
           </div>
           <div className={s.headerMeta}>
-            <p className={s.number}>#{pokemon.number}</p>
-            <h2 className={s.name}>{pokemon.nameKo}</h2>
+            <p className={s.number}>#{activePokemon.number}</p>
+            <h2 className={s.name}>{activePokemon.nameKo}</h2>
             <div className={s.types}>
-              {ensureStringArray(pokemon.types).map((type) => (
+              {ensureStringArray(activePokemon.types).map((type) => (
                 <span
                   key={type}
                   className={s.typeBadge}
@@ -159,12 +229,12 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
             {BASE_STAT_KEYS.map((key) => (
               <React.Fragment key={key}>
                 <span className={s.statLabel}>{BASE_STAT_LABEL[key]}</span>
-                <span className={s.statValue}>{pokemon[key]}</span>
+                <span className={s.statValue}>{activePokemon[key]}</span>
                 <div className={s.statBarTrack}>
                   <div
                     className={s.statBarFill}
                     style={{
-                      width: `${(pokemon[key] / BASE_STAT_MAX) * 100}%`,
+                      width: `${(activePokemon[key] / BASE_STAT_MAX) * 100}%`,
                       background: STAT_BAR_COLORS[key],
                     }}
                   />
@@ -174,9 +244,50 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
           </div>
           <div className={s.statTotalRow}>
             <span>합계</span>
-            <strong>{pokemon.total}</strong>
+            <strong>{activePokemon.total}</strong>
           </div>
         </section>
+
+        {showEvolutionNav ? (
+          <section className={s.evolutionSection}>
+            <div className={s.evolutionRow}>
+              <div className={s.evolutionSidePrev}>
+                {prevEvolutionTargets.map(({ nameKo, pokemon: target }) => (
+                  <button
+                    key={`prev-${nameKo}`}
+                    type="button"
+                    className={s.evolutionBtn}
+                    disabled={!target}
+                    onClick={() => handleEvolutionSelect(target)}
+                  >
+                    <span className={s.evolutionArrow} aria-hidden>
+                      &lt;
+                    </span>
+                    <span className={s.evolutionLabel}>진화전</span>
+                    <span className={s.evolutionName}>{nameKo}</span>
+                  </button>
+                ))}
+              </div>
+              <div className={s.evolutionSideNext}>
+                {nextEvolutionTargets.map(({ nameKo, pokemon: target }) => (
+                  <button
+                    key={`next-${nameKo}`}
+                    type="button"
+                    className={`${s.evolutionBtn} ${s.evolutionBtnNext}`}
+                    disabled={!target}
+                    onClick={() => handleEvolutionSelect(target)}
+                  >
+                    <span className={s.evolutionName}>{nameKo}</span>
+                    <span className={s.evolutionLabel}>진화후</span>
+                    <span className={s.evolutionArrow} aria-hidden>
+                      &gt;
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section>
           <h3 className={s.sectionTitle}>특성</h3>
@@ -207,7 +318,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
           )}
         </section>
 
-        <section>
+        <section className={s.skillSection}>
           <h3 className={s.sectionTitle}>배울 수 있는 기술 <p>항목 클릭시 기술 페이지로 이동되며 배울수있는 포켓몬이 검색됩니다.</p></h3>
           {movesLoading ? (
             <p className={s.statusText}>기술 목록 불러오는 중…</p>

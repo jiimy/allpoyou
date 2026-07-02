@@ -204,6 +204,8 @@ function pokemonFromStoredSlot(slot: TeamPokemonSlot): Pokemon {
     ability: [],
     s_ability: [],
     grade: 0,
+    prevEvolutions: [],
+    nextEvolutions: [],
   };
 }
 

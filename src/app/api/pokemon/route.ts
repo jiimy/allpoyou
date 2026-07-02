@@ -29,6 +29,8 @@ type DbPokemonRow = {
   total: number;
   ability: string[] | null;
   s_ability: string[] | null;
+  prevEvolutions: string[] | null;
+  nextEvolutions: string[] | null;
 };
 
 /**
@@ -70,6 +72,8 @@ export async function GET(request: NextRequest) {
           total: row.total,
           ability: row.ability,
           s_ability: row.s_ability,
+          prevEvolutions: row.prevEvolutions,
+          nextEvolutions: row.nextEvolutions,
         }),
       );
 
@@ -103,7 +107,7 @@ function parsePositiveInt(value: string | null): number | undefined {
 }
 
 const DB_POKEMON_SELECT =
-  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability';
+  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability, prevEvolutions, nextEvolutions';
 
 /** Supabase 기본 행 제한(1000)을 넘는 전체 목록을 페이지 단위로 조회 */
 async function fetchAllPokemonRowsFromDb(
@@ -139,8 +143,8 @@ function shouldSkipPokemon(name: string): boolean {
 }
 
 /**
- * 기준 영문명(메가/거다이 접미사 제거)별 최소 PokeAPI id → 전국도감 number.
- * 예: venusaur, venusaur-mega, venusaur-gmax → 모두 venusaur의 min id(3).
+ * 기준 영문명(메가/거다이/리전 폼 접미사 제거)별 최소 PokeAPI id → 전국도감 number.
+ * 예: venusaur-mega, rattata-alola → venusaur / rattata의 min id.
  */
 function buildMinIdByBaseEnglish(pokemon: PokemonKr[]): Map<string, number> {
   const minIdByBase = new Map<string, number>();
@@ -251,6 +255,72 @@ function splitAbilities(abilities: PokemonAbility[]): {
   return { ability, s_ability };
 }
 
+/** 메가 X → Y → Z → 기본 순으로 정렬 */
+function sortMegaDisplayNames(names: string[]): string[] {
+  const order = (name: string) => {
+    if (name.endsWith(' X')) return 1;
+    if (name.endsWith(' Y')) return 2;
+    if (name.endsWith(' Z')) return 3;
+    return 0;
+  };
+
+  return [...names].sort((a, b) => {
+    const byForm = order(a) - order(b);
+    return byForm !== 0 ? byForm : a.localeCompare(b, 'ko');
+  });
+}
+
+/** 기준 영문명 → 메가진화 한글 표시명 목록 */
+function buildMegaEvolutionsByBase(
+  pokemon: PokemonKr[],
+): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+
+  for (const p of pokemon) {
+    if (!isMegaEvolutionEnglishName(p.name) || shouldSkipPokemon(p.name)) {
+      continue;
+    }
+
+    const baseEnglish = getBaseEnglishNameForDex(p.name);
+    const displayName = buildDisplayName(p.name, p.nameKo);
+    const list = map.get(baseEnglish) ?? [];
+
+    if (!list.includes(displayName)) {
+      list.push(displayName);
+    }
+
+    map.set(baseEnglish, list);
+  }
+
+  for (const [baseEnglish, names] of map) {
+    map.set(baseEnglish, sortMegaDisplayNames(names));
+  }
+
+  return map;
+}
+
+/** PokeAPI 진화 체인 + 메가진화 한글명 병합 */
+function mergeNextEvolutions(
+  chainNext: string[],
+  englishName: string,
+  megaByBase: Map<string, string[]>,
+): string[] {
+  if (isMegaEvolutionEnglishName(englishName)) {
+    return [...chainNext];
+  }
+
+  const merged = [...chainNext];
+  const megaNext = megaByBase.get(englishName) ?? [];
+
+  for (const name of megaNext) {
+    if (!merged.includes(name)) {
+      merged.push(name);
+    }
+  }
+
+  return merged;
+}
+
 /**
  * POST /api
  *
@@ -258,7 +328,7 @@ function splitAbilities(abilities: PokemonAbility[]): {
  * 2) PokeAPI 한국어 데이터를 가공해 `pokemon` 테이블에 upsert.
  *
  * 컬럼 매핑:
- *   minId(baseEnglish) -> number  (메가/거다이는 접미사 제거 후 같은 기준명끼리 min id)
+ *   minId(baseEnglish) -> number  (메가/거다이/리전 폼 접미사 제거 후 같은 기준명끼리 min id)
  *   p.name        -> name  (영문 포켓몬명)
  *   buildDisplayName -> nameKo  (폼/리전/메가 등 한글 표시명)
  *   types[].ko (ㄱ~ㅎ 정렬) -> types (text[])
@@ -297,6 +367,7 @@ export async function POST() {
     // 2) PokeAPI에서 한국어 데이터 가져오기
     const all = await fetchAllPokemonKr();
     const minIdByBaseEnglish = buildMinIdByBaseEnglish(all);
+    const megaEvolutionsByBase = buildMegaEvolutionsByBase(all);
 
     const rows = all
       .filter((p) => !shouldSkipPokemon(p.name))
@@ -310,7 +381,7 @@ export async function POST() {
           name: p.name,
           nameKo: buildDisplayName(p.name, p.nameKo),
           images: buildImages(p),
-          types: sortTypesKo(p.types.map((t) => t.ko)),
+          types: sortTypesKo(p.types.map((t) => t)),
           ability,
           s_ability,
           H: p.stats.hp,
@@ -320,6 +391,12 @@ export async function POST() {
           D: p.stats.specialDefense,
           S: p.stats.speed,
           total: p.stats.total,
+          prevEvolutions: p.prevEvolutions,
+          nextEvolutions: mergeNextEvolutions(
+            p.nextEvolutions,
+            p.name,
+            megaEvolutionsByBase,
+          ),
         };
       });
 
@@ -366,6 +443,8 @@ export async function POST() {
       megaSamples,
       gmaxSamples,
       blastoiseMega: uniqueRows.find((r) => r.name === 'blastoise-mega'),
+      venusaurNext: uniqueRows.find((r) => r.name === 'venusaur')?.nextEvolutions,
+      charizardNext: uniqueRows.find((r) => r.name === 'charizard')?.nextEvolutions,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

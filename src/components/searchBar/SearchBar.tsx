@@ -19,6 +19,7 @@ const PLACEHOLDER_BY_TYPE: Record<PlaceholderType, string> = {
 export type SearchBarProps = {
   keyword: string;
   onKeywordChange: (value: string) => void;
+  onDebouncingChange?: (isDebouncing: boolean) => void;
   pokemonSearchLoading?: boolean;
   pokemonSearchError?: string | null;
   matchedPokemonNames?: string[];
@@ -28,6 +29,7 @@ export type SearchBarProps = {
 export default function SearchBar({
   keyword,
   onKeywordChange,
+  onDebouncingChange,
   pokemonSearchLoading = false,
   pokemonSearchError = null,
   matchedPokemonNames = [],
@@ -40,6 +42,10 @@ export default function SearchBar({
     setPrevKeyword(keyword);
     setInputValue(keyword);
   }
+
+  useEffect(() => {
+    onDebouncingChange?.(inputValue !== keyword);
+  }, [inputValue, keyword, onDebouncingChange]);
 
   useEffect(() => {
     if (inputValue === keyword) return;

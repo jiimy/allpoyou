@@ -20,8 +20,20 @@ const ALL_POKEMON_KOREAN_QUERY = /* GraphQL */ `
       is_default
       
       pokemonspecy {
+        name
         pokemonspeciesnames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
           name
+        }
+        # 진화 체인 전체 데이터 함께 조회
+        evolutionchain {
+          pokemonspecies(order_by: { order: asc }) {
+            id
+            name
+            pokemonspeciesnames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
+              name
+            }
+            evolves_from_species_id
+          }
         }
       }
       
@@ -52,14 +64,12 @@ const ALL_POKEMON_KOREAN_QUERY = /* GraphQL */ `
         sprites
       }
 
-      # ★ 여기에 특성(Abilities) 데이터를 추가합니다.
       pokemonabilities {
-        is_hidden # true면 숨겨진 특성(드림특성), false면 일반 특성
-        slot      # 특성 슬롯 (1번 특성, 2번 특성 구분용)
+        is_hidden
+        slot
         ability {
           id
-          name    # 영문 특성명
-          # 특성의 한글 이름 추출
+          name
           abilitynames(where: { language_id: { _eq: ${KOREAN_LANGUAGE_ID} } }) {
             name
           }
@@ -77,11 +87,23 @@ type RawSprites = {
   };
 };
 
+// ★ 진화 정보용 Raw 타입 정의
+type RawEvolutionSpecies = {
+  id: number;
+  name: string;
+  pokemonspeciesnames: { name: string }[];
+  evolves_from_species_id: number | null;
+};
+
 type RawPokemon = {
   id: number;
   name: string;
   pokemonspecy: {
+    name: string;
     pokemonspeciesnames: { name: string }[];
+    evolutionchain: {
+      pokemonspecies: RawEvolutionSpecies[];
+    } | null;
   } | null;
   pokemonstats: {
     base_stat: number;
@@ -107,13 +129,6 @@ type RawPokemon = {
 };
 
 type GraphQLResponse<T> = { data: T } | { errors: { message: string }[] };
-
-export type PokemonType = {
-  /** 영문 타입명 (예: "grass") */
-  en: string;
-  /** 한글 타입명 (예: "풀") */
-  ko: string;
-};
 
 export type PokemonStats = {
   hp: number;
@@ -157,14 +172,18 @@ export type PokemonKr = {
   name: string;
   /** 한글 이름 (예: "이상해씨") */
   nameKo: string;
-  /** 타입 (1~2개) */
-  types: PokemonType[];
+  /** ★ 기존 CSV와 부합하도록 한글 문자열 배열 형태로 변경 (예: ["독", "풀"]) */
+  types: string[];
   /** 종족값 */
   stats: PokemonStats;
   /** 스프라이트 / 일러스트 URL */
   images: PokemonImages;
   /** 특성 (일반 1~2개 + 숨겨진 특성) */
   abilities: PokemonAbility[];
+  /** ★ 추가: 이전 진화 한글명 리스트 (없으면 빈 배열 `[]`) */
+  prevEvolutions: string[];
+  /** ★ 추가: 이후 진화 한글명 리스트 (없으면 빈 배열 `[]`) */
+  nextEvolutions: string[];
 };
 
 const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
@@ -177,8 +196,7 @@ const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
 };
 
 /**
- * PokeAPI GraphQL에 질의해 모든 기본형 포켓몬의
- * 번호 / 이름(한글) / 타입(한글) / 종족값 / 특성(한글) / 이미지 URL을 가져옵니다.
+ * PokeAPI GraphQL에 질의해 모든 기본형 포켓몬의 데이터와 진화 정보를 가져옵니다.
  */
 export async function fetchAllPokemonKr(): Promise<PokemonKr[]> {
   const res = await fetch(POKEAPI_GRAPHQL_ENDPOINT, {
@@ -239,12 +257,10 @@ function toPokemonImages(raw: RawPokemon): PokemonImages {
 function toPokemonKr(raw: RawPokemon): PokemonKr {
   const nameKo = raw.pokemonspecy?.pokemonspeciesnames?.[0]?.name ?? raw.name;
 
-  const types: PokemonType[] = [...raw.pokemontypes]
-    .sort((a, b) => a.slot - b.slot)
-    .map((t) => ({
-      en: t.type.name,
-      ko: t.type.typenames?.[0]?.name ?? t.type.name,
-    }));
+  // ★ 변경: 기존 CSV 가나다순 필터와 호환성을 맞추기 위해 정렬 후 한글명 문자열 배열로 가공
+  const types: string[] = [...raw.pokemontypes]
+    .map((t) => t.type.typenames?.[0]?.name ?? t.type.name)
+    .sort(); // .sort() 추가 시 "풀,독" 순서가 기존 CSV처럼 "독,풀"로 가나다순 배치됩니다.
 
   const stats: PokemonStats = {
     hp: 0,
@@ -273,6 +289,35 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
       slot: entry.slot,
     }));
 
+  // ------------------------------------------------------------------
+  // ★ 진화 체인 분석 및 한글 이름 추출 로직 추가
+  // ------------------------------------------------------------------
+  const prevEvolutions: string[] = [];
+  const nextEvolutions: string[] = [];
+  const speciesList = raw.pokemonspecy?.evolutionchain?.pokemonspecies ?? [];
+  const speciesName = raw.pokemonspecy?.name ?? raw.name;
+
+  if (speciesList.length > 0) {
+    const currentSpecies = speciesList.find((s) => s.name === speciesName);
+
+    if (currentSpecies) {
+      // 1. 이전 진화형 추출
+      if (currentSpecies.evolves_from_species_id != null) {
+        const prevSpec = speciesList.find((s) => s.id === currentSpecies.evolves_from_species_id);
+        if (prevSpec) {
+          prevEvolutions.push(prevSpec.pokemonspeciesnames?.[0]?.name ?? prevSpec.name);
+        }
+      }
+
+      // 2. 이후 진화형 추출 (분기 진화 포함)
+      const nextSpecs = speciesList.filter((s) => s.evolves_from_species_id === currentSpecies.id);
+      for (const nextSpec of nextSpecs) {
+        nextEvolutions.push(nextSpec.pokemonspeciesnames?.[0]?.name ?? nextSpec.name);
+      }
+    }
+  }
+  // ------------------------------------------------------------------
+
   return {
     id: raw.id,
     name: raw.name,
@@ -281,5 +326,8 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
     stats,
     images: toPokemonImages(raw),
     abilities,
+    // ★ 결과값 주입
+    prevEvolutions,
+    nextEvolutions,
   };
 }

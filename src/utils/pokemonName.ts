@@ -10,16 +10,21 @@ export function isGmaxEnglishName(englishName: string): boolean {
 
 /**
  * 전국도감 번호 공유용 기준 영문명.
- * `-mega`, `-mega-x/y/z`, `-gmax` 접미사만 제거 (리전 폼 접미사는 유지).
+ * 메가/거다이/리전 폼 접미사를 제거해 같은 종족끼리 number를 공유합니다.
  */
 export function getBaseEnglishNameForDex(englishName: string): string {
-  if (isMegaEvolutionEnglishName(englishName)) {
-    return englishName.replace(/-mega(-[xyz])?$/, '');
+  let base = englishName;
+
+  if (isMegaEvolutionEnglishName(base)) {
+    base = base.replace(/-mega(-[xyz])?$/, '');
+  } else if (isGmaxEnglishName(base)) {
+    base = base.replace(/-gmax$/, '');
   }
-  if (isGmaxEnglishName(englishName)) {
-    return englishName.replace(/-gmax$/, '');
-  }
-  return englishName;
+
+  return base.replace(
+    /-(?:paldea-(?:aqua|blaze|combat)-breed|paldea|galar-(?:standard|zen)|galar|totem-alola|alola|hisui)$/,
+    '',
+  );
 }
 
 /** DB 표시명이 메가진화 접두사(메가 )로 시작하는지 */

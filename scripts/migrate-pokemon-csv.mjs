@@ -69,13 +69,16 @@ function isGmaxEnglishName(englishName) {
 }
 
 function getBaseEnglishNameForDex(englishName) {
-  if (isMegaEvolutionEnglishName(englishName)) {
-    return englishName.replace(/-mega(-[xyz])?$/, '');
+  let base = englishName;
+  if (isMegaEvolutionEnglishName(base)) {
+    base = base.replace(/-mega(-[xyz])?$/, '');
+  } else if (isGmaxEnglishName(base)) {
+    base = base.replace(/-gmax$/, '');
   }
-  if (isGmaxEnglishName(englishName)) {
-    return englishName.replace(/-gmax$/, '');
-  }
-  return englishName;
+  return base.replace(
+    /-(?:paldea-(?:aqua|blaze|combat)-breed|paldea|galar-(?:standard|zen)|galar|totem-alola|alola|hisui)$/,
+    '',
+  );
 }
 
 function buildDisplayName(englishName, nameKo) {

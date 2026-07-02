@@ -83,6 +83,8 @@ export function parsePokemonCsv(csv: string): Pokemon[] {
         ability: parseJsonArrayField(get('ability')),
         s_ability: parseJsonArrayField(get('s_ability')),
         grade: Number(get('grade')),
+        prevEvolutions: parseJsonArrayField(get('prevEvolutions')),
+        nextEvolutions: parseJsonArrayField(get('nextEvolutions')),
       }),
     );
   }

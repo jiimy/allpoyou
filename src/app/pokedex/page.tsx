@@ -1,16 +1,18 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 import SearchBar from '@/components/searchBar/SearchBar';
 import PokedexList from '@/components/pokedexList/PokedexList';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from './pokedexPage.module.scss';
+import Loading from '@/components/loading/Loading';
 
 function PokedexPageContent() {
   const { searchParams, replaceParams } = useUrlQueryParams();
   const keyword = searchParams.get('q') ?? '';
+  const [isSearchDebouncing, setIsSearchDebouncing] = useState(false);
 
   const handleKeywordChange = (value: string) => {
     replaceParams({
@@ -24,9 +26,17 @@ function PokedexPageContent() {
       <SearchBar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}
+        onDebouncingChange={setIsSearchDebouncing}
         placeholderType="pokemon"
       />
-      <PokedexList keyword={keyword} />
+      {/* <Loading /> */}
+      <div className={s.listArea}>
+        {isSearchDebouncing ? (
+          <Loading />
+        ) : (
+          <PokedexList keyword={keyword} />
+        )}
+      </div>
     </div>
   );
 }

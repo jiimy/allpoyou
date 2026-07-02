@@ -23,20 +23,27 @@ export type Pokemon = {
   s_ability: string[];
   /** 1=1단, 2=2단, 3=최종 진화 */
   grade: number;
+  /** 이전 진화 한글명 (직계 1단계) */
+  prevEvolutions: string[];
+  /** 이후 진화 한글명 (분기 포함) */
+  nextEvolutions: string[];
 };
 
 let cachedList: Pokemon[] | null = null;
 const byId = new Map<number, Pokemon>();
 const byEnglishName = new Map<string, Pokemon>();
+const byNameKo = new Map<string, Pokemon>();
 const byNumber = new Map<number, Pokemon[]>();
 
 function indexPokemon(list: Pokemon[]) {
   byId.clear();
   byEnglishName.clear();
+  byNameKo.clear();
   byNumber.clear();
   for (const p of list) {
     byId.set(p.id, p);
     byEnglishName.set(p.name, p);
+    byNameKo.set(p.nameKo, p);
     const group = byNumber.get(p.number) ?? [];
     group.push(p);
     byNumber.set(p.number, group);
@@ -46,10 +53,16 @@ function indexPokemon(list: Pokemon[]) {
 function isValidCachedList(list: Pokemon[] | null): list is Pokemon[] {
   const sample = list?.[0];
   if (!sample) return false;
+  const hasEvolutionData = list.some(
+    (p) => p.prevEvolutions.length > 0 || p.nextEvolutions.length > 0,
+  );
   return (
     !sample.nameKo.startsWith('[') &&
     sample.images.some((url) => url.startsWith('http')) &&
-    Number.isFinite(sample.grade)
+    Number.isFinite(sample.grade) &&
+    Array.isArray(sample.prevEvolutions) &&
+    Array.isArray(sample.nextEvolutions) &&
+    hasEvolutionData
   );
 }
 
@@ -59,7 +72,9 @@ export async function fetchPokemonList(force = false): Promise<Pokemon[]> {
 
   if (!force && isValidCachedList(cachedList)) return cachedList;
 
-  const res = await fetch('/data/pokemon.csv', { cache: 'force-cache' });
+  const res = await fetch('/data/pokemon.csv', {
+    cache: force ? 'no-store' : 'no-cache',
+  });
   if (!res.ok) {
     throw new Error(`포켓몬 목록 로드 실패 (${res.status})`);
   }
@@ -80,6 +95,10 @@ export function getPokemonById(id: number): Pokemon | undefined {
 
 export function getPokemonByEnglishName(name: string): Pokemon | undefined {
   return byEnglishName.get(name);
+}
+
+export function getPokemonByNameKo(nameKo: string): Pokemon | undefined {
+  return byNameKo.get(nameKo);
 }
 
 export function getPokemonsByNumber(number: number): Pokemon[] {

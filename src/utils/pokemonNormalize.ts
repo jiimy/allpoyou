@@ -48,5 +48,7 @@ export function normalizePokemon(row: Record<string, unknown>): Pokemon {
     S: Number(row.S),
     total: Number(row.total),
     grade: Number(row.grade),
+    prevEvolutions: ensureStringArray(row.prevEvolutions),
+    nextEvolutions: ensureStringArray(row.nextEvolutions),
   };
 }
