@@ -7,7 +7,7 @@ export const BASE_STAT_MIN = 1;
 export const BASE_STAT_MAX = 255;
 
 export const BASE_STAT_LABEL: Record<BaseStatKey, string> = {
-  H: '체력',
+  H: 'HP',
   A: '공격',
   B: '방어',
   C: '특공',
