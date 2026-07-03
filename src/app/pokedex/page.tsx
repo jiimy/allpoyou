@@ -29,7 +29,6 @@ function PokedexPageContent() {
         onDebouncingChange={setIsSearchDebouncing}
         placeholderType="pokemon"
       />
-      {/* <Loading /> */}
       <div className={s.listArea}>
         {isSearchDebouncing ? (
           <Loading />

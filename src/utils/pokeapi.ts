@@ -184,6 +184,8 @@ export type PokemonKr = {
   prevEvolutions: string[];
   /** ★ 추가: 이후 진화 한글명 리스트 (없으면 빈 배열 `[]`) */
   nextEvolutions: string[];
+  /** 1=1단, 2=2단, 3=최종 진화 */
+  grade: number;
 };
 
 const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
@@ -254,6 +256,45 @@ function toPokemonImages(raw: RawPokemon): PokemonImages {
   };
 }
 
+/**
+ * 진화 체인에서 현재 종의 단계 (1=1단, 2=2단, 3=최종).
+ * 체인 최대 깊이와 비교해 분기 진화·단일 종도 처리합니다.
+ */
+export function computeEvolutionGrade(
+  currentSpecies: RawEvolutionSpecies,
+  speciesList: RawEvolutionSpecies[],
+): number {
+  if (speciesList.length === 0) return 3;
+
+  const byId = new Map(speciesList.map((s) => [s.id, s]));
+
+  const getDepthFromRoot = (species: RawEvolutionSpecies): number => {
+    let depth = 1;
+    let cur: RawEvolutionSpecies | undefined = species;
+    const visited = new Set<number>();
+
+    while (cur?.evolves_from_species_id != null) {
+      if (visited.has(cur.id)) break;
+      visited.add(cur.id);
+      cur = byId.get(cur.evolves_from_species_id);
+      if (!cur) break;
+      depth += 1;
+    }
+
+    return depth;
+  };
+
+  let maxDepth = 1;
+  for (const species of speciesList) {
+    maxDepth = Math.max(maxDepth, getDepthFromRoot(species));
+  }
+
+  const depth = getDepthFromRoot(currentSpecies);
+  if (depth >= maxDepth) return 3;
+  if (depth === 1) return 1;
+  return 2;
+}
+
 function toPokemonKr(raw: RawPokemon): PokemonKr {
   const nameKo = raw.pokemonspecy?.pokemonspeciesnames?.[0]?.name ?? raw.name;
 
@@ -296,11 +337,14 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
   const nextEvolutions: string[] = [];
   const speciesList = raw.pokemonspecy?.evolutionchain?.pokemonspecies ?? [];
   const speciesName = raw.pokemonspecy?.name ?? raw.name;
+  let grade = 3;
 
   if (speciesList.length > 0) {
     const currentSpecies = speciesList.find((s) => s.name === speciesName);
 
     if (currentSpecies) {
+      grade = computeEvolutionGrade(currentSpecies, speciesList);
+
       // 1. 이전 진화형 추출
       if (currentSpecies.evolves_from_species_id != null) {
         const prevSpec = speciesList.find((s) => s.id === currentSpecies.evolves_from_species_id);
@@ -326,8 +370,8 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
     stats,
     images: toPokemonImages(raw),
     abilities,
-    // ★ 결과값 주입
     prevEvolutions,
     nextEvolutions,
+    grade,
   };
 }

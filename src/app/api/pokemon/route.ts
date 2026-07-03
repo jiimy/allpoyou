@@ -31,6 +31,7 @@ type DbPokemonRow = {
   s_ability: string[] | null;
   prevEvolutions: string[] | null;
   nextEvolutions: string[] | null;
+  grade: number;
 };
 
 /**
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
           s_ability: row.s_ability,
           prevEvolutions: row.prevEvolutions,
           nextEvolutions: row.nextEvolutions,
+          grade: row.grade,
         }),
       );
 
@@ -107,7 +109,7 @@ function parsePositiveInt(value: string | null): number | undefined {
 }
 
 const DB_POKEMON_SELECT =
-  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability, prevEvolutions, nextEvolutions';
+  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability, prevEvolutions, nextEvolutions, grade';
 
 /** Supabase 기본 행 제한(1000)을 넘는 전체 목록을 페이지 단위로 조회 */
 async function fetchAllPokemonRowsFromDb(
@@ -342,6 +344,7 @@ function mergeNextEvolutions(
  *   abilities(isHidden=false)[].ko -> ability (text[])
  *   abilities(isHidden=true)[].ko  -> s_ability (text[])
  *   [official, showdown ani] -> images (text[])
+ *   evolution chain depth -> grade (1=1단, 2=2단, 3=최종)
  */
 export async function POST() {
   try {
@@ -397,6 +400,7 @@ export async function POST() {
             p.name,
             megaEvolutionsByBase,
           ),
+          grade: p.grade,
         };
       });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { useOutOfClick } from '@/hooks/useOutOfClick';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -31,10 +31,11 @@ import { getMoveTypeKo } from '@/utils/moveDisplay';
 import { getMoveById } from '@/utils/movesIndex';
 import { getNatureEffectLabel, type NatureEntry } from '@/utils/natureList';
 import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
-import StatCountModal from '@/components/team/statCountModal/StatCountModal';
+import StatCountModal, {
+  type TeamStatSlot,
+} from '@/components/team/statCountModal/StatCountModal';
 import {
   BASE_STAT_LABEL,
-  areBaseStatsModified,
   getRowMaxStatKeys,
   hasMaxStatChanged,
   type BaseStatKey,
@@ -291,6 +292,19 @@ const Team: React.FC<TeamProps> = ({
   );
 
   const [statModalIndex, setStatModalIndex] = useState<number | null>(null);
+
+  const teamStatSlots = useMemo((): TeamStatSlot[] => {
+    const slots: TeamStatSlot[] = [];
+
+    for (let index = 0; index < selectedPokemons.length; index += 1) {
+      const pokemon = selectedPokemons[index];
+      const originalStats = originalBaseStatsBySlot[index];
+      if (!pokemon || !originalStats) continue;
+      slots.push({ index, pokemon, originalStats });
+    }
+
+    return slots;
+  }, [originalBaseStatsBySlot, selectedPokemons]);
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -1190,26 +1204,18 @@ const Team: React.FC<TeamProps> = ({
       selectedPokemons[statModalIndex] &&
       originalBaseStatsBySlot[statModalIndex] ? (
         <StatCountModal
-          setOnModal={(open) => {
-            if (!open && statModalIndex != null) {
-              const pokemon = selectedPokemons[statModalIndex];
-              const original = originalBaseStatsBySlot[statModalIndex];
-              if (
-                pokemon &&
-                original &&
-                areBaseStatsModified(pokemon, original)
-              ) {
-                onCommitBaseStats(statModalIndex);
-              }
+          setOnModal={(value) => {
+            const nextOpen =
+              typeof value === 'function' ? value(true) : value;
+            if (!nextOpen) {
               setStatModalIndex(null);
             }
           }}
-          pokemon={selectedPokemons[statModalIndex]!}
-          originalStats={originalBaseStatsBySlot[statModalIndex]!}
-          onUpdateStat={(statKey, value) =>
-            onUpdateBaseStat(statModalIndex, statKey, value)
-          }
-          onReset={() => onResetBaseStats(statModalIndex)}
+          initialSlotIndex={statModalIndex}
+          teamSlots={teamStatSlots}
+          onUpdateStat={onUpdateBaseStat}
+          onReset={onResetBaseStats}
+          onCommitSlot={onCommitBaseStats}
         />
       ) : null}
     </div>

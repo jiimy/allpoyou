@@ -12,7 +12,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   max-height: calc(100vh - 140px);
   overflow-y: auto;
   padding-right: 4px;
@@ -257,8 +257,11 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: 140px;
+  max-height: 240px;
   overflow-y: auto;
+  @include media-mo {
+    max-height: 160px;
+  }
 }
 
 .moveItem {
@@ -317,4 +320,7 @@
 
 .skillSection {
   height: 190.5px;
+  @include media-mo {
+    height: auto;
+  }
 }

@@ -14,12 +14,19 @@ import {
 } from '@/utils/pokemonBaseStats';
 import s from './statCountModal.module.scss';
 
-type StatCountModalProps = {
-  setOnModal: React.Dispatch<React.SetStateAction<boolean>>;
+export type TeamStatSlot = {
+  index: number;
   pokemon: Pokemon;
   originalStats: PokemonBaseStats;
-  onUpdateStat: (statKey: BaseStatKey, value: number) => void;
-  onReset: () => void;
+};
+
+type StatCountModalProps = {
+  setOnModal: React.Dispatch<React.SetStateAction<boolean>>;
+  initialSlotIndex: number;
+  teamSlots: TeamStatSlot[];
+  onUpdateStat: (slotIndex: number, statKey: BaseStatKey, value: number) => void;
+  onReset: (slotIndex: number) => void;
+  onCommitSlot: (slotIndex: number) => void;
 };
 
 function clampStat(value: number): number {
@@ -163,16 +170,73 @@ function StatSliderRow({ statKey, value, onUpdateStat }: StatSliderRowProps) {
 
 const StatCountModal = ({
   setOnModal,
-  pokemon,
-  originalStats,
+  initialSlotIndex,
+  teamSlots,
   onUpdateStat,
   onReset,
+  onCommitSlot,
 }: StatCountModalProps) => {
+  const [activeSlotIndex, setActiveSlotIndex] = useState(initialSlotIndex);
+  const [prevInitialSlotIndex, setPrevInitialSlotIndex] =
+    useState(initialSlotIndex);
+
+  if (prevInitialSlotIndex !== initialSlotIndex) {
+    setPrevInitialSlotIndex(initialSlotIndex);
+    setActiveSlotIndex(initialSlotIndex);
+  }
+
+  const activeSlot =
+    teamSlots.find((slot) => slot.index === activeSlotIndex) ?? teamSlots[0];
+
+  const handleSelectSlot = useCallback(
+    (slotIndex: number) => {
+      if (slotIndex === activeSlotIndex) return;
+
+      const currentSlot = teamSlots.find((slot) => slot.index === activeSlotIndex);
+      if (
+        currentSlot &&
+        areBaseStatsModified(currentSlot.pokemon, currentSlot.originalStats)
+      ) {
+        onCommitSlot(activeSlotIndex);
+      }
+
+      setActiveSlotIndex(slotIndex);
+    },
+    [activeSlotIndex, onCommitSlot, teamSlots],
+  );
+
+  const handleClose = useCallback<React.Dispatch<React.SetStateAction<boolean>>>(
+    (value) => {
+      const nextOpen =
+        typeof value === 'function' ? value(true) : value;
+
+      if (!nextOpen) {
+        const currentSlot =
+          teamSlots.find((slot) => slot.index === activeSlotIndex) ??
+          teamSlots[0];
+        if (
+          currentSlot &&
+          areBaseStatsModified(currentSlot.pokemon, currentSlot.originalStats)
+        ) {
+          onCommitSlot(activeSlotIndex);
+        }
+      }
+
+      setOnModal(nextOpen);
+    },
+    [activeSlotIndex, onCommitSlot, setOnModal, teamSlots],
+  );
+
+  if (!activeSlot) {
+    return null;
+  }
+
+  const { pokemon, originalStats } = activeSlot;
   const isModified = areBaseStatsModified(pokemon, originalStats);
 
   return (
     <ModalFrame
-      setOnModal={setOnModal}
+      setOnModal={handleClose}
       isDim
       onClose
       dimClick
@@ -189,7 +253,9 @@ const StatCountModal = ({
             key={statKey}
             statKey={statKey}
             value={pokemon[statKey]}
-            onUpdateStat={onUpdateStat}
+            onUpdateStat={(key, value) =>
+              onUpdateStat(activeSlotIndex, key, value)
+            }
           />
         ))}
       </div>
@@ -202,11 +268,56 @@ const StatCountModal = ({
           type="button"
           className={s.resetBtn}
           disabled={!isModified}
-          onClick={onReset}
+          onClick={() => onReset(activeSlotIndex)}
         >
           초기화
         </button>
       </div>
+
+      {teamSlots.length > 1 ? (
+        <section className={s.teamOverview} aria-label="팀 종족값 비교">
+          <h3 className={s.teamOverviewTitle}>팀 종족값</h3>
+          <div className={s.teamOverviewScroll}>
+            {teamSlots.map((slot) => {
+              const isActive = slot.index === activeSlotIndex;
+              const slotModified = areBaseStatsModified(
+                slot.pokemon,
+                slot.originalStats,
+              );
+
+              return (
+                <button
+                  key={slot.index}
+                  type="button"
+                  className={`${s.teamColumn} ${isActive ? s.teamColumnActive : ''}`}
+                  onClick={() => handleSelectSlot(slot.index)}
+                  aria-pressed={isActive}
+                >
+                  <div className={s.teamColumnName}>
+                    {slot.pokemon.nameKo}
+                    {slotModified ? (
+                      <span className={s.teamColumnModified}>수정됨</span>
+                    ) : null}
+                  </div>
+                  {BASE_STAT_KEYS.map((statKey) => (
+                    <div key={statKey} className={s.teamColumnStat}>
+                      <span className={s.teamColumnStatLabel}>
+                        {BASE_STAT_LABEL[statKey]}
+                      </span>
+                      <span className={s.teamColumnStatValue}>
+                        {slot.pokemon[statKey]}
+                      </span>
+                    </div>
+                  ))}
+                  <div className={s.teamColumnTotal}>
+                    합계 {slot.pokemon.total}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
     </ModalFrame>
   );
 };
