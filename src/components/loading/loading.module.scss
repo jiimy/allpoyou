@@ -1,6 +1,6 @@
 .wrap {
   position: relative;
-  height: 680px;
+  height: 475px;
   @include media-mo {
     height: calc(100vh - 190px);
   }

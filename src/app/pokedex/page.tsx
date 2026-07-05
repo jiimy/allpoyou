@@ -38,7 +38,9 @@ function PokedexPageContent() {
         onDebouncingChange={setIsSearchDebouncing}
         placeholderType="pokemon"
       />
-      <PokedexTagFilter selectedTag={selectedTag} onSelectTag={handleTagChange} />
+      <PokedexTagFilter selectedTag={selectedTag} onSelectTag=
+        {handleTagChange} />
+      {/* <Loading /> */}
       <div className={s.listArea}>
         {isSearchDebouncing ? (
           <Loading />
