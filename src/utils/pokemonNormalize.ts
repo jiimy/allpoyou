@@ -50,5 +50,8 @@ export function normalizePokemon(row: Record<string, unknown>): Pokemon {
     grade: Number(row.grade),
     prevEvolutions: ensureStringArray(row.prevEvolutions),
     nextEvolutions: ensureStringArray(row.nextEvolutions),
+    note: String(row.note ?? ''),
+    generation: Number(row.generation),
+    tag: String(row.tag ?? ''),
   };
 }

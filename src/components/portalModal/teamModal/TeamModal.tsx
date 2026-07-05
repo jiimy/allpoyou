@@ -17,8 +17,11 @@ function isEditableTarget(target: EventTarget | null): boolean {
 /** Shift+D로 팀 모달 열기/닫기 (모달 마운트 여부와 무관하게 동작) */
 export function useTeamModalShortcut(
   setOnModal: React.Dispatch<React.SetStateAction<boolean>>,
+  enabled = true,
 ) {
   useEffect(() => {
+    if (!enabled) return;
+
     const handleKeydown = (e: KeyboardEvent) => {
       if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
       if (e.key !== 'd' && e.key !== 'D') return;
@@ -30,7 +33,7 @@ export function useTeamModalShortcut(
 
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [setOnModal]);
+  }, [setOnModal, enabled]);
 }
 
 const TeamModal = ({

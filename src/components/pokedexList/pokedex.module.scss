@@ -53,6 +53,23 @@
   }
 }
 
+.tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  max-width: 60%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f0f0f0;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .imageWrap {
   display: flex;
   align-items: center;

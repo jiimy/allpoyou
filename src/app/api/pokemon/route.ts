@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
-import { fetchAllPokemonKr, type PokemonAbility, type PokemonKr } from '@/utils/pokeapi';
+import { fetchAllPokemonKr, getGenerationByNumber, type PokemonAbility, type PokemonKr } from '@/utils/pokeapi';
 import { normalizePokemon } from '@/utils/pokemonNormalize';
 import {
   getBaseEnglishNameForDex,
@@ -32,6 +32,7 @@ type DbPokemonRow = {
   prevEvolutions: string[] | null;
   nextEvolutions: string[] | null;
   grade: number;
+  generation: number;
 };
 
 /**
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest) {
           prevEvolutions: row.prevEvolutions,
           nextEvolutions: row.nextEvolutions,
           grade: row.grade,
+          generation: row.generation,
         }),
       );
 
@@ -85,7 +87,8 @@ export async function GET(request: NextRequest) {
     const limit = parsePositiveInt(searchParams.get('limit'));
     const offset = parsePositiveInt(searchParams.get('offset')) ?? 0;
 
-    const all = await fetchAllPokemonKr();
+    const raw = await fetchAllPokemonKr();
+    const all = attachGeneration(raw, buildMinIdByBaseEnglish(raw));
 
     const sliced =
       typeof limit === 'number' ? all.slice(offset, offset + limit) : all.slice(offset);
@@ -109,7 +112,17 @@ function parsePositiveInt(value: string | null): number | undefined {
 }
 
 const DB_POKEMON_SELECT =
-  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability, prevEvolutions, nextEvolutions, grade';
+  'id, number, name, nameKo, images, types, H, A, B, C, D, S, total, ability, s_ability, prevEvolutions, nextEvolutions, grade, generation';
+
+function attachGeneration(
+  all: PokemonKr[],
+  minIdByBaseEnglish: Map<string, number>,
+): PokemonKr[] {
+  return all.map((p) => {
+    const number = minIdByBaseEnglish.get(getBaseEnglishNameForDex(p.name)) ?? p.id;
+    return { ...p, generation: getGenerationByNumber(number) };
+  });
+}
 
 /** Supabase 기본 행 제한(1000)을 넘는 전체 목록을 페이지 단위로 조회 */
 async function fetchAllPokemonRowsFromDb(
@@ -345,6 +358,7 @@ function mergeNextEvolutions(
  *   abilities(isHidden=true)[].ko  -> s_ability (text[])
  *   [official, showdown ani] -> images (text[])
  *   evolution chain depth -> grade (1=1단, 2=2단, 3=최종)
+ *   number -> generation (전국도감 번호 기준 세대 1~9)
  */
 export async function POST() {
   try {
@@ -377,10 +391,11 @@ export async function POST() {
       .map((p) => {
         const { ability, s_ability } = splitAbilities(p.abilities);
         const baseEnglish = getBaseEnglishNameForDex(p.name);
+        const number = minIdByBaseEnglish.get(baseEnglish) ?? p.id;
 
         return {
           sourceId: p.id,
-          number: minIdByBaseEnglish.get(baseEnglish) ?? p.id,
+          number,
           name: p.name,
           nameKo: buildDisplayName(p.name, p.nameKo),
           images: buildImages(p),
@@ -401,6 +416,7 @@ export async function POST() {
             megaEvolutionsByBase,
           ),
           grade: p.grade,
+          generation: getGenerationByNumber(number),
         };
       });
 

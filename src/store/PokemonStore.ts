@@ -27,6 +27,12 @@ export type Pokemon = {
   prevEvolutions: string[];
   /** 이후 진화 한글명 (분기 포함) */
   nextEvolutions: string[];
+  /** 비고 (예: 준전설, 초전설) */
+  note: string;
+  /** 등장 세대 (1~9) */
+  generation: number;
+  /** 분류 태그 (예: 전설의 새) */
+  tag: string;
 };
 
 let cachedList: Pokemon[] | null = null;
@@ -131,6 +137,36 @@ export function filterPokemonList(list: Pokemon[], keyword: string): Pokemon[] {
       });
 
   return sortPokemonList(filtered);
+}
+
+/** 포켓몬덱스 태그 필터 옵션 (표시 순서) */
+export const POKEDEX_TAGS: string[] = [
+  ...Array.from({ length: 9 }, (_, i) => `${i + 1}세대`),
+  '전설',
+  '초전설',
+  '준전설',
+];
+
+/**
+ * 태그(세대/전설 계열)로 포켓몬 목록을 필터링합니다.
+ * - `N세대`: generation === N
+ * - `전설`: note에 '전설' 포함 (초전설·준전설 모두 포함)
+ * - `초전설` / `준전설`: 해당 note만
+ */
+export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon[] {
+  if (!tag) return list;
+
+  const genMatch = /^(\d+)세대$/.exec(tag);
+  if (genMatch) {
+    const gen = Number(genMatch[1]);
+    return list.filter((p) => p.generation === gen);
+  }
+
+  if (tag === '전설') return list.filter((p) => p.note.includes('전설'));
+  if (tag === '초전설') return list.filter((p) => p.note.includes('초전설'));
+  if (tag === '준전설') return list.filter((p) => p.note.includes('준전설'));
+
+  return list;
 }
 
 export function searchPokemonByName(

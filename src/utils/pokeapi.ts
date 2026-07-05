@@ -186,7 +186,23 @@ export type PokemonKr = {
   nextEvolutions: string[];
   /** 1=1단, 2=2단, 3=최종 진화 */
   grade: number;
+  /** 전국도감 number 기준 세대 (1~9) */
+  generation: number;
 };
+
+/** 전국도감 number 기준 세대 분류 */
+export function getGenerationByNumber(number: number): number {
+  if (number <= 151) return 1;
+  if (number <= 251) return 2;
+  if (number <= 386) return 3;
+  if (number <= 493) return 4;
+  if (number <= 649) return 5;
+  if (number <= 721) return 6;
+  if (number <= 809) return 7;
+  if (number <= 905) return 8;
+  if (number <= 1025) return 9;
+  return 9;
+}
 
 const STAT_KEY_MAP: Record<string, keyof Omit<PokemonStats, 'total'>> = {
   hp: 'hp',
@@ -373,5 +389,6 @@ function toPokemonKr(raw: RawPokemon): PokemonKr {
     prevEvolutions,
     nextEvolutions,
     grade,
+    generation: 0,
   };
 }

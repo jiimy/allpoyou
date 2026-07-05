@@ -4,7 +4,12 @@ import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
-import { fetchPokemonList, filterPokemonList, type Pokemon } from '@/store/PokemonStore';
+import {
+  fetchPokemonList,
+  filterPokemonByTag,
+  filterPokemonList,
+  type Pokemon,
+} from '@/store/PokemonStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { formatAbilityTooltipText } from '@/utils/abilitySearch';
@@ -35,6 +40,7 @@ function PokemonCard({
       tabIndex={0}
     >
       # {pokemon.number}
+      {pokemon.tag ? <span className={s.tag}>{pokemon.tag}</span> : null}
       <div className={s.imageWrap}>
         {imageUrl && !imageError ? (
           <Image
@@ -135,9 +141,10 @@ function PokemonCard({
 
 type PokedexListProps = {
   keyword?: string;
+  tag?: string | null;
 };
 
-export default function PokedexList({ keyword = '' }: PokedexListProps) {
+export default function PokedexList({ keyword = '', tag = null }: PokedexListProps) {
   const { replaceParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -188,8 +195,8 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
   }, []);
 
   const filteredPokemons = useMemo(
-    () => filterPokemonList(pokemons, keyword),
-    [pokemons, keyword],
+    () => filterPokemonByTag(filterPokemonList(pokemons, keyword), tag),
+    [pokemons, keyword, tag],
   );
 
   const visiblePokemons = useMemo(
@@ -199,9 +206,10 @@ export default function PokedexList({ keyword = '' }: PokedexListProps) {
 
   const hasMore = visibleCount < filteredPokemons.length;
 
-  const [prevKeyword, setPrevKeyword] = useState(keyword);
-  if (prevKeyword !== keyword) {
-    setPrevKeyword(keyword);
+  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}\u0000${tag ?? ''}`);
+  const filterKey = `${keyword}\u0000${tag ?? ''}`;
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setVisibleCount(PAGE_SIZE);
   }
 
