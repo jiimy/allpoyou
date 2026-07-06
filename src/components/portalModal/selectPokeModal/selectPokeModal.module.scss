@@ -13,7 +13,8 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  // max-height: calc(100vh - 140px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -257,9 +258,12 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: 140px;
+  flex: 1;
+  min-height: 80px;
   overflow-y: auto;
   @include media-mo {
+    flex: none;
+    min-height: 0;
     max-height: 160px;
   }
 }
@@ -319,8 +323,12 @@
 }
 
 .skillSection {
-  height: 190.5px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   @include media-mo {
-    height: auto;
+    flex: none;
+    min-height: auto;
   }
 }
