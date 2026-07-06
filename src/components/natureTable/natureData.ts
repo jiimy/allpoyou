@@ -8,7 +8,7 @@ export const NATURE_GRID: readonly (readonly string[])[] = [
   ['대담', '온순', '장난꾸러기', '촐량', '무사태평'],
   ['조심', '의젓', '수줍음', '덜렁', '냉정'],
   ['차분', '얌전', '신중', '변덕', '건방'],
-  ['겁쟁이', '성급', '명함', '천진난만', '성실'],
+  ['겁쟁이', '성급', '명랑', '천진난만', '성실'],
 ] as const;
 
 export const STAT_THEME: Record<
