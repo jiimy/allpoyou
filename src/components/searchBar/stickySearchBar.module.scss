@@ -1,0 +1,13 @@
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-block: 8px;
+  background: var(--background, #fff);
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.hidden {
+  transform: translateY(-100%);
+}

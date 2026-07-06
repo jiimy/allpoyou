@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import SearchBar from '@/components/searchBar/SearchBar';
+import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import {
   getItemGroupId,
   getItemSpriteUrl,
@@ -151,7 +151,7 @@ export default function ItemList() {
 
   return (
     <div className={s.page}>
-      <SearchBar
+      <StickySearchBar
         keyword={keyword}
         onKeywordChange={setKeyword}
         placeholderType="item"

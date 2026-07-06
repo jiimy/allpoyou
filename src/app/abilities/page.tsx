@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 
 import AbilitiesList from '@/components/abilitiesList/AbilitiesList';
-import SearchBar from '@/components/searchBar/SearchBar';
+import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from './abilities.module.scss';
@@ -22,7 +22,7 @@ function AbilitiesPageContent() {
 
   return (
     <div className={s.page}>
-      <SearchBar
+      <StickySearchBar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}
         placeholderType="ability"

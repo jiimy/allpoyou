@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import SearchBar from '@/components/searchBar/SearchBar';
+import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import type { MoveDamageClassFilter } from '@/constants/moveFilters';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 import type { MoveDbEntry } from '@/types/move';
@@ -417,7 +417,7 @@ export default function MovesPageContent() {
 
   return (
     <div>
-      <SearchBar
+      <StickySearchBar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}
         placeholderType="moves"

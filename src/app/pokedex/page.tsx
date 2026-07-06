@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 
-import SearchBar from '@/components/searchBar/SearchBar';
+import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import PokedexList from '@/components/pokedexList/PokedexList';
 import PokedexTagFilter from '@/components/pokedexTagFilter/PokedexTagFilter';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
@@ -32,7 +32,7 @@ function PokedexPageContent() {
 
   return (
     <div className={s.page}>
-      <SearchBar
+      <StickySearchBar
         keyword={keyword}
         onKeywordChange={handleKeywordChange}
         onDebouncingChange={setIsSearchDebouncing}
