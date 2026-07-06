@@ -9,7 +9,7 @@ const Footer = () => {
       <div className={s.footerInner}>
         <div className={s.brand}>
           <p className={s.brandName}>올포유</p>
-          <p className={s.brandDesc}>포켓몬 팀 빌드 · 도감 · 기술 검색</p>
+          {/* <p className={s.brandDesc}>포켓몬 팀 빌드 · 도감 · 기술 검색</p> */}
         </div>
 
         <nav className={s.links} aria-label="푸터 링크">
