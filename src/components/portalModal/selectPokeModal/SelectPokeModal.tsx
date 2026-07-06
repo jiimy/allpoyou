@@ -1,33 +1,38 @@
 'use client';
 
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ModalFrame from '@/components/portalModal/ModalFrame';
+import TypeCalcModal from '@/components/portalModal/typeCalcModal/TypeCalcModal';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
+import { typeTranslation } from '@/constants/pokemonType';
 import type { Pokemon } from '@/store/PokemonStore';
+import { useTypeCalcStore, type TypeCalcMode } from '@/store/TypeCalcStore';
+import { GiCheckedShield, GiCrossedSwords } from "react-icons/gi";
+import {
+  fetchPokemonList,
+  getCachedPokemonList,
+  getPokemonByNameKo,
+} from '@/store/PokemonStore';
 import type { MoveDbEntry } from '@/types/move';
 import { getAbilitySummary } from '@/utils/abilitySearch';
 import { getMoveStatsTitle, getMoveTypeKo } from '@/utils/moveDisplay';
 import { getMovesByIds } from '@/utils/movesDb';
 import { MOVES_BY_ID } from '@/utils/movesIndex';
 import {
-  fetchPokemonList,
-  getCachedPokemonList,
-  getPokemonByNameKo,
-} from '@/store/PokemonStore';
-import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
-import { ensureStringArray } from '@/utils/pokemonNormalize';
-import {
-  getMoveLookupNameKo,
-  resolveMoveLookupPokemonId,
-} from '@/utils/pokemonName';
-import {
   BASE_STAT_KEYS,
   BASE_STAT_LABEL,
   BASE_STAT_MAX,
 } from '@/utils/pokemonBaseStats';
+import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import {
+  getMoveLookupNameKo,
+  resolveMoveLookupPokemonId,
+} from '@/utils/pokemonName';
+import { ensureStringArray } from '@/utils/pokemonNormalize';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import s from './selectPokeModal.module.scss';
+
 
 const STAT_BAR_COLORS: Record<(typeof BASE_STAT_KEYS)[number], string> = {
   H: '#e02e2f',
@@ -37,6 +42,11 @@ const STAT_BAR_COLORS: Record<(typeof BASE_STAT_KEYS)[number], string> = {
   D: '#2c7de5',
   S: '#e771e7',
 };
+
+/** 한글 타입명 → 타입 계산기 스토어가 사용하는 영문 타입 키 */
+const KO_TO_EN_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(typeTranslation).map(([en, ko]) => [ko, en]),
+);
 
 type SelectPokeModalProps = {
   pokemon: Pokemon;
@@ -70,6 +80,11 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const [moves, setMoves] = useState<MoveDbEntry[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
   const [movesError, setMovesError] = useState<string | null>(null);
+  const [typeCalcOpen, setTypeCalcOpen] = useState(false);
+
+  const setTypeCalcMode = useTypeCalcStore((state) => state.setMode);
+  const setAttackSelected = useTypeCalcStore((state) => state.setAttackSelected);
+  const setDefenseSelected = useTypeCalcStore((state) => state.setDefenseSelected);
 
   if (prevPokemonProp !== pokemon) {
     setPrevPokemonProp(pokemon);
@@ -123,6 +138,23 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
       router.push(`/skills?moveId=${move.id}&learnable=1`);
     },
     [router],
+  );
+
+  const handleOpenTypeCalc = useCallback(
+    (mode: TypeCalcMode) => {
+      const englishTypes = ensureStringArray(activePokemon.types)
+        .map((ko) => KO_TO_EN_TYPE[ko])
+        .filter((type): type is string => Boolean(type));
+
+      setTypeCalcMode(mode);
+      if (mode === 'attack') {
+        setAttackSelected(englishTypes);
+      } else {
+        setDefenseSelected(englishTypes);
+      }
+      setTypeCalcOpen(true);
+    },
+    [activePokemon.types, setTypeCalcMode, setAttackSelected, setDefenseSelected],
   );
 
   const imageUrl = getPokemonStaticImage(activePokemon.images);
@@ -186,6 +218,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   }, [activePokemon, pokemonList]);
 
   return (
+    <>
     <ModalFrame
       setOnModal={setOnModal}
       isDim
@@ -220,6 +253,26 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                 </span>
               ))}
             </div>
+            <span className={s.typeCalc}>
+              <button
+                type="button"
+                className={`${s.typeCalcBtn} ${s.typeCalcAttack}`}
+                onClick={() => handleOpenTypeCalc('attack')}
+                title="공격 상성 계산"
+                aria-label="공격 상성 계산"
+              >
+                <GiCrossedSwords />
+              </button>
+              <button
+                type="button"
+                className={`${s.typeCalcBtn} ${s.typeCalcDefense}`}
+                onClick={() => handleOpenTypeCalc('defense')}
+                title="방어 상성 계산"
+                aria-label="방어 상성 계산"
+              >
+                <GiCheckedShield />
+              </button>
+            </span>
           </div>
         </div>
 
@@ -360,6 +413,10 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         </section>
       </div>
     </ModalFrame>
+    {typeCalcOpen ? (
+      <TypeCalcModal setOnModal={setTypeCalcOpen} dimClick />
+    ) : null}
+    </>
   );
 };
 

@@ -232,6 +232,62 @@
   background: #fafafa;
 }
 
+.typeCalc {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.typeCalcBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #c22e28;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: #fff;
+  color: #c22e28;
+  height: 22px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease;
+
+  svg {
+    width: 0.8em;
+    height: 0.8em;
+  }
+
+  &:hover {
+    background: #c22e28;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(194, 46, 40, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #c22e28;
+    outline-offset: 2px;
+  }
+}
+
+.typeCalcDefense {
+  border-color: #2c7de5;
+  color: #2c7de5;
+
+  &:hover {
+    background: #2c7de5;
+    box-shadow: 0 2px 6px rgba(44, 125, 229, 0.3);
+  }
+
+  &:focus-visible {
+    outline-color: #2c7de5;
+  }
+}
+
 .abilityName {
   display: block;
   margin-bottom: 4px;
@@ -259,13 +315,8 @@
   padding: 0;
   list-style: none;
   flex: 1;
-  min-height: 80px;
+  min-height: 79px;
   overflow-y: auto;
-  @include media-mo {
-    flex: none;
-    min-height: 0;
-    max-height: 160px;
-  }
 }
 
 .moveItem {
@@ -327,8 +378,4 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  @include media-mo {
-    flex: none;
-    min-height: auto;
-  }
 }
