@@ -17,9 +17,11 @@
 }
 
 .main {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 40px 60px 40px;
+  flex: 1 0 auto;
   @include media-mo() { 
     padding: 0;
   }
