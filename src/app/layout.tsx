@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://allpoyou.vercel.app'),
   title: {
     default: "올포유",
-    template: "%s | 올포유",
+    template: "올포유 | 포켓몬 파티 짜는 사이트",
   },
   description: "포켓몬, 포켓몬 팀 플래너, 포켓몬 파티 짜는 사이트",
   icons: {
