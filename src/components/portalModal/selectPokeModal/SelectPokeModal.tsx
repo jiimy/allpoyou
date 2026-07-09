@@ -140,6 +140,13 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     [router],
   );
 
+  const handleAbilitySelect = useCallback(
+    (name: string) => {
+      router.push(`/abilities?q=${encodeURIComponent(name)}`);
+    },
+    [router],
+  );
+
   const handleOpenTypeCalc = useCallback(
     (mode: TypeCalcMode) => {
       const englishTypes = ensureStringArray(activePokemon.types)
@@ -343,13 +350,25 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         ) : null}
 
         <section>
-          <h3 className={s.sectionTitle}>특성</h3>
+          <h3 className={s.sectionTitle}>특성 <p>항목 클릭시 특성 페이지로 이동됩니다.</p></h3>
           {regularAbilities.length === 0 && hiddenAbilities.length === 0 ? (
             <p className={s.statusText}>특성 정보 없음</p>
           ) : (
             <ul className={s.abilityList}>
               {regularAbilities.map((name) => (
-                <li key={`ability-${name}`} className={s.abilityItem}>
+                <li
+                  key={`ability-${name}`}
+                  className={s.abilityItem}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleAbilitySelect(name)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleAbilitySelect(name);
+                    }
+                  }}
+                >
                   <span className={s.abilityName}>{name}</span>
                   <p className={s.abilitySummary}>
                     {getAbilitySummary(name) ?? '설명 없음'}
@@ -360,6 +379,15 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                 <li
                   key={`s-ability-${name}`}
                   className={`${s.abilityItem} ${s.abilityHidden}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleAbilitySelect(name)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleAbilitySelect(name);
+                    }
+                  }}
                 >
                   <span className={s.abilityName}>{name}</span>
                   <p className={s.abilitySummary}>
@@ -372,7 +400,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         </section>
 
         <section className={s.skillSection}>
-          <h3 className={s.sectionTitle}>배울 수 있는 기술 <p>항목 클릭시 기술 페이지로 이동되며 배울수있는 포켓몬이 검색됩니다.</p></h3>
+          <h3 className={s.sectionTitle}>배울 수 있는 기술 <p>항목 클릭시 기술 페이지로 이동합니다.</p></h3>
           {movesLoading ? (
             <p className={s.statusText}>기술 목록 불러오는 중…</p>
           ) : movesError ? (
