@@ -58,7 +58,7 @@ export function getNatureEffectLabel(entry: NatureEntry): string {
 }
 
 /** 키워드로 성격을 검색합니다. 보정 없음 성격은 제외하고, 이름 또는 보정 능력치 기준 부분 일치. */
-export function searchNatures(keyword: string, limit = 50): NatureEntry[] {
+export function searchNatures(keyword: string, limit = 1000): NatureEntry[] {
   const q = keyword.trim();
   if (!q) return SELECTABLE_NATURE_LIST.slice(0, limit);
 

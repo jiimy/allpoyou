@@ -73,7 +73,7 @@ function sortPokemons(pokemons: Pokemon[]): Pokemon[] {
   );
 }
 
-export function searchAbilities(keyword: string, limit = 50): AbilityListItem[] {
+export function searchAbilities(keyword: string, limit = 1000): AbilityListItem[] {
   const q = keyword.trim();
   if (!q) return ALL_ABILITIES.slice(0, limit);
 

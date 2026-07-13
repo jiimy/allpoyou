@@ -32,7 +32,7 @@ export function searchLearnableMoves(
   moves: MoveDbEntry[],
   keyword: string,
   excludeIds: Set<number>,
-  limit = 50,
+  limit = 1000,
 ): MoveDbEntry[] {
   const q = keyword.trim();
   const qLower = q.toLowerCase();

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { FilterButton } from '@/components/button/Button';
 import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import {
   getItemGroupId,
@@ -159,14 +160,14 @@ export default function ItemList() {
 
       <div className={s.filters}>
         {ITEM_GROUPS.map((group) => (
-          <button
+          <FilterButton
             key={group.id}
             type="button"
-            className={`${s.filterBtn} ${activeGroup === group.id ? s.filterBtnActive : ''}`}
+            active={activeGroup === group.id}
             onClick={() => setActiveGroup(group.id)}
           >
             {group.label}
-          </button>
+          </FilterButton>
         ))}
       </div>
 

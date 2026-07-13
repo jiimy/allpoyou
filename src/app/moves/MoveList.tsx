@@ -18,6 +18,7 @@ import {
 
 import s from './moves.module.scss';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
+import { FilterButton } from '@/components/button/Button';
 
 const PAGE_SIZE = 30;
 
@@ -255,18 +256,18 @@ export default function MoveList({
         <div className={s.filterGroup}>
           <span className={s.filterLabel}>타입</span>
           <div className={s.filterRow}>
-            <button
+            <FilterButton
               type="button"
-              className={`${s.filterBtn} ${activeType === 'all' ? s.filterBtnActive : ''}`}
+              active={activeType === 'all'}
               onClick={() => onTypeChange('all')}
             >
               전체
-            </button>
+            </FilterButton>
             {MOVE_TYPE_OPTIONS.map((opt) => (
-              <button
+              <FilterButton
                 key={opt.value}
                 type="button"
-                className={`${s.filterBtn} ${activeType === opt.value ? s.filterBtnActive : ''}`}
+                active={activeType === opt.value}
                 style={
                   activeType === opt.value
                     ? {
@@ -279,7 +280,7 @@ export default function MoveList({
                 onClick={() => onTypeChange(opt.value)}
               >
                 {opt.label}
-              </button>
+              </FilterButton>
             ))}
           </div>
         </div>
@@ -287,14 +288,14 @@ export default function MoveList({
           <span className={s.filterLabel}>분류</span>
           <div className={s.filterRow}>
             {MOVE_DAMAGE_CLASS_OPTIONS.map((opt) => (
-              <button
+              <FilterButton
                 key={opt.value}
                 type="button"
-                className={`${s.filterBtn} ${activeDamageClass === opt.value ? s.filterBtnActive : ''}`}
+                active={activeDamageClass === opt.value}
                 onClick={() => onDamageClassChange(opt.value)}
               >
                 {opt.label}
-              </button>
+              </FilterButton>
             ))}
           </div>
         </div>
@@ -388,18 +389,18 @@ export default function MoveList({
                 <div className={s.filterGroup}>
                   <span className={s.filterLabel}>타입</span>
                   <div className={s.filterRow}>
-                    <button
+                    <FilterButton
                       type="button"
-                      className={`${s.filterBtn} ${pokemonMovesType === 'all' ? s.filterBtnActive : ''}`}
+                      active={pokemonMovesType === 'all'}
                       onClick={() => handlePokemonMovesTypeChange('all')}
                     >
                       전체
-                    </button>
+                    </FilterButton>
                     {MOVE_TYPE_OPTIONS.map((opt) => (
-                      <button
+                      <FilterButton
                         key={opt.value}
                         type="button"
-                        className={`${s.filterBtn} ${pokemonMovesType === opt.value ? s.filterBtnActive : ''}`}
+                        active={pokemonMovesType === opt.value}
                         style={
                           pokemonMovesType === opt.value
                             ? {
@@ -412,7 +413,7 @@ export default function MoveList({
                         onClick={() => handlePokemonMovesTypeChange(opt.value)}
                       >
                         {opt.label}
-                      </button>
+                      </FilterButton>
                     ))}
                   </div>
                 </div>
@@ -420,16 +421,16 @@ export default function MoveList({
                   <span className={s.filterLabel}>분류</span>
                   <div className={s.filterRow}>
                     {MOVE_DAMAGE_CLASS_OPTIONS.map((opt) => (
-                      <button
+                      <FilterButton
                         key={opt.value}
                         type="button"
-                        className={`${s.filterBtn} ${pokemonMovesDamageClass === opt.value ? s.filterBtnActive : ''}`}
+                        active={pokemonMovesDamageClass === opt.value}
                         onClick={() =>
                           handlePokemonMovesDamageClassChange(opt.value)
                         }
                       >
                         {opt.label}
-                      </button>
+                      </FilterButton>
                     ))}
                   </div>
                 </div>

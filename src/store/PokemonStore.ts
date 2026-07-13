@@ -172,7 +172,7 @@ export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon
 export function searchPokemonByName(
   keyword: string,
   list: Pokemon[],
-  limit = 50,
+  limit = 1000,
 ): Pokemon[] {
   const q = keyword.trim();
   if (!q) return [];
