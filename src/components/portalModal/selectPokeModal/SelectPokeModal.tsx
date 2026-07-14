@@ -109,7 +109,20 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     };
   }, [pokemon.id, pokemon.name]);
 
-  const prevEvolutionNames = ensureStringArray(activePokemon.prevEvolutions);
+  const isMegaEvolution =
+    activePokemon.name.includes('-mega') ||
+    activePokemon.nameKo.startsWith('메가 ');
+
+  // 메가 진화일 경우, 진화전은 이 포켓몬을 nextEvolutions로 가진 기본형(비-메가)으로 표시한다.
+  const megaBaseName = isMegaEvolution
+    ? pokemonList.find((entry) =>
+        ensureStringArray(entry.nextEvolutions).includes(activePokemon.nameKo),
+      )?.nameKo ?? null
+    : null;
+
+  const prevEvolutionNames = megaBaseName
+    ? [megaBaseName]
+    : ensureStringArray(activePokemon.prevEvolutions);
   const nextEvolutionNames = ensureStringArray(activePokemon.nextEvolutions);
 
   const prevEvolutionTargets = useMemo((): EvolutionTarget[] => {
