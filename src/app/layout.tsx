@@ -25,15 +25,15 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://allpoyou.vercel.app'),
   title: {
     default: "올포유",
-    template: "올포유 | 포켓몬 파티 짜는 사이트",
+    template: "올포유 | 포켓몬 팀 플래너",
   },
-  description: "포켓몬, 포켓몬 팀 플래너, 포켓몬 파티 짜는 사이트",
+  description: "포켓몬을 한개만 선택해도 타입을 보완하는 포켓몬을 추천해줍니다. ",
   icons: {
     icon: "/images/러브볼.ico",
-    shortcut: "/images/logo.png",
-    apple: "/images/logo.png",
+    shortcut: "/images/러브볼.ico",
+    apple: "/images/러브볼.ico",
   },
-  keywords: ["포켓몬", "포켓몬 팀 플래너", "포켓몬 파티 짜는 사이트", "올포유"],
+  keywords: ["포켓몬", "포켓몬 팀 플래너", "포켓몬 파티 짜는 사이트", "올포유", "포켓몬 팀짜기"],
   applicationName: "올포유",
   authors: [{ name: "올포유" }],
   verification: {
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "올포유",
-    description: "포켓몬, 포켓몬 팀 플래너, 포켓몬 파티 짜는 사이트",
+    description: "포켓몬을 한개만 선택해도 타입을 보완하는 포켓몬을 추천해줍니다. ",
     url: "https://allpoyou.vercel.app",
     siteName: "올포유",
     locale: "ko_KR",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "올포유",
-    description: "포켓몬, 포켓몬 팀 플래너, 포켓몬 파티 짜는 사이트",
+    description: "포켓몬을 한개만 선택해도 타입을 보완하는 포켓몬을 추천해줍니다. ",
     // images: ["/og-image.png"],
   },
 };
