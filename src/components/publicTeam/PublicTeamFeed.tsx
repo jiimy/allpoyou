@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchBar from '@/components/searchBar/SearchBar';
 import { teamMatchesPokemonQuery } from '@/utils/publicTeamDisplay';
+import { usePochampsStore } from '@/store/PochampsStore';
 import type { PublicTeam } from '@/app/public-teams/actions';
 import CanclePublicTeam from '@/components/portalModal/cancelPublicTeamModal/CanclePublicTeam';
 import PublicTeamItem from './PublicTeamItem';
@@ -53,12 +54,15 @@ export default function PublicTeamFeed({
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const pochampsEnabled = usePochampsStore((state) => state.enabled);
 
   const filteredTeams = useMemo(() => {
+    // 포챔스데이터 ON이면 공유 팀 검색은 하지 않고 전체 목록 유지
+    if (pochampsEnabled) return teams;
     return teams.filter((team) =>
       teamMatchesPokemonQuery(team.pokemons, keyword),
     );
-  }, [teams, keyword]);
+  }, [teams, keyword, pochampsEnabled]);
 
   const visibleTeams = useMemo(
     () => filteredTeams.slice(0, visibleCount),
@@ -137,11 +141,13 @@ export default function PublicTeamFeed({
         ) : null}
 
         {filteredTeams.length === 0 ? (
-          <p className={s.empty}>
-            {keyword.trim()
-              ? `"${keyword.trim()}"(으)로 검색된 팀이 없습니다.`
-              : emptyMessage}
-          </p>
+          pochampsEnabled ? null : (
+            <p className={s.empty}>
+              {keyword.trim()
+                ? `"${keyword.trim()}"(으)로 검색된 팀이 없습니다.`
+                : emptyMessage}
+            </p>
+          )
         ) : (
           <div className={s.listWrap}>
             {visibleTeams.map((team) => {

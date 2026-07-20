@@ -10,6 +10,7 @@ import Footer from "@/components/footer/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import TopButton from "@/components/topButton/TopButton";
 import AuthContext from "@/components/AuthContext";
+import Switch from "@/components/switch/Switch";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,6 +85,7 @@ export default function RootLayout({
         <AuthContext>
           <TeamSessionBootstrap />
           <LastVisitedPageBootstrap />
+          <Switch />
           <div className={s.main}>
             <Nav />
             <div className={s.page}>
