@@ -1,0 +1,90 @@
+.noticeModal {
+  width: min(620px, calc(100vw - 40px));
+  height: fit-content;
+  max-height: calc(100vh - 80px);
+  padding-top: 48px;
+
+  @include media-mo() {
+    width: calc(100% - 40px);
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #222;
+}
+
+.list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: min(360px, 50vh);
+}
+
+.item {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555;
+  .subText {
+    display: block;
+    margin-top: 4px;
+    font-size: 14px;
+    color: #777;
+  }
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  accent-color: #2c7de5;
+  cursor: pointer;
+}
+
+.confirmBtn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid #2c7de5;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: #2c7de5;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #dcecff;
+  }
+}

@@ -23,6 +23,7 @@ import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { useNaturePickStore } from '@/store/NaturePickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
+import { useNoticeModalStore } from '@/store/NoticeModalStore';
 import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
@@ -53,6 +54,11 @@ const NATURE_ITEM: FloatingMenuItem = {
   label: '성격',
 };
 
+const NOTICE_ITEM: FloatingMenuItem = {
+  id: 'notice',
+  label: '업데이트 안내',
+};
+
 function isMakeTeamPath(pathname: string): boolean {
   return pathname === '/make-team' || pathname.startsWith('/make-team/');
 }
@@ -71,8 +77,8 @@ const FloatingBtn = () => {
   const menuItems = useMemo(
     () =>
       isMakeTeamPage
-        ? [TYPE_CALC_ITEM, TYPE_TABLE_ITEM, NATURE_ITEM]
-        : [TYPE_CALC_ITEM, TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM],
+        ? [TYPE_CALC_ITEM, TYPE_TABLE_ITEM, NATURE_ITEM, NOTICE_ITEM]
+        : [TYPE_CALC_ITEM, TYPE_TABLE_ITEM, TEAM_ITEM, NATURE_ITEM, NOTICE_ITEM],
     [isMakeTeamPage],
   );
 
@@ -83,6 +89,7 @@ const FloatingBtn = () => {
   const [natureTableModalOpen, setNatureTableModalOpen] = useState(false);
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const setNoticeModalOpen = useNoticeModalStore((state) => state.setIsOpen);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
@@ -136,6 +143,9 @@ const FloatingBtn = () => {
     }
     if (item.id === 'nature') {
       setNatureTableModalOpen(true);
+    }
+    if (item.id === 'notice') {
+      setNoticeModalOpen(true);
     }
     item.onClick?.();
     setIsOpen(false);

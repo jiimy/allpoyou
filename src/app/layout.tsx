@@ -11,6 +11,7 @@ import { Analytics } from "@vercel/analytics/react";
 import TopButton from "@/components/topButton/TopButton";
 import AuthContext from "@/components/AuthContext";
 import Switch from "@/components/switch/Switch";
+import NoticeModal from "@/components/portalModal/noticeModal/NoticeModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -96,7 +97,9 @@ export default function RootLayout({
           </div>
           <Footer />
           <div id="modal" />
+          <NoticeModal />
           <Analytics />
+
         </AuthContext>
       </body>
     </html>
