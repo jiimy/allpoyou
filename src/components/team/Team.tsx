@@ -97,6 +97,8 @@ export type TeamProps = {
   itemSuggestions: ItemKr[];
   itemHighlightedIndex: number;
   activeIndex: number | null;
+  /** 마지막으로 선택한 슬롯 (모달/make-team 공통) */
+  focusedSlotIndex: number;
   isClient: boolean;
   searchLoading: boolean;
   suggestions: Pokemon[];
@@ -214,6 +216,7 @@ const Team: React.FC<TeamProps> = ({
   itemSuggestions,
   itemHighlightedIndex,
   activeIndex,
+  focusedSlotIndex,
   isClient,
   searchLoading,
   suggestions,
@@ -308,6 +311,7 @@ const Team: React.FC<TeamProps> = ({
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
+  const pokemonInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const typePickerWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const abilityInputWrapRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -318,6 +322,21 @@ const Team: React.FC<TeamProps> = ({
   const abilityDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const natureDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const didRestoreFocusRef = useRef(false);
+
+  useEffect(() => {
+    if (!isClient || didRestoreFocusRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      const el = pokemonInputRefs.current[focusedSlotIndex];
+      if (!el) return;
+      didRestoreFocusRef.current = true;
+      // el.focus({ preventScroll: true });
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [focusedSlotIndex, isClient]);
 
   useEffect(() => {
     if (!editorReady || isHydratingFromStore) return;
@@ -493,14 +512,18 @@ const Team: React.FC<TeamProps> = ({
           !selectedMoveIds[index].includes(pendingMovePick.id);
 
         return (
-          <div key={index}>
+          <div
+            key={index}
+            className={cn(s.slotColumn)}
+          >
             <div
               className={cn(s.thumbnail, {
-                [s.thumbnailPickable]: pendingPokemonPick != null,
+                [s.thumbnailPickable]:
+                  pendingPokemonPick != null && selected == null,
                 [s.thumbnailMoveLearnable]: pendingMoveLearnable,
               })}
               onClick={() => {
-                if (!pendingPokemonPick) return;
+                if (!pendingPokemonPick || selected != null) return;
                 onThumbnailActivate(index);
               }}
             >
@@ -584,6 +607,9 @@ const Team: React.FC<TeamProps> = ({
                   className={s.input}
                   placeholder={placeholder}
                   value={values[index]}
+                  ref={(el) => {
+                    pokemonInputRefs.current[index] = el;
+                  }}
                   onChange={(e) => onChange(index, e.target.value)}
                   onFocus={() => {
                     onActiveItemIndexChange(null);

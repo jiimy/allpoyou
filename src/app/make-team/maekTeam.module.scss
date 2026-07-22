@@ -212,6 +212,17 @@
   }
 }
 
+.slotColumn {
+  border-radius: 10px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+
+.slotColumnFocused {
+  background: #f5f9ff;
+  outline: 2px solid #6390f0;
+  outline-offset: 2px;
+}
+
 .thumbnail {
   display: flex;
   align-items: self-end;
@@ -277,7 +288,8 @@
 .types {
   display: flex;
   justify-content: space-evenly;
-  min-height: 24px;
+  flex-direction: column;
+  min-height: 53px;
   gap: 4px;
   margin: 10px 0;
 }

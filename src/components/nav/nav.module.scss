@@ -5,7 +5,7 @@
   padding: 0 20px;
   height: 50px;
   position: relative;
-  z-index: 20;
+  z-index: 19;
 
   @include media-mo() {
     justify-content: flex-end;

@@ -45,6 +45,8 @@ import { useItemPickStore } from '@/store/ItemPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { useNaturePickStore } from '@/store/NaturePickStore';
+import { usePochamsPickStore } from '@/store/PochamsPickStore';
+import { useTeamSlotFocusStore } from '@/store/TeamSlotFocusStore';
 import { getItemNameKoById, searchHeldItems } from '@/utils/itemSearch';
 import { isValidNature, searchNatures, type NatureEntry } from '@/utils/natureList';
 import {
@@ -363,7 +365,9 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   >({});
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState(0);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(() =>
+    useTeamSlotFocusStore.getState().focusedSlotIndex,
+  );
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const isClient = useIsClient();
   const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
@@ -371,13 +375,32 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const [pokemonListError, setPokemonListError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const [isHydratingFromStore, setIsHydratingFromStore] = useState(true);
+  const focusedSlotIndex = useTeamSlotFocusStore(
+    (state) => state.focusedSlotIndex,
+  );
+  const setFocusedSlotIndex = useTeamSlotFocusStore(
+    (state) => state.setFocusedSlotIndex,
+  );
+  const rememberFocusedSlot = useCallback(
+    (index: number) => {
+      setFocusedSlotIndex(index);
+    },
+    [setFocusedSlotIndex],
+  );
+  const handleActiveIndexChange = useCallback(
+    (index: number | null) => {
+      setActiveIndex(index);
+      if (index != null) rememberFocusedSlot(index);
+    },
+    [rememberFocusedSlot],
+  );
   const pendingItem = useItemPickStore((state) => state.pendingItem);
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const pendingPokemon = usePokemonPickStore((state) => state.pendingPokemon);
-  const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const pendingMove = useMovePickStore((state) => state.pendingMove);
   const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
   const pendingNature = useNaturePickStore((state) => state.pendingNature);
+  const pendingPochamsBuild = usePochamsPickStore((state) => state.pendingBuild);
   const clearPendingNature = useNaturePickStore(
     (state) => state.clearPendingNature,
   );
@@ -623,6 +646,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const handleChange = useCallback((index: number, value: string) => {
     setActiveItemIndex(null);
     setActiveIndex(index);
+    rememberFocusedSlot(index);
     setHighlightedIndex(0);
     setValues((prev) => {
       const next = [...prev];
@@ -713,7 +737,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     setActiveTypeSlot((current) =>
       current?.pokemon === index ? null : current,
     );
-  }, []);
+  }, [rememberFocusedSlot]);
 
   const handleTypeSlotActivate = useCallback(
     (
@@ -721,6 +745,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       typeIndex: number,
       source: TypePickerSource,
     ) => {
+      rememberFocusedSlot(pokemonIndex);
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveNatureIndex(null);
@@ -737,7 +762,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
           : { source, pokemon: pokemonIndex, typeIndex };
       });
     },
-    [],
+    [rememberFocusedSlot],
   );
 
   const handleSelectType = useCallback(
@@ -852,6 +877,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   );
 
   const handleAbilitySectionActivate = useCallback((index: number) => {
+    rememberFocusedSlot(index);
     setActiveIndex(null);
     setActiveItemIndex(null);
     setActiveNatureIndex(null);
@@ -859,7 +885,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     setActiveTypeSlot(null);
     setActiveAbilityIndex(index);
     setAbilityHighlightedIndex(0);
-  }, []);
+  }, [rememberFocusedSlot]);
 
   const handleAbilityPickerSearchChange = useCallback(
     (index: number, value: string) => {
@@ -1019,26 +1045,35 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const applyPendingItemToSlot = useCallback(
     (index: number) => {
       if (!pendingItem || selectedPokemons[index] == null) return false;
+      rememberFocusedSlot(index);
       handleSelectItem(index, pendingItem);
       clearPendingItem();
       return true;
     },
-    [pendingItem, selectedPokemons, handleSelectItem, clearPendingItem],
+    [
+      pendingItem,
+      selectedPokemons,
+      handleSelectItem,
+      clearPendingItem,
+      rememberFocusedSlot,
+    ],
   );
 
   const handleItemSectionActivate = useCallback(
     (index: number) => {
       if (applyPendingItemToSlot(index)) return;
+      rememberFocusedSlot(index);
       setActiveIndex(null);
       setActiveTypeSlot(null);
       setActiveAbilityIndex(null);
       setActiveItemIndex(index);
       setItemHighlightedIndex(0);
     },
-    [applyPendingItemToSlot],
+    [applyPendingItemToSlot, rememberFocusedSlot],
   );
 
   const handleItemSearchChange = useCallback((index: number, value: string) => {
+    rememberFocusedSlot(index);
     setActiveIndex(null);
     setActiveTypeSlot(null);
     setActiveItemIndex(index);
@@ -1054,7 +1089,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       next[index] = null;
       return next;
     });
-  }, []);
+  }, [rememberFocusedSlot]);
 
   const handleClearItem = useCallback((index: number) => {
     setSelectedItemIds((prev) => {
@@ -1087,16 +1122,24 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const applyPendingNatureToSlot = useCallback(
     (index: number) => {
       if (!pendingNature || selectedPokemons[index] == null) return false;
+      rememberFocusedSlot(index);
       handleSelectNature(index, pendingNature);
       clearPendingNature();
       return true;
     },
-    [pendingNature, selectedPokemons, handleSelectNature, clearPendingNature],
+    [
+      pendingNature,
+      selectedPokemons,
+      handleSelectNature,
+      clearPendingNature,
+      rememberFocusedSlot,
+    ],
   );
 
   const handleNatureSectionActivate = useCallback(
     (index: number) => {
       if (applyPendingNatureToSlot(index)) return;
+      rememberFocusedSlot(index);
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
@@ -1104,11 +1147,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveNatureIndex(index);
       setNatureHighlightedIndex(0);
     },
-    [applyPendingNatureToSlot],
+    [applyPendingNatureToSlot, rememberFocusedSlot],
   );
 
   const handleNatureSearchChange = useCallback(
     (index: number, value: string) => {
+      rememberFocusedSlot(index);
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
@@ -1128,7 +1172,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
         return next;
       });
     },
-    [],
+    [rememberFocusedSlot],
   );
 
   const handleClearNature = useCallback((index: number) => {
@@ -1234,6 +1278,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const handleMoveSlotActivate = useCallback(
     (pokemonIndex: number, moveIndex: number) => {
       if (applyPendingMoveToSlot(pokemonIndex, moveIndex)) return;
+      rememberFocusedSlot(pokemonIndex);
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
@@ -1241,11 +1286,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
       setActiveMoveSlot({ pokemon: pokemonIndex, move: moveIndex });
       setMoveHighlightedIndex(0);
     },
-    [applyPendingMoveToSlot],
+    [applyPendingMoveToSlot, rememberFocusedSlot],
   );
 
   const handleMoveSearchChange = useCallback(
     (pokemonIndex: number, moveIndex: number, value: string) => {
+      rememberFocusedSlot(pokemonIndex);
       setActiveIndex(null);
       setActiveItemIndex(null);
       setActiveTypeSlot(null);
@@ -1263,7 +1309,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
         return next;
       });
     },
-    [],
+    [rememberFocusedSlot],
   );
 
   const handleClearMove = useCallback(
@@ -1321,6 +1367,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   );
 
   const handleSelect = useCallback((index: number, suggestion: Pokemon) => {
+    rememberFocusedSlot(index);
     const pokemon = normalizePokemon(
       suggestion as unknown as Record<string, unknown>,
     );
@@ -1398,16 +1445,146 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     });
     setActiveIndex(null);
     setActiveTypeSlot(null);
-  }, []);
+  }, [rememberFocusedSlot]);
+
+  const applyPochamsPendingToSlot = useCallback(
+    (index: number) => {
+      if (!pendingPochamsBuild) return false;
+      // 빈 슬롯에만 적용
+      if (selectedPokemons[index] != null) return false;
+      // 이미 팀에 들어간 포켓몬은 다른 슬롯에 중복 추가 불가
+      if (
+        selectedPokemons.some(
+          (pokemon) => pokemon?.id === pendingPochamsBuild.pokemon.id,
+        )
+      ) {
+        return false;
+      }
+
+      rememberFocusedSlot(index);
+
+      const {
+        pokemon: suggestion,
+        abilityName,
+        item,
+        nature,
+        moves,
+        evs,
+      } = pendingPochamsBuild;
+
+      const pokemon = normalizePokemon(
+        suggestion as unknown as Record<string, unknown>,
+      );
+      const resolvedAbility =
+        abilityName ?? getDefaultAbility(pokemon);
+      const moveIds = createEmptyMoveSlots<number | null>(null);
+      const moveSearches = createEmptyMoveSlots<string>('');
+      moves.slice(0, MOVE_SLOT_COUNT).forEach((move, moveIndex) => {
+        moveIds[moveIndex] = move.id;
+        moveSearches[moveIndex] = move.koreanName;
+      });
+
+      setValues((prev) => {
+        const next = [...prev];
+        next[index] = pokemon.nameKo;
+        return next;
+      });
+      setSelectedPokemons((prev) => {
+        const next = [...prev];
+        next[index] = pokemon;
+        return next;
+      });
+      setOriginalTypesBySlot((prev) => {
+        const next = [...prev];
+        next[index] = [...ensureStringArray(pokemon.types)];
+        return next;
+      });
+      setOriginalBaseStatsBySlot((prev) => {
+        const next = [...prev];
+        next[index] = pickBaseStats(pokemon);
+        return next;
+      });
+      setSelectedAbilities((prev) => {
+        const next = [...prev];
+        next[index] = resolvedAbility;
+        return next;
+      });
+      setAbilitySummaries((prev) => {
+        const next = [...prev];
+        next[index] = getAbilitySummary(resolvedAbility);
+        return next;
+      });
+      setAbilityPickerSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = '';
+        return next;
+      });
+      setSelectedItemIds((prev) => {
+        const next = [...prev];
+        next[index] = item?.id ?? null;
+        return next;
+      });
+      setItemSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = item?.nameKo ?? '';
+        return next;
+      });
+      setSelectedNatures((prev) => {
+        const next = [...prev];
+        next[index] = nature;
+        return next;
+      });
+      setNatureSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = nature ?? '';
+        return next;
+      });
+      setSelectedMoveIds((prev) => {
+        const next = [...prev];
+        next[index] = moveIds;
+        return next;
+      });
+      setMoveSearchValues((prev) => {
+        const next = [...prev];
+        next[index] = moveSearches;
+        return next;
+      });
+      setSelectedEvs((prev) => {
+        const next = [...prev];
+        next[index] = evs ?? createEmptyEvs();
+        return next;
+      });
+      setActiveIndex(null);
+      setActiveTypeSlot(null);
+
+      return true;
+    },
+    [
+      pendingPochamsBuild,
+      selectedPokemons,
+      rememberFocusedSlot,
+    ],
+  );
 
   const applyPendingPokemonToSlot = useCallback(
     (index: number) => {
+      if (applyPochamsPendingToSlot(index)) return true;
       if (!pendingPokemon) return false;
+      // 빈 슬롯에만 적용
+      if (selectedPokemons[index] != null) return false;
+      // 이미 팀에 들어간 포켓몬은 다른 슬롯에 중복 추가 불가
+      if (selectedPokemons.some((pokemon) => pokemon?.id === pendingPokemon.id)) {
+        return false;
+      }
       handleSelect(index, pendingPokemon);
-      clearPendingPokemon();
       return true;
     },
-    [pendingPokemon, handleSelect, clearPendingPokemon],
+    [
+      applyPochamsPendingToSlot,
+      pendingPokemon,
+      selectedPokemons,
+      handleSelect,
+    ],
   );
 
   const handleThumbnailActivate = useCallback(
@@ -1617,6 +1794,15 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     ],
   );
 
+  const pendingPokemonPick = useMemo(() => {
+    const pending = pendingPokemon ?? pendingPochamsBuild?.pokemon ?? null;
+    if (!pending) return null;
+    const alreadyOnTeam = selectedPokemons.some(
+      (pokemon) => pokemon?.id === pending.id,
+    );
+    return alreadyOnTeam ? null : pending;
+  }, [pendingPokemon, pendingPochamsBuild, selectedPokemons]);
+
   const teamProps: TeamProps = {
     editorReady,
     isHydratingFromStore,
@@ -1630,11 +1816,12 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     itemSuggestions,
     itemHighlightedIndex,
     activeIndex,
+    focusedSlotIndex,
     isClient,
     searchLoading,
     suggestions,
     highlightedIndex,
-    onActiveIndexChange: setActiveIndex,
+    onActiveIndexChange: handleActiveIndexChange,
     onHighlightedIndexChange: setHighlightedIndex,
     onChange: handleChange,
     onClear: handleClear,
@@ -1657,7 +1844,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     onItemHighlightedIndexChange: setItemHighlightedIndex,
     onItemKeyDown: handleItemKeyDown,
     pendingItemPick: pendingItem,
-    pendingPokemonPick: pendingPokemon,
+    pendingPokemonPick,
     onItemSectionActivate: handleItemSectionActivate,
     onThumbnailActivate: handleThumbnailActivate,
     selectedNatures,

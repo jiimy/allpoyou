@@ -29,6 +29,132 @@
   color: #111827;
 }
 
+.selectionEmpty {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  color: #9ca3af;
+  flex: 1;
+  min-width: 0;
+}
+
+.selectionEmptyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.selection {
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.selectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.selectionHint {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.selectionAdd {
+  flex-shrink: 0;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.selectionClear {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.selectionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  background: #fff;
+  color: #1e3a8a;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #dbeafe;
+    border-color: #60a5fa;
+  }
+}
+
+.selectionChipCat {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.selectionChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
 .categories {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -71,6 +197,13 @@
   font-weight: 600;
 }
 
+.categoryPick {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
 .list {
   margin: 0;
   padding: 0;
@@ -78,13 +211,55 @@
 }
 
 .list li {
+  font-size: 12px;
+  color: #374151;
+
+  &:not(:has(.itemBtn)) {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 6px;
+    align-items: baseline;
+    padding: 4px 6px;
+  }
+}
+
+.itemBtn {
   display: grid;
   grid-template-columns: 18px 1fr auto;
   gap: 6px;
   align-items: baseline;
-  padding: 2px 0;
-  font-size: 12px;
-  color: #374151;
+  width: 100%;
+  margin: 0;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+  }
+}
+
+.itemSelected {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+
+  &:hover:not(:disabled) {
+    background: #dbeafe;
+    border-color: #60a5fa;
+  }
+}
+
+.itemDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .rank {
@@ -115,6 +290,54 @@
     color: #f8fafc;
   }
 
+  .selectionEmpty {
+    border-color: #475569;
+    background: #111827;
+    color: #94a3b8;
+  }
+
+  .selection {
+    border-color: #1e3a8a;
+    background: #172554;
+  }
+
+  .selectionTitle {
+    color: #93c5fd;
+  }
+
+  .selectionHint {
+    color: #94a3b8;
+  }
+
+  .selectionAdd {
+    border-color: #3b82f6;
+    background: #2563eb;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+  }
+
+  .selectionClear {
+    color: #93c5fd;
+  }
+
+  .selectionChip {
+    border-color: #1d4ed8;
+    background: #0f172a;
+    color: #bfdbfe;
+  }
+
+  .selectionChip:hover {
+    background: #1e3a8a;
+  }
+
+  .selectionChipCat {
+    color: #94a3b8;
+  }
+
   .category {
     border-color: #334155;
     background: #111827;
@@ -125,8 +348,27 @@
     color: #cbd5e1;
   }
 
+  .categoryPick {
+    color: #93c5fd;
+  }
+
   .list li {
     color: #e5e7eb;
+  }
+
+  .itemBtn:hover:not(:disabled) {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .itemSelected {
+    background: #1e3a8a;
+    border-color: #2563eb;
+    color: #bfdbfe;
+
+    &:hover:not(:disabled) {
+      background: #1e40af;
+    }
   }
 
   .rank,

@@ -11364,5 +11364,23 @@
     "cost": 0,
     "categoryEn": "plot-advancement",
     "categoryKo": "plot-advancement"
+  },
+  {
+    "id": 1659,
+    "name": "Raichunite X",
+    "nameKo": "라이츄나이트 X",
+    "description": "라이츄에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "mega-stones",
+    "categoryKo": "mega-stones"
+  },
+  {
+    "id": 1660,
+    "name": "Raichunite Y",
+    "nameKo": "라이츄나이트 Y",
+    "description": "라이츄에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "mega-stones",
+    "categoryKo": "mega-stones"
   }
 ]

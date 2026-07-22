@@ -22,6 +22,7 @@ import { useItemPickStore } from '@/store/ItemPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { useNaturePickStore } from '@/store/NaturePickStore';
+import { usePochamsPickStore } from '@/store/PochamsPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { useNoticeModalStore } from '@/store/NoticeModalStore';
 import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
@@ -94,6 +95,9 @@ const FloatingBtn = () => {
   const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
   const clearPendingNature = useNaturePickStore((state) => state.clearPendingNature);
+  const clearPendingPochamsBuild = usePochamsPickStore(
+    (state) => state.clearPendingBuild,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTeamModalOpenChange: React.Dispatch<
@@ -107,6 +111,7 @@ const FloatingBtn = () => {
           clearPendingPokemon();
           clearPendingMove();
           clearPendingNature();
+          clearPendingPochamsBuild();
         }
         return next;
       });
@@ -117,6 +122,7 @@ const FloatingBtn = () => {
       clearPendingPokemon,
       clearPendingMove,
       clearPendingNature,
+      clearPendingPochamsBuild,
     ],
   );
 
