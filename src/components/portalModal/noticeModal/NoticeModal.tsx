@@ -84,6 +84,12 @@ const NoticeModal = () => {
               - 메인메뉴에서 포켓몬 이름 검색시 포챔스 데이터 기준으로              배틀데이터 제공
             </span>
           </li>
+          <li className={s.item}>
+            26.07.22 - 포챔스 데이터 팀에 추가 기능 추가
+            <span className={s.subText}>
+              - 포챔스 데이터 검색 후 상세 스탯을 선택후 팀에 추가 기능 추가.
+            </span>
+          </li>
         </ul>
         <div className={s.footer}>
           <label className={s.checkbox}>
