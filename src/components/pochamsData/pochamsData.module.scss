@@ -273,6 +273,10 @@
   white-space: nowrap;
 }
 
+.nameMuted {
+  color: #d1d5db;
+}
+
 .pct {
   color: #6b7280;
   font-variant-numeric: tabular-nums;
@@ -374,5 +378,9 @@
   .rank,
   .pct {
     color: #94a3b8;
+  }
+
+  .nameMuted {
+    color: #475569;
   }
 }

@@ -60,8 +60,23 @@ type BattlePreview = {
   byCategory: BattleCategoryGroup[];
 };
 
+type PositionEntry = {
+  position: number;
+  name: string;
+  slug: string;
+  showdownId: string;
+  nameKo?: string;
+};
+
+type PositionRankings = {
+  date: string;
+  doubles: PositionEntry[];
+  singles: PositionEntry[];
+};
+
 type PochamsDataProps = {
   keyword: string;
+  onKeywordChange?: (value: string) => void;
 };
 
 type SelectionState = {
@@ -253,12 +268,15 @@ function buildTopSelection(groups: BattleCategoryGroup[]): SelectionState {
   };
 }
 
-const PochamsData = ({ keyword }: PochamsDataProps) => {
+const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<BattlePreview | null>(null);
   const [resolvedPokemon, setResolvedPokemon] = useState<Pokemon | null>(null);
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
+  const [rankings, setRankings] = useState<PositionRankings | null>(null);
+  const [rankingsLoading, setRankingsLoading] = useState(false);
+  const [rankingsError, setRankingsError] = useState<string | null>(null);
 
   const enabled = usePochampsStore((state) => state.enabled);
   const battleFormat = usePochampsStore((state) => state.format);
@@ -270,6 +288,52 @@ const PochamsData = ({ keyword }: PochamsDataProps) => {
 
   const q = keyword.trim();
   const shouldFetch = enabled && q.length > 0;
+  const shouldShowRankings = enabled && q.length === 0;
+
+  useEffect(() => {
+    if (!shouldShowRankings) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      setRankingsLoading(true);
+      setRankingsError(null);
+
+      try {
+        const res = await fetch('/api/pokemon-meta/rankings?limit=15', {
+          cache: 'no-store',
+        });
+        const data = (await res.json()) as PositionRankings & { error?: string };
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setRankings(null);
+          setRankingsError(data.error ?? `랭킹 조회 실패 (${res.status})`);
+          return;
+        }
+
+        setRankings({
+          date: data.date,
+          doubles: data.doubles ?? [],
+          singles: data.singles ?? [],
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setRankings(null);
+        setRankingsError(
+          err instanceof Error ? err.message : '랭킹을 가져오지 못했습니다.',
+        );
+      } finally {
+        if (!cancelled) setRankingsLoading(false);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldShowRankings]);
 
   useEffect(() => {
     if (!shouldFetch) return;
@@ -343,6 +407,45 @@ const PochamsData = ({ keyword }: PochamsDataProps) => {
   const chips = useMemo(() => selectionChips(selection), [selection]);
   const moveCount = selection.moves.length;
 
+  const handleSelectRanking = (entry: PositionEntry) => {
+    onKeywordChange?.(entry.nameKo || entry.name);
+  };
+
+  const renderRankingList = (title: string, items: PositionEntry[]) => (
+    <section className={s.category}>
+      <h3 className={s.categoryTitle}>
+        {title}
+        <span className={s.categoryCount}>{items.length}</span>
+      </h3>
+      <ol className={s.list}>
+        {Array.from({ length: 15 }, (_, i) => {
+          const position = i + 1;
+          const entry = items.find((item) => item.position === position);
+          return (
+            <li key={`${title}-${position}`}>
+              {entry ? (
+                <button
+                  type="button"
+                  className={s.itemBtn}
+                  onClick={() => handleSelectRanking(entry)}
+                  title="클릭하면 상세 검색"
+                >
+                  <span className={s.rank}>{position}</span>
+                  <span className={s.name}>{entry.nameKo || entry.name}</span>
+                </button>
+              ) : (
+                <>
+                  <span className={s.rank}>{position}</span>
+                  <span className={s.nameMuted}>—</span>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+
   const handleAddToTeam = () => {
     if (!resolvedPokemon) return;
 
@@ -375,6 +478,30 @@ const PochamsData = ({ keyword }: PochamsDataProps) => {
     if (!preview) return;
     setSelection(buildTopSelection(preview.byCategory));
   };
+
+  if (!enabled) return null;
+
+  if (shouldShowRankings) {
+    return (
+      <div className={s.panel}>
+        {rankingsLoading ? (
+          <p className={s.hint}>랭킹 순위(1–15) 불러오는 중…</p>
+        ) : rankingsError ? (
+          <p className={`${s.hint} ${s.hintError}`}>{rankingsError}</p>
+        ) : rankings ? (
+          <>
+            <p className={s.meta}>랭킹 순위 · {rankings.date}</p>
+            <div className={s.categories}>
+              {renderRankingList('Doubles', rankings.doubles)}
+              {renderRankingList('Singles', rankings.singles)}
+            </div>
+          </>
+        ) : (
+          <p className={s.hint}>순위 데이터가 없습니다. 잠시 후 다시 시도해 주세요.</p>
+        )}
+      </div>
+    );
+  }
 
   if (!shouldFetch) return null;
 

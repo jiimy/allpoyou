@@ -19,7 +19,7 @@ import s from './noticeModal.module.scss';
  * 새 업데이트마다 이 값과 안내 문구를 함께 수정하세요.
  * "다음 업데이트 전까지 보지 않기"는 이 버전 기준으로 숨깁니다.
  */
-const CURRENT_UPDATE_VERSION = '2026-07-20';
+const CURRENT_UPDATE_VERSION = '2026-07-27';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -89,6 +89,9 @@ const NoticeModal = () => {
             <span className={s.subText}>
               - 포챔스 데이터 검색 후 상세 스탯을 선택후 팀에 추가 기능 추가.
             </span>
+          </li>
+          <li className={s.item}>
+            26.07.27 - 포챔스 랭킹 데이터 반영
           </li>
         </ul>
         <div className={s.footer}>

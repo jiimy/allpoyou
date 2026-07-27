@@ -101,7 +101,9 @@ export default function SearchBar({
         </p>
       ) : null}
 
-      {placeholderType === 'main' ? <PochamsData keyword={keyword} /> : null}
+      {placeholderType === 'main' ? (
+        <PochamsData keyword={keyword} onKeywordChange={onKeywordChange} />
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,115 @@
+import 'server-only';
+
+import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
+import {
+  getSeoulDateString,
+  normalizePokemonSlug,
+} from '@/utils/battleData';
+import { getDailyPokemonMetaData } from '@/utils/pokemonMetaData';
+
+/** 요청 간 대기 (ms) */
+export const POKEMON_META_PREFETCH_DELAY_MS = 3800;
+
+/** 서버리스 배치당 작업 예산 (Hobby maxDuration 300s 대비 여유) */
+export const POKEMON_META_PREFETCH_BATCH_BUDGET_MS = 250_000;
+
+export type PokemonMetaPrefetchItemResult = {
+  name: string;
+  slug: string;
+  ok: boolean;
+  cached?: boolean;
+  storagePath?: string;
+  error?: string;
+};
+
+export type PokemonMetaPrefetchBatchResult = {
+  date: string;
+  offset: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  done: boolean;
+  results: PokemonMetaPrefetchItemResult[];
+  next: { offset: number } | null;
+};
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function toPokemonMetaSlug(displayName: string): string {
+  return normalizePokemonSlug(displayName);
+}
+
+/**
+ * POCHAMS_POKEMON_DATA 를 3800ms 간격으로 순회하며
+ * /api/pokemon/:slug → CSV Storage 저장을 수행합니다.
+ */
+export async function runPokemonMetaPrefetchBatch(options: {
+  offset?: number;
+  delayMs?: number;
+  timeBudgetMs?: number;
+}): Promise<PokemonMetaPrefetchBatchResult> {
+  const offset = Math.max(0, options.offset ?? 0);
+  const delayMs = options.delayMs ?? POKEMON_META_PREFETCH_DELAY_MS;
+  const timeBudgetMs =
+    options.timeBudgetMs ?? POKEMON_META_PREFETCH_BATCH_BUDGET_MS;
+  const startedAt = Date.now();
+  const date = getSeoulDateString();
+
+  const results: PokemonMetaPrefetchItemResult[] = [];
+  let index = offset;
+
+  while (index < POCHAMS_POKEMON_DATA.length) {
+    if (Date.now() - startedAt >= timeBudgetMs) {
+      break;
+    }
+
+    if (index > 0) {
+      await sleep(delayMs);
+      if (Date.now() - startedAt >= timeBudgetMs) {
+        break;
+      }
+    }
+
+    const name = POCHAMS_POKEMON_DATA[index]!;
+    const slug = toPokemonMetaSlug(name);
+
+    try {
+      const data = await getDailyPokemonMetaData(slug);
+      results.push({
+        name,
+        slug,
+        ok: true,
+        cached: data.cached,
+        storagePath: data.storagePath,
+      });
+    } catch (error) {
+      results.push({
+        name,
+        slug,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    index += 1;
+  }
+
+  const succeeded = results.filter((r) => r.ok).length;
+  const failed = results.length - succeeded;
+  const done = index >= POCHAMS_POKEMON_DATA.length;
+
+  return {
+    date,
+    offset,
+    processed: results.length,
+    succeeded,
+    failed,
+    done,
+    results,
+    next: done ? null : { offset: index },
+  };
+}
