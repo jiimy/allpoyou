@@ -61,8 +61,10 @@ function scheduleNextBatch(request: NextRequest, offset: number) {
 /**
  * GET /api/cron/pokemon-prefetch
  *
- * 매일 KST 01:00 시작 → POCHAMS_POKEMON_DATA 전수
- * 완료 시 Doubles/Singles position 1~15 랭킹 CSV도 갱신
+ * 매일 KST 01:00 (UTC 16:00, vercel.json) 시작
+ * → championsbattledata.com/api/pokemon/:slug 전수 호출
+ * → 기존 당일 CSV 삭제 후 재저장 (forceRefresh)
+ * → Doubles/Singles position 1~15 랭킹 CSV 갱신
  */
 export async function GET(request: NextRequest) {
   if (!authorize(request)) {
@@ -78,6 +80,7 @@ export async function GET(request: NextRequest) {
     offset: Math.floor(offset),
     delayMs: POKEMON_META_PREFETCH_DELAY_MS,
     timeBudgetMs: POKEMON_META_PREFETCH_BATCH_BUDGET_MS,
+    forceRefresh: true,
   });
 
   if (batch.next) {

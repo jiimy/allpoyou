@@ -398,6 +398,90 @@ async function downloadTodayCsv(storagePath: string): Promise<string | null> {
   return data.text();
 }
 
+function getSeoulDateDaysAgo(daysAgo: number, now = new Date()): string {
+  return getSeoulDateString(new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000));
+}
+
+function parseRankingsCsv(
+  csv: string,
+  date: string,
+  limit: number,
+): PokemonPositionRankings | null {
+  const { rows } = csvToRows(csv);
+  const doubles: PokemonPositionEntry[] = [];
+  const singles: PokemonPositionEntry[] = [];
+
+  for (const row of rows) {
+    const position = Number(row.position);
+    if (!Number.isFinite(position) || position < 1 || position > limit) continue;
+    const entry: PokemonPositionEntry = {
+      position,
+      name: String(row.name ?? ''),
+      slug: String(row.slug ?? ''),
+      showdownId: String(row.showdown_id ?? ''),
+      nameKo: String(row.name_ko || '') || undefined,
+    };
+    if (String(row.format) === 'Doubles') doubles.push(entry);
+    if (String(row.format) === 'Singles') singles.push(entry);
+  }
+
+  doubles.sort((a, b) => a.position - b.position);
+  singles.sort((a, b) => a.position - b.position);
+
+  if (doubles.length === 0 && singles.length === 0) return null;
+
+  return {
+    date,
+    cached: true,
+    doubles: doubles.slice(0, limit),
+    singles: singles.slice(0, limit),
+  };
+}
+
+async function findLatestRankingsCsv(
+  limit: number,
+): Promise<PokemonPositionRankings | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BATTLE_STORAGE_BUCKET)
+    .list('Pokemon/rankings', {
+      limit: 30,
+      sortBy: { column: 'name', order: 'desc' },
+    });
+
+  if (error || !data) return null;
+
+  const files = data
+    .map((item) => item.name)
+    .filter((name): name is string => !!name && /^\d{4}-\d{2}-\d{2}\.csv$/.test(name))
+    .sort((a, b) => b.localeCompare(a));
+
+  for (const fileName of files) {
+    const date = fileName.replace(/\.csv$/, '');
+    const csv = await downloadTodayCsv(buildPokemonRankingsStoragePath(date));
+    if (!csv) continue;
+    const parsed = parseRankingsCsv(csv, date, limit);
+    if (parsed) return parsed;
+  }
+
+  return null;
+}
+
+async function deleteStorageFiles(paths: string[]): Promise<void> {
+  const targets = paths.filter((path) => path.trim().length > 0);
+  if (targets.length === 0) return;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.storage
+    .from(BATTLE_STORAGE_BUCKET)
+    .remove(targets);
+
+  if (error) {
+    // 파일이 없어도 무시 — 없거나 권한 이슈만 로그
+    console.warn('[pokemonMetaData] storage remove:', error.message, targets);
+  }
+}
+
 async function uploadCsv(storagePath: string, csv: string): Promise<void> {
   const supabase = createAdminClient();
   const { error } = await supabase.storage
@@ -414,9 +498,10 @@ async function uploadCsv(storagePath: string, csv: string): Promise<void> {
 }
 
 /**
- * 당일(KST) Pokemon 메타 CSV가 있으면 재사용,
- * 없으면 /api/pokemon/:slug 호출 후 Storage에 저장합니다.
- * battle_summary(position) 행이 없는 옛 CSV는 한 번 갱신합니다.
+ * championsbattledata `/api/pokemon/:slug` 호출 후 CSV를 Storage에 저장합니다.
+ *
+ * - 기본: 당일(KST) CSV가 있고 battle_summary가 있으면 재사용
+ * - forceRefresh: 기존 당일 CSV를 지우고 항상 새로 받아 덮어씀 (일일 cron용)
  */
 export async function getDailyPokemonMetaData(
   pokemonSlug: string,
@@ -425,6 +510,7 @@ export async function getDailyPokemonMetaData(
   const slug = normalizePokemonSlug(pokemonSlug);
   const date = getSeoulDateString();
   const storagePath = buildPokemonMetaStoragePath(slug, date);
+  const metaPath = `Pokemon/${slug}/${date}-metadata.csv`;
 
   if (!options?.forceRefresh) {
     const cachedCsv = await downloadTodayCsv(storagePath);
@@ -448,6 +534,8 @@ export async function getDailyPokemonMetaData(
         };
       }
     }
+  } else {
+    await deleteStorageFiles([storagePath, metaPath]);
   }
 
   const fresh = await fetchChampionsPokemonData(slug);
@@ -461,7 +549,6 @@ export async function getDailyPokemonMetaData(
       const metaRes = await fetch(metaUrl, { cache: 'no-store' });
       if (metaRes.ok) {
         const metaCsv = await metaRes.text();
-        const metaPath = `Pokemon/${slug}/${date}-metadata.csv`;
         await uploadCsv(metaPath, metaCsv);
       }
     } catch {
@@ -550,59 +637,34 @@ async function localizeRankings(
 
 /**
  * Doubles/Singles position 1~limit 랭킹.
- * 1) Pokemon/rankings/{date}.csv 캐시
- * 2) 개별 Pokemon CSV의 battle_summary 집계
+ * 1) 오늘(KST) rankings CSV
+ * 2) 어제 rankings CSV
+ * 3) Storage 내 가장 최근 rankings CSV
+ *
+ * 페이지 로드에서 235개 개별 CSV를 순회하지 않습니다(너무 느림).
  */
 export async function getDailyPositionRankings(
   limit = 15,
 ): Promise<PokemonPositionRankings> {
   const date = getSeoulDateString();
-  const rankingsPath = buildPokemonRankingsStoragePath(date);
 
-  const cachedCsv = await downloadTodayCsv(rankingsPath);
-  if (cachedCsv) {
-    const { rows } = csvToRows(cachedCsv);
-    const doubles: PokemonPositionEntry[] = [];
-    const singles: PokemonPositionEntry[] = [];
-
-    for (const row of rows) {
-      const position = Number(row.position);
-      if (!Number.isFinite(position) || position < 1 || position > limit) continue;
-      const entry: PokemonPositionEntry = {
-        position,
-        name: String(row.name ?? ''),
-        slug: String(row.slug ?? ''),
-        showdownId: String(row.showdown_id ?? ''),
-        nameKo: String(row.name_ko || '') || undefined,
-      };
-      if (String(row.format) === 'Doubles') doubles.push(entry);
-      if (String(row.format) === 'Singles') singles.push(entry);
-    }
-
-    doubles.sort((a, b) => a.position - b.position);
-    singles.sort((a, b) => a.position - b.position);
-
-    if (doubles.length > 0 || singles.length > 0) {
-      return localizeRankings({
-        date,
-        cached: true,
-        doubles: doubles.slice(0, limit),
-        singles: singles.slice(0, limit),
-      });
-    }
+  const todayCsv = await downloadTodayCsv(buildPokemonRankingsStoragePath(date));
+  if (todayCsv) {
+    const parsed = parseRankingsCsv(todayCsv, date, limit);
+    if (parsed) return localizeRankings(parsed);
   }
 
-  const fromCsvs = await collectPositionsFromPokemonCsvs(date, limit);
-  if (fromCsvs.doubles.length > 0 || fromCsvs.singles.length > 0) {
-    const localized = await localizeRankings({
-      date,
-      cached: false,
-      doubles: fromCsvs.doubles,
-      singles: fromCsvs.singles,
-    });
-    await saveDailyPositionRankings(localized);
-    return { ...localized, cached: false };
+  const yesterday = getSeoulDateDaysAgo(1);
+  const yesterdayCsv = await downloadTodayCsv(
+    buildPokemonRankingsStoragePath(yesterday),
+  );
+  if (yesterdayCsv) {
+    const parsed = parseRankingsCsv(yesterdayCsv, yesterday, limit);
+    if (parsed) return localizeRankings(parsed);
   }
+
+  const latest = await findLatestRankingsCsv(limit);
+  if (latest) return localizeRankings(latest);
 
   return { date, cached: false, doubles: [], singles: [] };
 }
@@ -700,6 +762,7 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
     doubles: sortAndSlicePositions(doubles, limit),
     singles: sortAndSlicePositions(singles, limit),
   });
+  await deleteStorageFiles([buildPokemonRankingsStoragePath(date)]);
   await saveDailyPositionRankings(localized);
   return localized;
 }

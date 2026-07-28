@@ -6,7 +6,7 @@ import {
   getPokemonByNameKo,
   type Pokemon,
 } from '@/store/PokemonStore';
-import { usePochampsStore } from '@/store/PochampsStore';
+import { usePochampsStore, type PochampsBattleFormat } from '@/store/PochampsStore';
 import { usePochamsPickStore } from '@/store/PochamsPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
@@ -96,6 +96,7 @@ const EMPTY_SELECTION: SelectionState = {
 };
 
 const MAX_MOVES = 4;
+const BATTLE_FORMATS: PochampsBattleFormat[] = ['Singles', 'Doubles'];
 
 const SELECTABLE = new Set<BattleCategoryKey>([
   'move',
@@ -280,6 +281,7 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
 
   const enabled = usePochampsStore((state) => state.enabled);
   const battleFormat = usePochampsStore((state) => state.format);
+  const setFormat = usePochampsStore((state) => state.setFormat);
   const setPendingBuild = usePochamsPickStore((state) => state.setPendingBuild);
   const setPendingPokemon = usePokemonPickStore(
     (state) => state.setPendingPokemon,
@@ -289,6 +291,15 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
   const q = keyword.trim();
   const shouldFetch = enabled && q.length > 0;
   const shouldShowRankings = enabled && q.length === 0;
+
+  // 포켓몬(검색어)이 바뀌면 이전 미리보기를 비워 초기 로딩으로 전환
+  const [prevQuery, setPrevQuery] = useState(q);
+  if (prevQuery !== q) {
+    setPrevQuery(q);
+    if (preview) setPreview(null);
+    if (selection !== EMPTY_SELECTION) setSelection(EMPTY_SELECTION);
+    if (resolvedPokemon) setResolvedPokemon(null);
+  }
 
   useEffect(() => {
     if (!shouldShowRankings) return;
@@ -343,8 +354,6 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
     const run = async () => {
       setLoading(true);
       setError(null);
-      setSelection(EMPTY_SELECTION);
-      setResolvedPokemon(null);
 
       try {
         const list = await fetchPokemonList();
@@ -354,6 +363,7 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
         if (!pokemon) {
           setPreview(null);
           setResolvedPokemon(null);
+          setSelection(EMPTY_SELECTION);
           setError(`"${q}"에 해당하는 포켓몬을 찾지 못했습니다.`);
           return;
         }
@@ -370,6 +380,7 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
 
         if (!res.ok) {
           setPreview(null);
+          setSelection(EMPTY_SELECTION);
           setError(data.error ?? `배틀 데이터 조회 실패 (${res.status})`);
           return;
         }
@@ -384,11 +395,13 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
           storagePath: data.storagePath,
           byCategory: data.byCategory ?? [],
         });
+        setSelection(EMPTY_SELECTION);
         setError(null);
       } catch (err) {
         if (cancelled) return;
         setPreview(null);
         setResolvedPokemon(null);
+        setSelection(EMPTY_SELECTION);
         setError(
           err instanceof Error ? err.message : '배틀 데이터를 가져오지 못했습니다.',
         );
@@ -505,19 +518,40 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
 
   if (!shouldFetch) return null;
 
+  const showInitialLoading = loading && !preview && !error;
+
   return (
-    <div className={s.panel}>
-      {loading ? (
+    <div className={`${s.panel} ${loading && preview ? s.panelRefreshing : ''}`}>
+      <div className={s.metaRow}>
+        <p className={s.meta}>
+          {preview
+            ? `${preview.pokemonKo || preview.pokemon} · ${preview.date}`
+            : resolvedPokemon
+              ? resolvedPokemon.nameKo
+              : q}
+        </p>
+        <div className={s.formatToggle} role="group" aria-label="배틀 포맷">
+          {BATTLE_FORMATS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`${s.formatBtn} ${battleFormat === item ? s.formatBtnActive : ''}`}
+              aria-pressed={battleFormat === item}
+              disabled={loading}
+              onClick={() => setFormat(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showInitialLoading ? (
         <p className={s.hint}>포챔스 배틀 데이터 조회 중…</p>
-      ) : error ? (
+      ) : error && !preview ? (
         <p className={`${s.hint} ${s.hintError}`}>{error}</p>
       ) : preview ? (
         <>
-          <p className={s.meta}>
-            {preview.pokemonKo || preview.pokemon} · {preview.format} ·{' '}
-            {preview.date}
-          </p>
-
           {chips.length > 0 ? (
             <div className={s.selection}>
               <div className={s.selectionHeader}>

@@ -45,17 +45,21 @@ export function toPokemonMetaSlug(displayName: string): string {
 
 /**
  * POCHAMS_POKEMON_DATA 를 3800ms 간격으로 순회하며
- * /api/pokemon/:slug → CSV Storage 저장을 수행합니다.
+ * championsbattledata `/api/pokemon/:slug` → CSV Storage 저장을 수행합니다.
+ * 일일 cron은 항상 forceRefresh 로 기존 당일 CSV를 지우고 다시 받습니다.
  */
 export async function runPokemonMetaPrefetchBatch(options: {
   offset?: number;
   delayMs?: number;
   timeBudgetMs?: number;
+  /** 기본 true — 기존 CSV 무시하고 재수집 */
+  forceRefresh?: boolean;
 }): Promise<PokemonMetaPrefetchBatchResult> {
   const offset = Math.max(0, options.offset ?? 0);
   const delayMs = options.delayMs ?? POKEMON_META_PREFETCH_DELAY_MS;
   const timeBudgetMs =
     options.timeBudgetMs ?? POKEMON_META_PREFETCH_BATCH_BUDGET_MS;
+  const forceRefresh = options.forceRefresh ?? true;
   const startedAt = Date.now();
   const date = getSeoulDateString();
 
@@ -78,7 +82,7 @@ export async function runPokemonMetaPrefetchBatch(options: {
     const slug = toPokemonMetaSlug(name);
 
     try {
-      const data = await getDailyPokemonMetaData(slug);
+      const data = await getDailyPokemonMetaData(slug, { forceRefresh });
       results.push({
         name,
         slug,
