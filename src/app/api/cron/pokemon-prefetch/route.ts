@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { type NextRequest } from 'next/server';
 
-import { rebuildDailyPositionRankingsFromApi } from '@/utils/pokemonMetaData';
+import { rebuildDailyPositionRankingsFromApi, rebuildPochampsMovesIndexFromStorage } from '@/utils/pokemonMetaData';
 import {
   POKEMON_META_PREFETCH_BATCH_BUDGET_MS,
   POKEMON_META_PREFETCH_DELAY_MS,
@@ -103,6 +103,13 @@ export async function GET(request: NextRequest) {
     console.error('[pokemon-prefetch] rankings 재생성 실패', error);
   }
 
+  let movesIndex = null;
+  try {
+    movesIndex = await rebuildPochampsMovesIndexFromStorage({ concurrency: 10 });
+  } catch (error) {
+    console.error('[pokemon-prefetch] moves index 재생성 실패', error);
+  }
+
   return Response.json({
     message: 'Pokemon meta prefetch 완료',
     delayMs: POKEMON_META_PREFETCH_DELAY_MS,
@@ -113,6 +120,9 @@ export async function GET(request: NextRequest) {
           doubles: rankings.doubles.length,
           singles: rankings.singles.length,
         }
+      : null,
+    movesIndex: movesIndex
+      ? { date: movesIndex.date, count: movesIndex.names.length }
       : null,
     ...batch,
   });

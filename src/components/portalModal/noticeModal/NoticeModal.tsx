@@ -19,7 +19,7 @@ import s from './noticeModal.module.scss';
  * 새 업데이트마다 이 값과 안내 문구를 함께 수정하세요.
  * "다음 업데이트 전까지 보지 않기"는 이 버전 기준으로 숨깁니다.
  */
-const CURRENT_UPDATE_VERSION = '2026-07-27';
+const CURRENT_UPDATE_VERSION = '2026-07-29';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -79,10 +79,13 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
         <ul className={s.list}>
           <li className={s.item}>
-            26.07.20 - 우측 상단에 포챔스데이터를 가져오는 기능 추가.
+            26.07.29 - 포챔스 배울 수 있는 기술 반영
             <span className={s.subText}>
-              - 메인메뉴에서 포켓몬 이름 검색시 포챔스 데이터 기준으로              배틀데이터 제공
+              - &quot;기술&quot; 페이지에서 포챔스 기준으로 기술을 검색하고 배울수있는 기술을 검색할 수 있습니다.
             </span>
+          </li>
+          <li className={s.item}>
+            26.07.27 - 포챔스 랭킹 데이터 반영
           </li>
           <li className={s.item}>
             26.07.22 - 포챔스 데이터 팀에 추가 기능 추가
@@ -91,7 +94,10 @@ const NoticeModal = () => {
             </span>
           </li>
           <li className={s.item}>
-            26.07.27 - 포챔스 랭킹 데이터 반영
+            26.07.20 - 우측 상단에 포챔스데이터를 가져오는 기능 추가.
+            <span className={s.subText}>
+              - 메인메뉴에서 포켓몬 이름 검색시 포챔스 데이터 기준으로              배틀데이터 제공
+            </span>
           </li>
         </ul>
         <div className={s.footer}>

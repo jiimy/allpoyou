@@ -26,36 +26,24 @@ function MoveRow({
   move,
   onMoveClick,
   onMoveSearch,
+  searchDisabled = false,
 }: {
   move: MoveDbEntry;
   onMoveClick?: (move: MoveDbEntry) => void;
   onMoveSearch?: (move: MoveDbEntry) => void;
+  searchDisabled?: boolean;
 }) {
   const typeKo = getMoveTypeKo(move.type);
-  const clickable = onMoveClick != null;
 
   return (
-    <li
-      className={`${s.item} ${clickable ? s.itemClickable : ''} pokemonTooltipHost`}
-      role={clickable ? 'button' : undefined}
-      tabIndex={clickable ? 0 : undefined}
-      onClick={clickable ? () => onMoveClick?.(move) : undefined}
-      onKeyDown={
-        clickable
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onMoveClick?.(move);
-              }
-            }
-          : undefined
-      }
-    >
+    <li className={`${s.item} pokemonTooltipHost`}>
       <PokemonTooltip
         viewInfoLabel="기술검색"
         addToTeamLabel="기술부여"
+        viewInfoDisabled={searchDisabled}
         onViewInfo={(event) => {
           event.stopPropagation();
+          if (searchDisabled) return;
           onMoveSearch?.(move);
         }}
         onAddToTeam={(event) => {
@@ -103,6 +91,9 @@ type MoveListProps = {
   activeDamageClass: MoveDamageClassFilter;
   onDamageClassChange: (value: MoveDamageClassFilter) => void;
   totalCount: number;
+  catalogLoading?: boolean;
+  catalogError?: string | null;
+  pochampsOnly?: boolean;
   pokemonSearchPending?: boolean;
   showLearnablePokemon: boolean;
   onShowLearnablePokemonChange: (checked: boolean) => void;
@@ -118,6 +109,10 @@ type MoveListProps = {
   pokemonMovesError: string | null;
   onMoveClick?: (move: MoveDbEntry) => void;
   onMoveSearch?: (move: MoveDbEntry) => void;
+  /** 현재 검색 중인 기술 id (해당 기술의 '기술검색' 비활성) */
+  activeSearchMoveId?: number | null;
+  /** 현재 검색어 (한글명 일치 시 '기술검색' 비활성) */
+  searchKeyword?: string;
 };
 
 export default function MoveList({
@@ -127,6 +122,9 @@ export default function MoveList({
   activeDamageClass,
   onDamageClassChange,
   totalCount,
+  catalogLoading = false,
+  catalogError = null,
+  pochampsOnly = false,
   pokemonSearchPending = false,
   showLearnablePokemon,
   onShowLearnablePokemonChange,
@@ -142,6 +140,8 @@ export default function MoveList({
   pokemonMovesError,
   onMoveClick,
   onMoveSearch,
+  activeSearchMoveId = null,
+  searchKeyword = '',
 }: MoveListProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [pokemonMovesVisibleCount, setPokemonMovesVisibleCount] =
@@ -192,6 +192,12 @@ export default function MoveList({
 
   const hasMorePokemonMoves =
     pokemonMovesVisibleCount < filteredPokemonMoves.length;
+
+  const trimmedSearchKeyword = searchKeyword.trim();
+  const isMoveSearchActive = (move: MoveDbEntry) =>
+    (activeSearchMoveId != null && activeSearchMoveId === move.id) ||
+    (trimmedSearchKeyword.length > 0 &&
+      move.koreanName === trimmedSearchKeyword);
 
   const pokemonKey = selectedPokemon?.id ?? 'none';
   const [prevPokemonKey, setPrevPokemonKey] = useState(pokemonKey);
@@ -315,6 +321,7 @@ export default function MoveList({
         <section className={s.learnableSection}>
           <h3 className={s.learnableTitle}>
             배울 수 있는 포켓몬
+            {pochampsOnly ? ' · 포챔스' : ''}
             {matchedMoveNames.length > 0
               ? ` · ${matchedMoveNames.join(', ')}`
               : ''}
@@ -352,30 +359,39 @@ export default function MoveList({
 
       <p className={s.resultCount}>
         {moves.length.toLocaleString()}개 / {totalCount.toLocaleString()}개
+        {pochampsOnly ? ' · 포챔스 기술' : ''}
       </p>
 
-      {pokemonSearchPending ? (
+      {catalogLoading ? (
+        <p className={s.empty}>포챔스 기술 목록을 불러오는 중…</p>
+      ) : catalogError ? (
+        <p className={s.learnableError}>{catalogError}</p>
+      ) : pokemonSearchPending ? (
         <p className={s.empty}>포켓몬 기술을 불러오는 중…</p>
       ) : moves.length === 0 ? (
         <p className={s.empty}>조건에 맞는 기술이 없습니다.</p>
       ) : (
-        <ul className={s.list}>
+            <ul className={s.list}>
           {visibleMoves.map((move) => (
             <MoveRow
               key={move.id}
               move={move}
               onMoveClick={onMoveClick}
               onMoveSearch={onMoveSearch}
+              searchDisabled={isMoveSearchActive(move)}
             />
           ))}
         </ul>
       )}
-      {hasMore ? <div ref={sentinelRef} className={s.sentinel} aria-hidden /> : null}
+      {!catalogLoading && !catalogError && hasMore ? (
+        <div ref={sentinelRef} className={s.sentinel} aria-hidden />
+      ) : null}
 
       {selectedPokemon ? (
         <section className={s.pokemonMovesSection}>
           <h3 className={s.pokemonMovesTitle}>
             {selectedPokemon.nameKo} · 배울 수 있는 기술
+            {pochampsOnly ? ' · 포챔스' : ''}
           </h3>
           {pokemonMovesLoading ? (
             <p className={s.empty}>기술 목록을 불러오는 중…</p>
@@ -450,6 +466,7 @@ export default function MoveList({
                       move={move}
                       onMoveClick={onMoveClick}
                       onMoveSearch={onMoveSearch}
+                      searchDisabled={isMoveSearchActive(move)}
                     />
                   ))}
                 </ul>

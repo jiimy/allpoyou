@@ -52,4 +52,13 @@
   &:hover {
     background: rgba(255, 255, 255, 0.16);
   }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: auto;
+
+    &:hover {
+      background: transparent;
+    }
+  }
 }

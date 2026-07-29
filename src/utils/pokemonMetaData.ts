@@ -11,6 +11,7 @@ import {
 } from '@/utils/battleData';
 import { resolvePokemonNameKo } from '@/utils/battleLocalize';
 import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
+import { resolvePochampsStorageSlug } from '@/utils/pochampsMoves';
 
 const CHAMPIONS_POKEMON_BASE = 'https://championsbattledata.com/api/pokemon';
 const CHAMPIONS_ASSET_BASE = 'https://championsbattledata.com';
@@ -329,9 +330,10 @@ export function championsPokemonToRows(
     });
   });
 
+  // API 응답의 learnableMoveNames → CSV category=learnable_move
   (data.learnableMoveNames ?? []).forEach((move, index) => {
     rows.push({
-      category: 'move',
+      category: 'learnable_move',
       rank: index + 1,
       name: move,
       slug: data.slug ?? '',
@@ -500,7 +502,7 @@ async function uploadCsv(storagePath: string, csv: string): Promise<void> {
 /**
  * championsbattledata `/api/pokemon/:slug` 호출 후 CSV를 Storage에 저장합니다.
  *
- * - 기본: 당일(KST) CSV가 있고 battle_summary가 있으면 재사용
+ * - 기본: 당일(KST) CSV에 battle_summary + learnable_move 가 있으면 재사용
  * - forceRefresh: 기존 당일 CSV를 지우고 항상 새로 받아 덮어씀 (일일 cron용)
  */
 export async function getDailyPokemonMetaData(
@@ -519,7 +521,9 @@ export async function getDailyPokemonMetaData(
       const hasBattleSummary = rows.some(
         (row) => String(row.category) === 'battle_summary',
       );
-      if (hasBattleSummary) {
+      const hasLearnable = rows.some((row) => isLearnableMoveRow(row.category));
+      // learnable 이 비어 있으면 불완전 캐시로 보고 재수집
+      if (hasBattleSummary && hasLearnable) {
         return {
           cached: true,
           date,
@@ -765,4 +769,435 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
   await deleteStorageFiles([buildPokemonRankingsStoragePath(date)]);
   await saveDailyPositionRankings(localized);
   return localized;
+}
+
+const MOVES_INDEX_CSV_COLUMNS = ['name', 'slug'] as const;
+
+export function buildPokemonMovesIndexStoragePath(date: string): string {
+  return `Pokemon/moves/${date}.csv`;
+}
+
+export type PochampsMovesIndex = {
+  date: string;
+  cached: boolean;
+  names: string[];
+};
+
+function parseMovesIndexCsv(csv: string, date: string): PochampsMovesIndex | null {
+  const { rows } = csvToRows(csv);
+  const names: string[] = [];
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    const name = String(row.name ?? '').trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+
+  if (names.length === 0) return null;
+  return { date, cached: true, names };
+}
+
+async function findLatestMovesIndexCsv(): Promise<PochampsMovesIndex | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BATTLE_STORAGE_BUCKET)
+    .list('Pokemon/moves', {
+      limit: 30,
+      sortBy: { column: 'name', order: 'desc' },
+    });
+
+  if (error || !data) return null;
+
+  const files = data
+    .map((item) => item.name)
+    .filter((name): name is string => !!name && /^\d{4}-\d{2}-\d{2}\.csv$/.test(name))
+    .sort((a, b) => b.localeCompare(a));
+
+  for (const fileName of files) {
+    const date = fileName.replace(/\.csv$/, '');
+    const csv = await downloadTodayCsv(buildPokemonMovesIndexStoragePath(date));
+    if (!csv) continue;
+    const parsed = parseMovesIndexCsv(csv, date);
+    if (parsed) return parsed;
+  }
+
+  return null;
+}
+
+function isLearnableMoveRow(category: unknown): boolean {
+  const value = String(category);
+  // learnable_move: 신규 저장분
+  // move: 기존 CSV (learnableMoveNames에서 변환해 둔 행)
+  return value === 'learnable_move' || value === 'move';
+}
+
+function toMoveSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export type PochampsMoveLearner = {
+  moveName: string;
+  moveSlug: string;
+  pokemonName: string;
+  pokemonSlug: string;
+};
+
+type LearnableMoveGraph = {
+  moveNames: string[];
+  learners: PochampsMoveLearner[];
+};
+
+const LEARNERS_CSV_COLUMNS = [
+  'move_name',
+  'move_slug',
+  'pokemon_name',
+  'pokemon_slug',
+] as const;
+
+export function buildPokemonMoveLearnersStoragePath(date: string): string {
+  return `Pokemon/move-learners/${date}.csv`;
+}
+
+async function collectLearnableMoveGraph(
+  date: string,
+  concurrency = 10,
+): Promise<LearnableMoveGraph> {
+  const moveNames = new Set<string>();
+  const learners: PochampsMoveLearner[] = [];
+  const learnerKeys = new Set<string>();
+  const list = [...POCHAMS_POKEMON_DATA];
+  const fallbackDate = getSeoulDateDaysAgo(1);
+
+  for (let start = 0; start < list.length; start += concurrency) {
+    const chunk = list.slice(start, start + concurrency);
+    const settled = await Promise.allSettled(
+      chunk.map(async (displayName) => {
+        const slug = normalizePokemonSlug(displayName);
+        const primaryCsv = await downloadTodayCsv(
+          buildPokemonMetaStoragePath(slug, date),
+        );
+        const primaryRows = primaryCsv ? csvToRows(primaryCsv).rows : [];
+        const primaryLearnable = primaryRows.some((row) =>
+          isLearnableMoveRow(row.category),
+        );
+
+        // 당일 CSV에 learnable이 없으면 어제 파일로 보완
+        let rows = primaryRows;
+        if (!primaryLearnable && fallbackDate !== date) {
+          const fallbackCsv = await downloadTodayCsv(
+            buildPokemonMetaStoragePath(slug, fallbackDate),
+          );
+          if (fallbackCsv) {
+            const fallbackRows = csvToRows(fallbackCsv).rows;
+            if (fallbackRows.some((row) => isLearnableMoveRow(row.category))) {
+              rows = fallbackRows;
+            }
+          }
+        }
+
+        return { displayName, slug, rows };
+      }),
+    );
+
+    for (const result of settled) {
+      if (result.status !== 'fulfilled' || result.value.rows.length === 0) {
+        continue;
+      }
+      const { displayName, slug, rows } = result.value;
+      const summaryName = String(
+        rows.find((row) => String(row.category) === 'summary')?.name ??
+          displayName,
+      ).trim();
+
+      for (const row of rows) {
+        if (!isLearnableMoveRow(row.category)) continue;
+        const moveName = String(row.name ?? '').trim();
+        if (!moveName) continue;
+
+        moveNames.add(moveName);
+        const moveSlug = toMoveSlug(moveName);
+        const key = `${moveSlug}::${slug}`;
+        if (learnerKeys.has(key)) continue;
+        learnerKeys.add(key);
+        learners.push({
+          moveName,
+          moveSlug,
+          pokemonName: summaryName || displayName,
+          pokemonSlug: slug,
+        });
+      }
+    }
+  }
+
+  return {
+    moveNames: [...moveNames].sort((a, b) => a.localeCompare(b)),
+    learners,
+  };
+}
+
+export async function savePochampsMovesIndex(
+  index: PochampsMovesIndex,
+): Promise<string> {
+  const path = buildPokemonMovesIndexStoragePath(index.date);
+  const rows = index.names.map((name) => ({
+    name,
+    slug: toMoveSlug(name),
+  }));
+  await uploadCsv(path, rowsToCsv([...MOVES_INDEX_CSV_COLUMNS], rows));
+  return path;
+}
+
+export async function savePochampsMoveLearnersIndex(
+  date: string,
+  learners: PochampsMoveLearner[],
+): Promise<string> {
+  const path = buildPokemonMoveLearnersStoragePath(date);
+  const rows = learners.map((entry) => ({
+    move_name: entry.moveName,
+    move_slug: entry.moveSlug,
+    pokemon_name: entry.pokemonName,
+    pokemon_slug: entry.pokemonSlug,
+  }));
+  await uploadCsv(path, rowsToCsv([...LEARNERS_CSV_COLUMNS], rows));
+  return path;
+}
+
+/**
+ * Pokemon/{slug}/{date}.csv 의 learnableMoveNames 행을 모아
+ * 기술 인덱스 + (기술→포켓몬) learners 인덱스를 만듭니다.
+ */
+export async function rebuildPochampsMovesIndexFromStorage(options?: {
+  concurrency?: number;
+}): Promise<PochampsMovesIndex> {
+  const concurrency = options?.concurrency ?? 10;
+  const today = getSeoulDateString();
+  const yesterday = getSeoulDateDaysAgo(1);
+
+  let graph = await collectLearnableMoveGraph(today, concurrency);
+  let date = today;
+
+  if (graph.moveNames.length === 0) {
+    graph = await collectLearnableMoveGraph(yesterday, concurrency);
+    date = yesterday;
+  }
+
+  const index: PochampsMovesIndex = {
+    date: today,
+    cached: false,
+    names: graph.moveNames,
+  };
+
+  if (graph.moveNames.length > 0) {
+    await deleteStorageFiles([
+      buildPokemonMovesIndexStoragePath(today),
+      buildPokemonMoveLearnersStoragePath(today),
+    ]);
+    await savePochampsMovesIndex(index);
+    await savePochampsMoveLearnersIndex(today, graph.learners);
+    return index;
+  }
+
+  return { date, cached: false, names: [] };
+}
+
+async function loadMoveLearnersCsv(date: string): Promise<PochampsMoveLearner[] | null> {
+  const csv = await downloadTodayCsv(buildPokemonMoveLearnersStoragePath(date));
+  if (!csv) return null;
+
+  const { rows } = csvToRows(csv);
+  const learners: PochampsMoveLearner[] = [];
+  for (const row of rows) {
+    const moveName = String(row.move_name ?? '').trim();
+    const moveSlug = String(row.move_slug ?? toMoveSlug(moveName)).trim();
+    const pokemonName = String(row.pokemon_name ?? '').trim();
+    const pokemonSlug = String(row.pokemon_slug ?? '').trim();
+    if (!moveSlug || !pokemonSlug) continue;
+    learners.push({ moveName, moveSlug, pokemonName, pokemonSlug });
+  }
+  return learners;
+}
+
+async function findLatestMoveLearnersCsv(): Promise<{
+  date: string;
+  learners: PochampsMoveLearner[];
+} | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(BATTLE_STORAGE_BUCKET)
+    .list('Pokemon/move-learners', {
+      limit: 30,
+      sortBy: { column: 'name', order: 'desc' },
+    });
+
+  if (error || !data) return null;
+
+  const files = data
+    .map((item) => item.name)
+    .filter((name): name is string => !!name && /^\d{4}-\d{2}-\d{2}\.csv$/.test(name))
+    .sort((a, b) => b.localeCompare(a));
+
+  for (const fileName of files) {
+    const date = fileName.replace(/\.csv$/, '');
+    const learners = await loadMoveLearnersCsv(date);
+    if (learners && learners.length > 0) {
+      return { date, learners };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * learnableMoveNames 기준으로 해당 기술을 가진 포켓몬 목록을 반환합니다.
+ */
+export async function getPochampsLearnersForMoveKeys(
+  moveKeys: string[],
+): Promise<{ date: string; learners: PochampsMoveLearner[] }> {
+  const keys = new Set(
+    moveKeys.map((key) => toMoveSlug(key)).filter((key) => key.length > 0),
+  );
+  if (keys.size === 0) {
+    return { date: getSeoulDateString(), learners: [] };
+  }
+
+  const today = getSeoulDateString();
+  const yesterday = getSeoulDateDaysAgo(1);
+
+  let date = today;
+  let learners = await loadMoveLearnersCsv(today);
+  if (!learners) {
+    learners = await loadMoveLearnersCsv(yesterday);
+    if (learners) date = yesterday;
+  }
+
+  if (!learners) {
+    const latest = await findLatestMoveLearnersCsv();
+    if (latest) {
+      learners = latest.learners;
+      date = latest.date;
+    }
+  }
+
+  if (!learners) {
+    const rebuilt = await rebuildPochampsMovesIndexFromStorage();
+    learners = (await loadMoveLearnersCsv(rebuilt.date)) ?? [];
+    date = rebuilt.date;
+  }
+
+  const matched = learners.filter((entry) => keys.has(entry.moveSlug));
+
+  // 인덱스에 해당 기술이 없으면 재집계 (당일 CSV가 불완전했던 경우)
+  if (matched.length === 0) {
+    const rebuilt = await rebuildPochampsMovesIndexFromStorage();
+    learners = (await loadMoveLearnersCsv(rebuilt.date)) ?? learners;
+    date = rebuilt.date;
+  }
+
+  const rematched = learners.filter((entry) => keys.has(entry.moveSlug));
+  // 포켓몬 단위 중복 제거 (여러 기술이 매칭돼도 한 번만)
+  const seen = new Set<string>();
+  const unique: PochampsMoveLearner[] = [];
+  for (const entry of rematched) {
+    if (seen.has(entry.pokemonSlug)) continue;
+    seen.add(entry.pokemonSlug);
+    unique.push(entry);
+  }
+
+  unique.sort((a, b) => a.pokemonName.localeCompare(b.pokemonName));
+  return { date, learners: unique };
+}
+
+/**
+ * 특정 포켓몬 CSV의 learnableMoveNames 목록을 반환합니다.
+ * Storage에 없거나 learnable 행이 비면 champions API로 보충합니다.
+ */
+export async function getPochampsLearnableMoveNamesForPokemon(
+  pokemonSlugOrName: string,
+): Promise<{ date: string; slug: string; names: string[] }> {
+  // 도감 영문명(ninetales-alola)과 포챔스 저장 슬러그(alolanninetales)가 다를 수 있음
+  const slug = resolvePochampsStorageSlug(pokemonSlugOrName);
+  const today = getSeoulDateString();
+  const yesterday = getSeoulDateDaysAgo(1);
+  const fallbackSlug = normalizePokemonSlug(pokemonSlugOrName);
+  const slugCandidates = [...new Set([slug, fallbackSlug].filter(Boolean))];
+
+  const extractNames = (rows: BattleRow[]): string[] =>
+    rows
+      .filter((row) => isLearnableMoveRow(row.category))
+      .map((row) => String(row.name ?? '').trim())
+      .filter(Boolean);
+
+  for (const candidate of slugCandidates) {
+    for (const date of [today, yesterday]) {
+      const csv = await downloadTodayCsv(
+        buildPokemonMetaStoragePath(candidate, date),
+      );
+      if (!csv) continue;
+      const { rows } = csvToRows(csv);
+      const names = extractNames(rows);
+      if (names.length > 0) {
+        return { date, slug: candidate, names };
+      }
+    }
+  }
+
+  // 오늘/어제 CSV에 learnable 이 없으면 API 재수집
+  for (const candidate of slugCandidates) {
+    try {
+      const meta = await getDailyPokemonMetaData(candidate);
+      const names = extractNames(meta.rows);
+      if (names.length > 0) {
+        return { date: meta.date, slug: candidate, names };
+      }
+    } catch (error) {
+      console.warn(
+        '[pokemonMetaData] learnable moves fallback 실패',
+        candidate,
+        error,
+      );
+    }
+  }
+
+  return { date: today, slug: slug || fallbackSlug, names: [] };
+}
+
+/**
+ * 포챔스 기술 목록.
+ * Storage `Pokemon/{slug}/{date}.csv` 안의 learnableMoveNames 기반 행만 사용합니다.
+ *
+ * 1) Pokemon/moves/{date}.csv
+ * 2) 어제/최근 인덱스
+ * 3) 개별 Pokemon CSV에서 재집계 후 캐시
+ */
+export async function getDailyPochampsMovesIndex(): Promise<PochampsMovesIndex> {
+  const today = getSeoulDateString();
+
+  const todayCsv = await downloadTodayCsv(buildPokemonMovesIndexStoragePath(today));
+  if (todayCsv) {
+    const parsed = parseMovesIndexCsv(todayCsv, today);
+    if (parsed) return parsed;
+  }
+
+  const yesterday = getSeoulDateDaysAgo(1);
+  const yesterdayCsv = await downloadTodayCsv(
+    buildPokemonMovesIndexStoragePath(yesterday),
+  );
+  if (yesterdayCsv) {
+    const parsed = parseMovesIndexCsv(yesterdayCsv, yesterday);
+    if (parsed) return parsed;
+  }
+
+  const latest = await findLatestMovesIndexCsv();
+  if (latest) return latest;
+
+  return rebuildPochampsMovesIndexFromStorage();
 }
