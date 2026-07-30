@@ -46,12 +46,12 @@ export const metadata: Metadata = {
   //   icon: "/favicon.ico",
   // },
   alternates: {
-    canonical: "https://allpoyou.vercel.app",
+    canonical: "./",
   },
   openGraph: {
     title: "올포유",
     description: "포켓몬을 한개만 선택해도 타입을 보완하는 포켓몬을 추천해줍니다. ",
-    url: "https://allpoyou.vercel.app",
+    url: "./",
     siteName: "올포유",
     locale: "ko_KR",
     type: "website",
