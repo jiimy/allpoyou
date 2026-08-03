@@ -9,6 +9,8 @@ import React, {
 import { createPortal } from 'react-dom';
 import {
   formatCounterProduct,
+  formatResistHoleLabel,
+  getPartyResistHoleDetails,
   getRecommendedCounterDetails,
 } from '@/hooks/useType';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -382,6 +384,10 @@ const MakeTeam = () => {
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
   const [finalEvolutionOnly, setFinalEvolutionOnly] = useState(true);
+  /** 슬롯별 OFF: 해당 포켓몬 기준 / ON: 그때까지 파티 약점 기준 보완 */
+  const [partyWideComplement, setPartyWideComplement] = useState<boolean[]>(
+    () => Array.from({ length: TEAM_SIZE }, () => false),
+  );
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => true),
   );
@@ -531,9 +537,16 @@ const MakeTeam = () => {
           if (!pokemon) return null;
           // 팀이 가득 찼을 때 마지막 슬롯 기준 '다음(7번째)' 추천 표만 숨김
           if (nextEmptyIndex === -1 && idx === lastSelectedIndex) return null;
-          const counterResult = getRecommendedCounterDetails(
-            ensureStringArray(pokemon.types),
-          );
+
+          const usePartyWide = partyWideComplement[idx] === true;
+          const partyTypesList = selectedPokemons
+            .slice(0, idx + 1)
+            .filter((p): p is Pokemon => p != null)
+            .map((p) => ensureStringArray(p.types));
+
+          const counterResult = usePartyWide
+            ? getPartyResistHoleDetails(partyTypesList)
+            : getRecommendedCounterDetails(ensureStringArray(pokemon.types));
           const { weaknesses, counters } = counterResult;
           const targetSlotIndex = idx + 1;
           const isTargetSlotFilled =
@@ -543,6 +556,7 @@ const MakeTeam = () => {
               ? getTeamTypesUpToIndex(idx)
               : getSelectedTeamTypes()
             : null;
+          // 파티 보완 ON: 이미 파티 타입·2배 약점 타입을 걸러 둔 추천 타입
           const visibleCounters = teamTypes
             ? counters.filter((c) => !teamTypes.has(c.type))
             : counters;
@@ -551,10 +565,13 @@ const MakeTeam = () => {
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
           const matchingPokemons = allPokemons.filter((p) => {
             if (selectedPokemonIds.has(p.id)) return false;
+
+            // OFF/ON 공통: 추천 타입을 가진 포켓몬
             const matches = ensureStringArray(p.types).filter((t) =>
               recSet.has(t),
             );
             if (matches.length < minRecTypeCount) return false;
+
             if (excludeMegaEvolution[idx] && isMegaDisplayName(p.nameKo))
               return false;
             if (finalEvolutionOnly && p.grade !== 3) return false;
@@ -589,6 +606,30 @@ const MakeTeam = () => {
               >
                 ( {`${idx + 2}`} 번째 포켓몬 선택)
                 <strong>{pokemon.nameKo}</strong>
+                <button
+                  type="button"
+                  onClick={() => teamProps.onClear(idx)}
+                  aria-label={`${pokemon.nameKo} 선택 취소`}
+                  title="선택 취소"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 22,
+                    height: 22,
+                    padding: 0,
+                    margin: 0,
+                    border: '1px solid #ddd',
+                    borderRadius: 4,
+                    background: '#fafafa',
+                    color: '#666',
+                    fontSize: 16,
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ×
+                </button>
                 <PokemonTypePicker
                   source="recommendation"
                   pokemonIndex={idx}
@@ -619,7 +660,11 @@ const MakeTeam = () => {
                         fontSize: 12,
                         fontWeight: 600,
                       }}
-                      title={formatCounterProduct(c)}
+                      title={
+                        usePartyWide
+                          ? formatResistHoleLabel(c)
+                          : formatCounterProduct(c)
+                      }
                     >
                       {c.type}
                       <span style={{ marginLeft: 4, opacity: 0.85 }}>
@@ -628,6 +673,78 @@ const MakeTeam = () => {
                     </span>
                   ))}
                 </span>
+                <div
+                  className={s.partyWideToggle}
+                  title={
+                    usePartyWide
+                      ? '이 슬롯: 상성표 미강점 공격을 0.5배 이하로 받는 타입(파티·2배 약점 제외) 추천'
+                      : '이 슬롯: 현재 포켓몬 약점 기준으로 보완'
+                  }
+                >
+                  <span
+                    className={s.partyWideToggleLabel}
+                    id={`party-wide-complement-${idx}`}
+                  >
+                    파티 전체 약점 보완
+                  </span>
+                  <button
+                    type="button"
+                    className={`${s.partyWideTrack} ${usePartyWide ? s.partyWideTrackOn : ''}`}
+                    role="switch"
+                    aria-checked={usePartyWide}
+                    aria-labelledby={`party-wide-complement-${idx}`}
+                    onClick={() =>
+                      setPartyWideComplement((prev) => {
+                        const next = [...prev];
+                        next[idx] = !prev[idx];
+                        return next;
+                      })
+                    }
+                  >
+                    <span className={s.partyWideThumb} aria-hidden />
+                  </button>
+                </div>
+                {idx + 2 === 6 && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 13,
+                      color: '#555',
+                    }}
+                  >
+                    (현재선택된 포켓몬 :{' '}
+                    {selectedPokemons[5]?.nameKo ?? '없음'}
+                    {selectedPokemons[5] != null && (
+                      <button
+                        type="button"
+                        onClick={() => teamProps.onClear(5)}
+                        aria-label={`${selectedPokemons[5].nameKo} 선택 취소`}
+                        title="선택 취소"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 22,
+                          height: 22,
+                          padding: 0,
+                          margin: 0,
+                          border: '1px solid #ddd',
+                          borderRadius: 4,
+                          background: '#fafafa',
+                          color: '#666',
+                          fontSize: 16,
+                          lineHeight: 1,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                    )
+                  </span>
+                )}
               </div>
 
               <div
@@ -723,9 +840,7 @@ const MakeTeam = () => {
                   }}
                 >
                   <span style={{ fontSize: 12, color: '#666' }}>
-                    추천 타입을{' '}
-                    {requireTwoRecTypes[idx] ? '두 가지 이상' : '한 가지 이상'}{' '}
-                    가진 포켓몬 ({matchingPokemons.length})
+                    {`추천 타입을 ${requireTwoRecTypes[idx] ? '두 가지 이상' : '한 가지 이상'} 가진 포켓몬 (${matchingPokemons.length})`}
                   </span>
                   <label
                     style={{

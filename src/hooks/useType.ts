@@ -1,7 +1,14 @@
 // export function useTypeCounter() {
 
 import { sortKeyValue } from "@/utils/Sort";
-import { Type, typeChart, typeTranslation } from "@/constants/pokemonType";
+import {
+  Type,
+  isTypeTableStrengthMultiplier,
+  typeChart,
+  typeTranslation,
+} from "@/constants/pokemonType";
+
+export { isTypeTableStrengthMultiplier };
 
 // }
 export function useTypeCounter(
@@ -123,7 +130,188 @@ export function getRecommendedCounterDetails(
     return { weaknesses: [], counters: [] };
   }
 
-  const weaknessTypes = getWeaknessTypes(englishTypes);
+  return buildCounterResultFromWeaknesses(getWeaknessTypes(englishTypes));
+}
+
+function getDefenseMultiplierAgainst(
+  defenderTypes: Type[],
+  attackType: Type,
+): number {
+  let mult = 1;
+  for (const def of defenderTypes) {
+    mult *= typeChart[def][attackType] ?? 1;
+  }
+  return mult;
+}
+
+/**
+ * 파티 전체 약점 보완(ON):
+ * 1) 상성표 강점(0 / 0.5)이 없는 공격 타입(구멍)을 찾음
+ * 2) 그 공격을 ≤0.5배로 받는 방어 타입을 후보로 모음
+ * 3) 이미 파티에 있는 타입은 제외
+ * 4) 구멍 공격에 2배 이상 약점이 있는 타입은 제외
+ *    (단, 구멍에 대한 면역(0배)이 있고 ≤0.5 저항이 2개 이상이면 유지 — 예: 강철)
+ * 5) 남은 타입을 기존 추천처럼 뱃지·포켓몬 매칭에 사용
+ */
+export function getPartyResistHoleDetails(
+  partyKoreanTypes: string[][],
+): RecommendedCounterResult {
+  const members = partyKoreanTypes
+    .map((koreanTypes) =>
+      koreanTypes
+        .map((t) => KOREAN_TO_ENGLISH[t])
+        .filter((t): t is Type => Boolean(t && t in typeChart)),
+    )
+    .filter((types) => types.length > 0);
+
+  if (members.length === 0) {
+    return { weaknesses: [], counters: [] };
+  }
+
+  const partyTypeSet = new Set<Type>();
+  for (const defs of members) {
+    for (const t of defs) partyTypeSet.add(t);
+  }
+
+  const holeAttackTypes: Type[] = [];
+  for (const attacker of Object.keys(typeChart) as Type[]) {
+    const partyHasStrength = members.some((defs) =>
+      isTypeTableStrengthMultiplier(
+        getDefenseMultiplierAgainst(defs, attacker),
+      ),
+    );
+    if (!partyHasStrength) {
+      holeAttackTypes.push(attacker);
+    }
+  }
+
+  if (holeAttackTypes.length === 0) {
+    return { weaknesses: [], counters: [] };
+  }
+
+  const candidateDefs = new Set<Type>();
+  for (const attacker of holeAttackTypes) {
+    for (const defender of Object.keys(typeChart) as Type[]) {
+      const mult = typeChart[defender][attacker] ?? 1;
+      if (mult <= 0.5) candidateDefs.add(defender);
+    }
+  }
+
+  const recommendedDefs = [...candidateDefs].filter((defender) => {
+    if (partyTypeSet.has(defender)) return false;
+
+    const vsHoles = holeAttackTypes.map(
+      (attacker) => typeChart[defender][attacker] ?? 1,
+    );
+    const hasWeakness = vsHoles.some((m) => m >= 2);
+    if (!hasWeakness) return true;
+
+    // 면역으로 구멍을 메우면서 저항도 충분한 타입(강철 등)은 유지
+    const resistCount = vsHoles.filter((m) => m <= 0.5).length;
+    const hasImmune = vsHoles.some((m) => m === 0);
+    return hasImmune && resistCount >= 2;
+  });
+
+  if (recommendedDefs.length === 0) {
+    return { weaknesses: [], counters: [] };
+  }
+
+  const counters: CounterDetail[] = recommendedDefs
+    .map((defender) => {
+      const factors = holeAttackTypes.map((attacker) => ({
+        weakness: typeTranslation[attacker],
+        multiplier: typeChart[defender][attacker] ?? 1,
+      }));
+      const resistFactors = factors.filter((f) => f.multiplier <= 0.5);
+      const resistCount = resistFactors.length;
+      const immuneCount = resistFactors.filter((f) => f.multiplier === 0)
+        .length;
+
+      return {
+        detail: {
+          type: typeTranslation[defender],
+          product: resistCount,
+          factors: resistFactors.length > 0 ? resistFactors : factors,
+        } satisfies CounterDetail,
+        sortKey: resistCount * 10 + immuneCount,
+      };
+    })
+    .sort((a, b) => b.sortKey - a.sortKey)
+    .map((entry) => entry.detail);
+
+  const weaknesses: WeaknessMatchupGroup[] = holeAttackTypes.map(
+    (attacker) => {
+      const superEffective: string[] = [];
+      const notVeryEffective: string[] = [];
+      const noEffect: string[] = [];
+      for (const defender of recommendedDefs) {
+        const mult = typeChart[defender][attacker] ?? 1;
+        const label = typeTranslation[defender];
+        if (mult === 0) noEffect.push(label);
+        else if (mult <= 0.5) notVeryEffective.push(label);
+        else if (mult >= 2) superEffective.push(label);
+      }
+      return {
+        weakness: typeTranslation[attacker],
+        superEffective,
+        notVeryEffective,
+        noEffect,
+      };
+    },
+  );
+
+  return { weaknesses, counters };
+}
+
+/** @deprecated 파티 보완은 getPartyResistHoleDetails 를 사용 */
+export function getPartyRecommendedCounterDetails(
+  partyKoreanTypes: string[][],
+): RecommendedCounterResult {
+  return getPartyResistHoleDetails(partyKoreanTypes);
+}
+
+/**
+ * 포켓몬이 주어진 공격 타입(한글)들을 타입 상성표 강점(0 / 0.5)으로
+ * 받는지 개수를 셉니다.
+ */
+export function countResistedAttackTypes(
+  pokemonKoreanTypes: string[],
+  attackTypesKo: string[],
+): number {
+  const defs = pokemonKoreanTypes
+    .map((t) => KOREAN_TO_ENGLISH[t])
+    .filter((t): t is Type => Boolean(t && t in typeChart));
+  if (defs.length === 0) return 0;
+
+  let count = 0;
+  for (const attackKo of attackTypesKo) {
+    const attacker = KOREAN_TO_ENGLISH[attackKo];
+    if (!attacker || !(attacker in typeChart)) continue;
+    if (
+      isTypeTableStrengthMultiplier(
+        getDefenseMultiplierAgainst(defs, attacker),
+      )
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export function formatResistHoleLabel(detail: CounterDetail): string {
+  const parts = detail.factors.map((f) => {
+    const multLabel =
+      f.multiplier === 0 ? '0배' : f.multiplier === 0.5 ? '0.5배' : `${f.multiplier}배`;
+    return `${f.weakness} ${multLabel}`;
+  });
+  return parts.length > 0
+    ? `${detail.type} — ${parts.join(', ')}`
+    : detail.type;
+}
+
+function buildCounterResultFromWeaknesses(
+  weaknessTypes: Type[],
+): RecommendedCounterResult {
   if (weaknessTypes.length === 0) {
     return { weaknesses: [], counters: [] };
   }

@@ -28,6 +28,11 @@ export const typeTranslation: Record<string, string> = {
   fairy: '페어리'
 };
 
+/** 타입 상성표 강점 칸과 동일: 0배·0.5배만 강점 (0.25 등은 제외) */
+export function isTypeTableStrengthMultiplier(multiplier: number): boolean {
+  return multiplier === 0 || multiplier === 0.5;
+}
+
 // 타입 상성 테이블 정의
 export const typeChart: Record<Type, Record<Type, number>> = {
   normal: {

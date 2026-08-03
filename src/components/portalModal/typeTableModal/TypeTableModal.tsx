@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
 import ModalFrame from '../ModalFrame';
 import { ChildrenModalType } from '@/types/modal';
-import TypeTable, { TypeTablePokemon } from '@/components/typeTable/TypeTable';
+import TypeTable, {
+  TypeTableMode,
+  TypeTablePokemon,
+} from '@/components/typeTable/TypeTable';
 import { useActiveTeamTypeTablePokemons } from '@/hooks/useActiveTeamTypeTablePokemons';
 import s from './typeTableModal.module.scss';
 
@@ -39,6 +42,11 @@ export function useTypeTableModalShortcut(
   }, [setOnModal]);
 }
 
+const TABS: { id: TypeTableMode; label: string }[] = [
+  { id: 'attack', label: '공격할 때' },
+  { id: 'defense', label: '맞을 때' },
+];
+
 const TypeTableModal = ({
   setOnModal,
   pokemons,
@@ -51,6 +59,7 @@ const TypeTableModal = ({
   const useStoreData = pokemons === undefined;
   const resolvedPokemons = useStoreData ? activeTeamPokemons : pokemons;
   const showLoading = useStoreData && !isReady;
+  const [mode, setMode] = useState<TypeTableMode>('defense');
 
   return (
     <ModalFrame
@@ -60,11 +69,32 @@ const TypeTableModal = ({
       dimClick={dimClick}
       className={classNames(s.type_table_modal, className)}
     >
-      {showLoading ? (
-        <p className={s.loading}>팀 정보를 불러오는 중…</p>
-      ) : (
-        <TypeTable pokemons={resolvedPokemons ?? []} />
-      )}
+      <div className={s.content}>
+        <h2 className={s.title}>타입 상성표</h2>
+
+        <div className={s.modeTabs} role="tablist" aria-label="상성 방향">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={mode === tab.id}
+              className={classNames(s.modeTab, {
+                [s.modeTabActive]: mode === tab.id,
+              })}
+              onClick={() => setMode(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {showLoading ? (
+          <p className={s.loading}>팀 정보를 불러오는 중…</p>
+        ) : (
+          <TypeTable pokemons={resolvedPokemons ?? []} mode={mode} />
+        )}
+      </div>
     </ModalFrame>
   );
 };
