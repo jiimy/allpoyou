@@ -11,8 +11,10 @@ import {
   type Pokemon,
 } from '@/store/PokemonStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
+import { usePochampsStore } from '@/store/PochampsStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { formatAbilityTooltipText } from '@/utils/abilitySearch';
+import { filterPokemonByPochampsData } from '@/utils/pochampsMoves';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
@@ -153,12 +155,11 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
   const sentinelRef = useRef<HTMLDivElement>(null);
   const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const pochampsEnabled = usePochampsStore((state) => state.enabled);
+  const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
+  const pochampsActive = pochampsHydrated && pochampsEnabled;
 
   const urlPokemonId = parseIntParam('pokemonId');
-  const infoModalPokemon = useMemo(() => {
-    if (urlPokemonId == null || loading) return null;
-    return pokemons.find((entry) => entry.id === urlPokemonId) ?? null;
-  }, [urlPokemonId, pokemons, loading]);
 
   const handlePokemonSelect = (pokemon: Pokemon) => {
     setPendingPokemon(pokemon);
@@ -194,9 +195,19 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
     };
   }, []);
 
+  const sourcePokemons = useMemo(
+    () => (pochampsActive ? filterPokemonByPochampsData(pokemons) : pokemons),
+    [pokemons, pochampsActive],
+  );
+
+  const infoModalPokemon = useMemo(() => {
+    if (urlPokemonId == null || loading) return null;
+    return sourcePokemons.find((entry) => entry.id === urlPokemonId) ?? null;
+  }, [urlPokemonId, sourcePokemons, loading]);
+
   const filteredPokemons = useMemo(
-    () => filterPokemonByTag(filterPokemonList(pokemons, keyword), tag),
-    [pokemons, keyword, tag],
+    () => filterPokemonByTag(filterPokemonList(sourcePokemons, keyword), tag),
+    [sourcePokemons, keyword, tag],
   );
 
   const visiblePokemons = useMemo(
@@ -206,8 +217,10 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
 
   const hasMore = visibleCount < filteredPokemons.length;
 
-  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}\u0000${tag ?? ''}`);
-  const filterKey = `${keyword}\u0000${tag ?? ''}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(
+    `${keyword}\u0000${tag ?? ''}\u0000${pochampsActive}`,
+  );
+  const filterKey = `${keyword}\u0000${tag ?? ''}\u0000${pochampsActive}`;
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
     setVisibleCount(PAGE_SIZE);
@@ -245,8 +258,10 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
     <>
       <p className={s.resultCount}>
         {trimmedKeyword
-          ? `${filteredPokemons.length.toLocaleString()}마리 / ${pokemons.length.toLocaleString()}마리`
-          : `${filteredPokemons.length.toLocaleString()}마리`}
+          ? `${filteredPokemons.length.toLocaleString()}마리 / ${sourcePokemons.length.toLocaleString()}마리`
+          : `${filteredPokemons.length.toLocaleString()}마리${
+              pochampsActive ? ' · 포챔스' : ''
+            }`}
       </p>
 
       <div className={s.grid}>

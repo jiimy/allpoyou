@@ -140,3 +140,23 @@ export function resolvePokemonFromPochampsLearner(
     null
   );
 }
+
+/**
+ * POCHAMS_POKEMON_DATA 에 대응하는 도감 포켓몬만 남깁니다.
+ * (표시명 ↔ csv 영문명 슬러그 매칭)
+ */
+export function filterPokemonByPochampsData(list: Pokemon[]): Pokemon[] {
+  if (list.length === 0) return [];
+
+  const ids = new Set<number>();
+  for (const displayName of POCHAMS_POKEMON_DATA) {
+    const slug = toPokemonMetaSlug(displayName);
+    const pokemon = resolvePokemonFromPochampsLearner(
+      { pokemonName: displayName, pokemonSlug: slug },
+      list,
+    );
+    if (pokemon) ids.add(pokemon.id);
+  }
+
+  return list.filter((p) => ids.has(p.id));
+}
