@@ -161,15 +161,13 @@ function findLocalPokemonMoves(
   pokemonId: number,
   nameKo?: string | null,
 ): PokemonMovesJsonRow | undefined {
-  const byId = rows.find((row) => row.id === pokemonId);
-  if (byId) return byId;
-
+  // pokemon.csv row id 와 moves JSON id(도감번호)가 다르므로 이름 우선
   if (nameKo) {
     const exact = rows.find((row) => row.name === nameKo);
     if (exact) return exact;
   }
 
-  return undefined;
+  return rows.find((row) => row.id === pokemonId);
 }
 
 async function resolvePokemonMoveIds(

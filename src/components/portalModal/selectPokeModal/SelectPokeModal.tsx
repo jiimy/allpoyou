@@ -14,20 +14,21 @@ import {
 } from '@/store/PokemonStore';
 import type { MoveDbEntry } from '@/types/move';
 import { getAbilitySummary } from '@/utils/abilitySearch';
+import { getLearnableMovesFromLocalFiles } from '@/utils/localPokemonMoves';
 import { getMoveStatsTitle, getMoveTypeKo } from '@/utils/moveDisplay';
-import { getMovesByIds } from '@/utils/movesDb';
-import { MOVES_BY_ID } from '@/utils/movesIndex';
+import { ALL_MOVES } from '@/utils/movesIndex';
+import {
+  filterMovesByPochampsNames,
+  resolvePochampsStorageSlug,
+} from '@/utils/pochampsMoves';
 import {
   BASE_STAT_KEYS,
   BASE_STAT_LABEL,
   BASE_STAT_MAX,
 } from '@/utils/pokemonBaseStats';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
-import {
-  getMoveLookupNameKo,
-  resolveMoveLookupPokemonId,
-} from '@/utils/pokemonName';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import { usePochampsStore } from '@/store/PochampsStore';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -70,6 +71,31 @@ function resolveEvolutionPokemon(nameKo: string, list: Pokemon[]): Pokemon | und
   return getPokemonByNameKo(nameKo) ?? list.find((entry) => entry.nameKo === nameKo);
 }
 
+/** 로컬 JSON 누락 시에만 PokeAPI로 보강 */
+async function fetchLearnsetFromPokeApi(
+  englishName: string,
+): Promise<MoveDbEntry[]> {
+  const slug = englishName.trim().toLowerCase();
+  if (!slug) return [];
+
+  const res = await fetch(
+    `https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(slug)}`,
+  );
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as {
+    moves?: { move: { name: string } }[];
+  };
+  const keys = new Set(
+    (data.moves ?? []).map((entry) => entry.move.name.toLowerCase()),
+  );
+  if (keys.size === 0) return [];
+
+  return ALL_MOVES.filter((move) =>
+    keys.has(move.englishName.toLowerCase()),
+  ).sort((a, b) => a.id - b.id);
+}
+
 const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const router = useRouter();
   const [activePokemon, setActivePokemon] = useState(pokemon);
@@ -77,14 +103,23 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const [pokemonList, setPokemonList] = useState<Pokemon[]>(() =>
     getCachedPokemonList(),
   );
+  const pokemonListRef = React.useRef(pokemonList);
   const [moves, setMoves] = useState<MoveDbEntry[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
   const [movesError, setMovesError] = useState<string | null>(null);
   const [typeCalcOpen, setTypeCalcOpen] = useState(false);
+  const [prevMovesPokemonKey, setPrevMovesPokemonKey] = useState<string | null>(
+    null,
+  );
 
   const setTypeCalcMode = useTypeCalcStore((state) => state.setMode);
   const setAttackSelected = useTypeCalcStore((state) => state.setAttackSelected);
   const setDefenseSelected = useTypeCalcStore((state) => state.setDefenseSelected);
+  const pochampsEnabled = usePochampsStore((state) => state.enabled);
+  const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
+  const pochampsActive = pochampsHydrated && pochampsEnabled;
+
+  const movesPokemonKey = `${activePokemon.id}:${activePokemon.nameKo}:${pochampsActive}`;
 
   if (prevPokemonProp !== pokemon) {
     setPrevPokemonProp(pokemon);
@@ -92,6 +127,18 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     setMovesLoading(true);
     setMovesError(null);
   }
+
+  if (prevMovesPokemonKey !== movesPokemonKey) {
+    setPrevMovesPokemonKey(movesPokemonKey);
+    if (prevMovesPokemonKey !== null) {
+      setMovesLoading(true);
+      setMovesError(null);
+    }
+  }
+
+  useEffect(() => {
+    pokemonListRef.current = pokemonList;
+  }, [pokemonList]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,41 +234,49 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     let cancelled = false;
 
     const loadMoves = async () => {
-      let list = pokemonList;
-      if (list.length === 0) {
-        try {
-          list = await fetchPokemonList();
-          if (!cancelled) setPokemonList(list);
-        } catch {
-          /* id/nameKo fallback은 캐시 없이도 동작 */
-        }
-      }
-
-      const lookupNameKo = getMoveLookupNameKo(activePokemon.nameKo);
-      const lookupId = resolveMoveLookupPokemonId(activePokemon, list);
-
-      const params = new URLSearchParams({
-        pokemonId: String(lookupId),
-        nameKo: lookupNameKo,
-      });
-
-      return fetch(`/api/moves?${params.toString()}`, { cache: 'no-store' });
-    };
-
-    loadMoves()
-      .then(async (res) => {
+      if (pochampsActive) {
+        const slug = resolvePochampsStorageSlug(activePokemon.name);
+        const res = await fetch(
+          `/api/pokemon-meta/pokemon-moves?slug=${encodeURIComponent(slug)}`,
+          { cache: 'no-store' },
+        );
         const body = (await res.json()) as {
-          moveIds?: number[];
+          names?: string[];
           error?: string;
         };
         if (!res.ok) {
           throw new Error(body.error ?? `조회 실패 (${res.status})`);
         }
         if (cancelled) return;
-        setMoves(getMovesByIds(MOVES_BY_ID, body.moveIds ?? []));
-      })
+        setMoves(filterMovesByPochampsNames(ALL_MOVES, body.names ?? []));
+        return;
+      }
+
+      // OFF: 로컬 JSON 우선 (pokemon-with-moves + moves-db), 없으면 PokeAPI
+      const localMoves = await getLearnableMovesFromLocalFiles({
+        id: activePokemon.id,
+        number: activePokemon.number,
+        nameKo: activePokemon.nameKo,
+      });
+      if (cancelled) return;
+
+      if (localMoves.length > 0) {
+        setMoves(localMoves);
+        return;
+      }
+
+      const pokeApiMoves = await fetchLearnsetFromPokeApi(activePokemon.name);
+      if (cancelled) return;
+      if (pokeApiMoves.length === 0) {
+        throw new Error('배울 수 있는 기술을 찾지 못했습니다.');
+      }
+      setMoves(pokeApiMoves);
+    };
+
+    loadMoves()
       .catch((err: unknown) => {
         if (cancelled) return;
+        setMoves([]);
         setMovesError(
           err instanceof Error
             ? err.message
@@ -235,7 +290,13 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     return () => {
       cancelled = true;
     };
-  }, [activePokemon, pokemonList]);
+  }, [
+    activePokemon.id,
+    activePokemon.name,
+    activePokemon.nameKo,
+    activePokemon.number,
+    pochampsActive,
+  ]);
 
   return (
     <>
@@ -413,7 +474,11 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         </section>
 
         <section className={s.skillSection}>
-          <h3 className={s.sectionTitle}>배울 수 있는 기술 <p>항목 클릭시 기술 페이지로 이동합니다.</p></h3>
+          <h3 className={s.sectionTitle}>
+            배울 수 있는 기술
+            {pochampsActive ? ' · 포챔스' : ''}{' '}
+            <p>항목 클릭시 기술 페이지로 이동합니다.</p>
+          </h3>
           {movesLoading ? (
             <p className={s.statusText}>기술 목록 불러오는 중…</p>
           ) : movesError ? (
