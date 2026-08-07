@@ -74,8 +74,8 @@ export function getSeoulDateString(now = new Date()): string {
 
 export function normalizeBattleFormat(raw: string): BattleFormat | null {
   const key = raw.trim().toLowerCase();
-  if (key === 'doubles') return 'Doubles';
-  if (key === 'singles') return 'Singles';
+  if (key === 'doubles' || key === 'double') return 'Doubles';
+  if (key === 'singles' || key === 'single') return 'Singles';
   return null;
 }
 
@@ -204,6 +204,20 @@ async function downloadTodayCsv(
   return data.text();
 }
 
+async function deleteStorageFiles(paths: string[]): Promise<void> {
+  const targets = paths.filter((path) => path.trim().length > 0);
+  if (targets.length === 0) return;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.storage
+    .from(BATTLE_STORAGE_BUCKET)
+    .remove(targets);
+
+  if (error) {
+    console.warn('[battleData] storage remove:', error.message, targets);
+  }
+}
+
 async function uploadCsv(storagePath: string, csv: string): Promise<void> {
   const supabase = createAdminClient();
   const { error } = await supabase.storage
@@ -249,54 +263,67 @@ async function toLocalizedResult(
 }
 
 /**
- * 당일(KST) CSV가 Storage에 있으면 재사용하고,
- * 없으면 외부 API → 한글 번역 CSV 저장 후 반환합니다.
- * 응답의 byCategory는 category별 상위 10개입니다.
+ * championsbattledata `/api/battle/{Singles|Doubles}/:slug` 호출 후 CSV를 Storage에 저장합니다.
+ *
+ * - 기본: 당일(KST) CSV가 있으면 재사용
+ * - forceRefresh: 기존 당일 CSV를 지우고 항상 새로 받아 덮어씀 (일일 cron용)
+ * - 응답의 byCategory는 category별 상위 10개입니다.
+ *
+ * URL 예: https://championsbattledata.com/api/battle/Single/archaludon
+ * (Single/Double 도 Singles/Doubles 로 정규화)
  */
 export async function getDailyBattleData(
   format: BattleFormat,
   pokemonSlug: string,
+  options?: { forceRefresh?: boolean },
 ): Promise<BattleDataResult> {
   const date = getSeoulDateString();
   const storagePath = buildStoragePath(format, pokemonSlug, date);
 
-  const cachedCsv = await downloadTodayCsv(storagePath);
-  if (cachedCsv) {
-    const { rows } = csvToRows(cachedCsv);
-    const hasKoreanSchema = rows.some((row) => row.name_en != null && row.name_en !== '');
-    const pokemonEn =
-      String(rows[0]?.pokemon_en ?? rows[0]?.pokemon ?? pokemonSlug) || pokemonSlug;
-
-    // 예전 영문 CSV 캐시면 한글 번역본으로 한 번 갱신
-    if (!hasKoreanSchema) {
-      const localizedRows = await localizeBattleRows(rows);
-      await uploadCsv(
-        storagePath,
-        rowsToCsv([...LOCALIZED_CSV_COLUMNS], localizedRows),
+  if (!options?.forceRefresh) {
+    const cachedCsv = await downloadTodayCsv(storagePath);
+    if (cachedCsv) {
+      const { rows } = csvToRows(cachedCsv);
+      const hasKoreanSchema = rows.some(
+        (row) => row.name_en != null && row.name_en !== '',
       );
-      const pokemonKo = await resolvePokemonNameKo(pokemonEn);
-      return {
+      const pokemonEn =
+        String(rows[0]?.pokemon_en ?? rows[0]?.pokemon ?? pokemonSlug) ||
+        pokemonSlug;
+
+      // 예전 영문 CSV 캐시면 한글 번역본으로 한 번 갱신
+      if (!hasKoreanSchema) {
+        const localizedRows = await localizeBattleRows(rows);
+        await uploadCsv(
+          storagePath,
+          rowsToCsv([...LOCALIZED_CSV_COLUMNS], localizedRows),
+        );
+        const pokemonKo = await resolvePokemonNameKo(pokemonEn);
+        return {
+          cached: true,
+          date,
+          pokemon: pokemonEn,
+          pokemonKo,
+          showdownId: pokemonSlug,
+          format,
+          columns: [...LOCALIZED_CSV_COLUMNS],
+          rows: localizedRows,
+          byCategory: groupBattleByCategory(localizedRows, 10),
+          storagePath,
+        };
+      }
+
+      return toLocalizedResult(rows, {
         cached: true,
         date,
-        pokemon: pokemonEn,
-        pokemonKo,
+        pokemonEn,
         showdownId: pokemonSlug,
         format,
-        columns: [...LOCALIZED_CSV_COLUMNS],
-        rows: localizedRows,
-        byCategory: groupBattleByCategory(localizedRows, 10),
         storagePath,
-      };
+      });
     }
-
-    return toLocalizedResult(rows, {
-      cached: true,
-      date,
-      pokemonEn,
-      showdownId: pokemonSlug,
-      format,
-      storagePath,
-    });
+  } else {
+    await deleteStorageFiles([storagePath]);
   }
 
   const fresh = await fetchChampionsBattleData(format, pokemonSlug);

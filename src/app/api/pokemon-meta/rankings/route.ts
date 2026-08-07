@@ -14,7 +14,7 @@ export const maxDuration = 300;
  * GET /api/pokemon-meta/rankings
  * - 기본: 캐시된 Doubles/Singles position 1~15 (오늘 → 어제 → 최근 파일)
  * - 오늘자 캐시가 없으면 백그라운드에서 재생성
- * - ?rebuild=1 : API에서 랭킹 재생성 (관리/최초용)
+ * - ?rebuild=1 : pokemon API(`/api/pokemon/:slug`) battle_summary 기준 재생성
  */
 export async function GET(request: NextRequest) {
   try {

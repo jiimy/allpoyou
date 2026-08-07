@@ -12,6 +12,7 @@ import {
   type ItemGroupId,
 } from '@/constants/itemCategoryGroups';
 import { useItemPickStore } from '@/store/ItemPickStore';
+import { usePochampsStore } from '@/store/PochampsStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import type { ItemKr } from '@/types/item';
 import itemsData from '../../../public/data/item.json';
@@ -25,13 +26,19 @@ function isHeldItem(item: ItemKr): boolean {
   return getItemGroupId(item.categoryKo) === 'held';
 }
 
+function isPochamsItem(item: ItemKr): boolean {
+  return item.availableTypes?.includes('poChams') === true;
+}
+
 function ItemCard({
   item,
   selectable,
+  showBattlePoint,
   onSelect,
 }: {
   item: ItemKr;
   selectable: boolean;
+  showBattlePoint: boolean;
   onSelect?: () => void;
 }) {
   const [imageError, setImageError] = useState(false);
@@ -48,6 +55,13 @@ function ItemCard({
       onSelect?.();
     }
   };
+
+  const priceLabel =
+    item.cost > 0 ? `${item.cost.toLocaleString()}원` : '가격 없음';
+  const battlePointLabel =
+    showBattlePoint && item.battlePoint != null
+      ? `BP ${item.battlePoint.toLocaleString()}`
+      : '';
 
   return (
     <article
@@ -73,7 +87,9 @@ function ItemCard({
       </div>
       <h3 className={s.name}>{item.nameKo}</h3>
       <p className={s.meta}>
-        #{item.id} · {item.cost > 0 ? `${item.cost.toLocaleString()}원` : '가격 없음'}
+        {/* #{item.id} ·  */}
+        {isPochamsItem(item) ? '' : `${priceLabel} · `}
+        {battlePointLabel}
       </p>
       <p className={s.description}>{item.description}</p>
     </article>
@@ -87,6 +103,9 @@ export default function ItemList() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const setPendingItem = useItemPickStore((state) => state.setPendingItem);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const pochampsEnabled = usePochampsStore((state) => state.enabled);
+  const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
+  const pochampsActive = pochampsHydrated && pochampsEnabled;
 
   const handleItemSelect = (item: ItemKr) => {
     setPendingItem(item);
@@ -97,10 +116,15 @@ export default function ItemList() {
     const activeCategories =
       ITEM_GROUPS.find((group) => group.id === activeGroup)?.categories ?? null;
 
-    const byCategory =
+    let byCategory =
       activeGroup === 'all'
         ? items
         : items.filter((item) => activeCategories?.includes(item.categoryKo));
+
+    // 포챔스 ON + 지참/전투: availableTypes에 poChams가 있는 항목만
+    if (pochampsActive && activeGroup === 'held') {
+      byCategory = byCategory.filter(isPochamsItem);
+    }
 
     const q = keyword.trim();
     if (!q) return byCategory;
@@ -112,7 +136,7 @@ export default function ItemList() {
         item.description.includes(q) ||
         item.name.toLowerCase().includes(qLower),
     );
-  }, [activeGroup, keyword]);
+  }, [activeGroup, keyword, pochampsActive]);
 
   const visibleItems = useMemo(
     () => filteredItems.slice(0, visibleCount),
@@ -121,14 +145,12 @@ export default function ItemList() {
 
   const hasMore = visibleCount < filteredItems.length;
 
-  const [prevGroup, setPrevGroup] = useState(activeGroup);
-  const [prevKeyword, setPrevKeyword] = useState(keyword);
-  if (prevGroup !== activeGroup) {
-    setPrevGroup(activeGroup);
-    setVisibleCount(PAGE_SIZE);
-  }
-  if (prevKeyword !== keyword) {
-    setPrevKeyword(keyword);
+  const [prevFilterKey, setPrevFilterKey] = useState(
+    `${activeGroup}\u0000${keyword}\u0000${pochampsActive}`,
+  );
+  const filterKey = `${activeGroup}\u0000${keyword}\u0000${pochampsActive}`;
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setVisibleCount(PAGE_SIZE);
   }
 
@@ -139,7 +161,9 @@ export default function ItemList() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredItems.length));
+          setVisibleCount((prev) =>
+            Math.min(prev + PAGE_SIZE, filteredItems.length),
+          );
         }
       },
       { rootMargin: '240px' },
@@ -172,7 +196,9 @@ export default function ItemList() {
       </div>
 
       <p className={s.resultCount}>
-        {filteredItems.length.toLocaleString()}개 / {items.length.toLocaleString()}개
+        {filteredItems.length.toLocaleString()}개 /{' '}
+        {items.length.toLocaleString()}개
+        {pochampsActive && activeGroup === 'held' ? ' · 포챔스 - 추가중..' : ''}
       </p>
 
       <div className={s.grid}>
@@ -182,13 +208,16 @@ export default function ItemList() {
               key={item.id}
               item={item}
               selectable={activeGroup === 'held' || isHeldItem(item)}
+              showBattlePoint={pochampsActive}
               onSelect={() => handleItemSelect(item)}
             />
           ))
         ) : (
           <p className={s.empty}>조건에 맞는 도구가 없습니다.</p>
         )}
-        {hasMore ? <div ref={sentinelRef} className={s.sentinel} aria-hidden /> : null}
+        {hasMore ? (
+          <div ref={sentinelRef} className={s.sentinel} aria-hidden />
+        ) : null}
       </div>
     </div>
   );

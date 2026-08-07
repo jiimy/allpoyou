@@ -123,6 +123,12 @@ export function getItemGroupId(categoryKo: string): ItemGroupId {
 export const ITEM_SPRITE_BASE =
   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items';
 
+const FAIRY_FEATHER_SPRITE_URL =
+  'https://etbddsmzchzwmidplocy.supabase.co/storage/v1/object/public/pokemon_champions/images/fairy-father.png';
+
 export function getItemSpriteUrl(name: string) {
+  if (name === 'fairy_feather') {
+    return FAIRY_FEATHER_SPRITE_URL;
+  }
   return `${ITEM_SPRITE_BASE}/${name}.png`;
 }

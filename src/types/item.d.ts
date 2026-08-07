@@ -15,4 +15,8 @@ export type ItemKr = {
   categoryKo: string;
   /** 검색/선택 목록에서 제외 여부 */
   except?: boolean;
+  /** 포챔스 배틀포인트 (있는 경우) */
+  battlePoint?: number;
+  /** 사용 가능 출처 (예: poChams) */
+  availableTypes?: string[];
 };

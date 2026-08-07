@@ -18,16 +18,21 @@ type RouteContext = {
  *
  * 예: /api/battle/Doubles/garchomp
  *     /api/battle/Singles/garchomp
+ *     /api/battle/Single/archaludon  (Single/Double 도 허용)
  *
  * - 한국(Asia/Seoul) 날짜 기준 하루 1회만 championsbattledata를 호출하고
- *   rows → CSV 변환 후 Supabase Storage(`battle-data`)에 저장합니다.
+ *   rows → CSV 변환 후 Supabase Storage에 저장합니다.
  * - 같은 날 이후 요청은 Storage CSV를 재사용합니다.
+ * - ?refresh=1 이면 당일 CSV를 지우고 다시 받습니다.
  */
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { format: rawFormat, pokemon: rawPokemon } = await context.params;
     const format = normalizeBattleFormat(rawFormat);
     const pokemonSlug = normalizePokemonSlug(rawPokemon);
+    const forceRefresh =
+      request.nextUrl.searchParams.get('refresh') === '1' ||
+      request.nextUrl.searchParams.get('force') === '1';
 
     if (!format) {
       return Response.json(
@@ -43,7 +48,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    const data = await getDailyBattleData(format, pokemonSlug);
+    const data = await getDailyBattleData(format, pokemonSlug, {
+      forceRefresh,
+    });
 
     return Response.json(data, {
       headers: {

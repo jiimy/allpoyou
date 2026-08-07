@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
         hostname: 'raw.githubusercontent.com',
         pathname: '/PokeAPI/sprites/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'etbddsmzchzwmidplocy.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
   sassOptions: {
