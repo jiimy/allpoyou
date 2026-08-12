@@ -11751,7 +11751,7 @@
     {
     "id": 1678,
     "name": "manectite",
-    "nameKo": "썯너볼트나이트",
+    "nameKo": "썬더볼트나이트",
     "description": "썬더볼트에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "held-items",
@@ -11772,8 +11772,8 @@
   },
     {
     "id": 1680,
-    "name": "fairy_feather",
-    "nameKo": "meowsticite",
+    "name": "meowsticite",
+    "nameKo": "냐오닉스나이트",
     "description": "냐오닉스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "held-items",
