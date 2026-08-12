@@ -5911,7 +5911,9 @@
     "description": "팬텀에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 696,
@@ -5920,7 +5922,9 @@
     "description": "가디안에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 697,
@@ -5929,7 +5933,9 @@
     "description": "전룡에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 698,
@@ -5938,7 +5944,9 @@
     "description": "이상해꽃에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 699,
@@ -5947,7 +5955,9 @@
     "description": "리자몽에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 700,
@@ -5956,7 +5966,9 @@
     "description": "거북왕에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 701,
@@ -5983,7 +5995,9 @@
     "description": "번치코에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 704,
@@ -5992,7 +6006,9 @@
     "description": "요가램에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 705,
@@ -6001,7 +6017,9 @@
     "description": "헬가에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 706,
@@ -6010,7 +6028,9 @@
     "description": "보스로라에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 707,
@@ -6019,7 +6039,9 @@
     "description": "다크펫에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 708,
@@ -6028,7 +6050,9 @@
     "description": "마기라스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 709,
@@ -6037,7 +6061,9 @@
     "description": "핫삼에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 710,
@@ -6046,7 +6072,9 @@
     "description": "쁘사이저에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 711,
@@ -6055,7 +6083,9 @@
     "description": "프테라에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 712,
@@ -6064,7 +6094,9 @@
     "description": "루카리오에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 713,
@@ -6073,7 +6105,9 @@
     "description": "눈설왕에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 714,
@@ -6082,7 +6116,9 @@
     "description": "캥카에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 715,
@@ -6091,7 +6127,9 @@
     "description": "갸라도스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 716,
@@ -6100,7 +6138,9 @@
     "description": "앱솔에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 717,
@@ -6109,7 +6149,9 @@
     "description": "리자몽에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 718,
@@ -6118,7 +6160,9 @@
     "description": "후딘에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 719,
@@ -6127,7 +6171,9 @@
     "description": "헤라크로스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 720,
@@ -6136,7 +6182,9 @@
     "description": "입치트에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 721,
@@ -6154,7 +6202,9 @@
     "description": "한카리아스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 723,
@@ -6640,7 +6690,9 @@
     "description": "대짱이에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 794,
@@ -6649,7 +6701,9 @@
     "description": "나무킹에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 795,
@@ -6658,7 +6712,9 @@
     "description": "깜까미에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 796,
@@ -6667,7 +6723,9 @@
     "description": "파비코리에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 797,
@@ -6676,7 +6734,9 @@
     "description": "엘레이드에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 798,
@@ -6685,7 +6745,9 @@
     "description": "다부니에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 799,
@@ -6694,7 +6756,9 @@
     "description": "메타그로스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 800,
@@ -6703,7 +6767,9 @@
     "description": "샤크니아에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 801,
@@ -6712,7 +6778,9 @@
     "description": "야도란에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 802,
@@ -6721,7 +6789,9 @@
     "description": "강철톤에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 803,
@@ -6730,7 +6800,9 @@
     "description": "피죤투에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 804,
@@ -6739,7 +6811,9 @@
     "description": "얼음귀신에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 805,
@@ -6775,7 +6849,9 @@
     "description": "폭타에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 809,
@@ -6784,7 +6860,9 @@
     "description": "이어롭에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 810,
@@ -6802,7 +6880,9 @@
     "description": "독침붕에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 812,
@@ -6811,7 +6891,9 @@
     "description": "마폭시에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 814,
@@ -11464,7 +11546,9 @@
     "description": "라이츄에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 1660,
@@ -11473,7 +11557,9 @@
     "description": "라이츄에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
     "cost": 0,
     "categoryEn": "mega-stones",
-    "categoryKo": "mega-stones"
+    "categoryKo": "mega-stones",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 1661,
@@ -11483,8 +11569,359 @@
     "cost": 0,
     "categoryEn": "held-items",
     "categoryKo": "held-items",
-        "battlePoint": 700,
+    "battlePoint": 700,
     "availableTypes": ["poChams"]
-
+  },
+  {
+    "id": 1662,
+    "name": "chandelurite",
+    "nameKo": "샹델라나이트",
+    "description": "샹델라에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1663,
+    "name": "chesnaughtite",
+    "nameKo": "브리가론나이트",
+    "description": "브리가론에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1664,
+    "name": "chimechite",
+    "nameKo": "치렁나이트",
+    "description": "치렁에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1665,
+    "name": "clefablite",
+    "nameKo": "픽시나이트",
+    "description": "픽시에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1666,
+    "name": "crabominite",
+    "nameKo": "모단단게나이트",
+    "description": "모단단게에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1667,
+    "name": "dragoninite",
+    "nameKo": "망나뇽",
+    "description": "망나뇽에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1668,
+    "name": "drampanite",
+    "nameKo": "할비롱나이트",
+    "description": "할비롱에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1669,
+    "name": "emboarite",
+    "nameKo": "염무왕나이트",
+    "description": "염무왕에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1670,
+    "name": "excadrite",
+    "nameKo": "몰드류나이트",
+    "description": "몰드류에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1671,
+    "name": "feraligite",
+    "nameKo": "장크로다일나이트",
+    "description": "장크로다일에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1672,
+    "name": "floettite",
+    "nameKo": "플라엣테나이트",
+    "description": "플라엣테에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1673,
+    "name": "galladite",
+    "nameKo": "눈여아나이트",
+    "description": "눈여아에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1674,
+    "name": "glimmoranite",
+    "nameKo": "킬라플로르나이트",
+    "description": "킬라플로르에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1675,
+    "name": "golurkite",
+    "nameKo": "골루그나이트",
+    "description": "골루그에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1676,
+    "name": "greninjite",
+    "nameKo": "개굴닌자나이트",
+    "description": "개굴닌자에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1677,
+    "name": "hawluchanite",
+    "nameKo": "루차불나이트",
+    "description": "루차불에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1678,
+    "name": "manectite",
+    "nameKo": "썯너볼트나이트",
+    "description": "썬더볼트에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1679,
+    "name": "meganiumite",
+    "nameKo": "메가니움나이트",
+    "description": "메가니움에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1680,
+    "name": "fairy_feather",
+    "nameKo": "meowsticite",
+    "description": "냐오닉스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1681,
+    "name": "scovillainite",
+    "nameKo": "스코빌런나이트",
+    "description": "스코빌런에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1682,
+    "name": "skarmorite",
+    "nameKo": "무장조나이트",
+    "description": "무장조에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "starminite",
+    "nameKo": "아쿠스타나이트",
+    "description": "아쿠스타에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1675,
+    "name": "victreebelite",
+    "nameKo": "우츠보트나이트",
+    "description": "우츠보트에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+  {
+    "id": 1676,
+    "name": "staraptorite",
+    "nameKo": "찌르호크나이트",
+    "description": "찌르호크에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "scolipedite",
+    "nameKo": "펜드라나이트",
+    "description": "펜드라에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "scraftite",
+    "nameKo": "곤율거니나이트",
+    "description": "곤율거니에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "eelektrossite",
+    "nameKo": "저리더프나이트",
+    "description": "저리더프에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "pyroarite",
+    "nameKo": "화염레오나이트",
+    "description": "화염레오에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "malamarite",
+    "nameKo": "칼라마네로나이트",
+    "description": "칼라마네로에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "barbaraclite",
+    "nameKo": "거북손데스나이트",
+    "description": "거북손데스에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "dragalgite",
+    "nameKo": "드래캄나이트",
+    "description": "드래캄에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
+  },
+    {
+    "id": 1674,
+    "name": "falinksite",
+    "nameKo": "대여르나이트",
+    "description": "대여르에게 지니게 하면 배틀할 때 메가진화할 수 있는 신비한 메가스톤의 일종.",
+    "cost": 0,
+    "categoryEn": "held-items",
+    "categoryKo": "held-items",
+    "battlePoint": 2000,
+    "availableTypes": ["poChams"]
   }
-]
+] 
