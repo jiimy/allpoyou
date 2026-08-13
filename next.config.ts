@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         hostname: 'etbddsmzchzwmidplocy.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        protocol: 'https',
+        hostname: 's-stats-platform-cdn.op.gg',
+        pathname: '/pokemon-champions/images/**',
+      },
     ],
   },
   sassOptions: {

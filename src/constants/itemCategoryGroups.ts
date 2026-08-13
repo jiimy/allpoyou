@@ -123,12 +123,25 @@ export function getItemGroupId(categoryKo: string): ItemGroupId {
 export const ITEM_SPRITE_BASE =
   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items';
 
+/** PokeAPI 스프라이트 404 시 사용할 OP.GG 포챔스 아이템 CDN */
+export const ITEM_SPRITE_OPGG_BASE =
+  'https://s-stats-platform-cdn.op.gg/pokemon-champions/images/items';
+
 const FAIRY_FEATHER_SPRITE_URL =
   'https://etbddsmzchzwmidplocy.supabase.co/storage/v1/object/public/pokemon_champions/images/fairy-father.png';
+
+/** OP.GG 경로용 슬러그: sitrus_berry → sitrus-berry */
+export function toOpggItemSlug(name: string): string {
+  return name.trim().toLowerCase().replace(/_/g, '-');
+}
 
 export function getItemSpriteUrl(name: string) {
   if (name === 'fairy_feather') {
     return FAIRY_FEATHER_SPRITE_URL;
   }
   return `${ITEM_SPRITE_BASE}/${name}.png`;
+}
+
+export function getItemSpriteFallbackUrl(name: string) {
+  return `${ITEM_SPRITE_OPGG_BASE}/${toOpggItemSlug(name)}.png`;
 }

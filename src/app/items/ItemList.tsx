@@ -7,6 +7,7 @@ import { FilterButton } from '@/components/button/Button';
 import StickySearchBar from '@/components/searchBar/StickySearchBar';
 import {
   getItemGroupId,
+  getItemSpriteFallbackUrl,
   getItemSpriteUrl,
   ITEM_GROUPS,
   type ItemGroupId,
@@ -41,6 +42,9 @@ function ItemCard({
   showBattlePoint: boolean;
   onSelect?: () => void;
 }) {
+  const primarySrc = getItemSpriteUrl(item.name);
+  const fallbackSrc = getItemSpriteFallbackUrl(item.name);
+  const [src, setSrc] = useState(primarySrc);
   const [imageError, setImageError] = useState(false);
 
   const handleClick = () => {
@@ -54,6 +58,14 @@ function ItemCard({
       e.preventDefault();
       onSelect?.();
     }
+  };
+
+  const handleImageError = () => {
+    if (src !== fallbackSrc) {
+      setSrc(fallbackSrc);
+      return;
+    }
+    setImageError(true);
   };
 
   const priceLabel =
@@ -76,12 +88,12 @@ function ItemCard({
           <span className={s.imageFallback}>이미지 없음</span>
         ) : (
           <Image
-            src={getItemSpriteUrl(item.name)}
+            src={src}
             alt={item.nameKo}
             width={48}
             height={48}
             className={s.image}
-            onError={() => setImageError(true)}
+            onError={handleImageError}
           />
         )}
       </div>
