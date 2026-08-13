@@ -210,7 +210,7 @@ export default function ItemList() {
       <p className={s.resultCount}>
         {filteredItems.length.toLocaleString()}개 /{' '}
         {items.length.toLocaleString()}개
-        {pochampsActive && activeGroup === 'held' ? ' · 포챔스 - 추가중..' : ''}
+        {pochampsActive && activeGroup === 'held' ? ' · 포챔스' : ''}
       </p>
 
       <div className={s.grid}>
