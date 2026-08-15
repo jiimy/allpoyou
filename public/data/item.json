@@ -1030,7 +1030,9 @@
     "description": "포켓몬에게 지니게 하면 마비를 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 127,
@@ -1039,7 +1041,9 @@
     "description": "포켓몬에게 지니게 하면 잠듦을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 128,
@@ -1048,7 +1052,9 @@
     "description": "포켓몬에게 지니게 하면 독을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 129,
@@ -1057,7 +1063,9 @@
     "description": "포켓몬에게 지니게 하면 화상을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 130,
@@ -1066,7 +1074,9 @@
     "description": "포켓몬에게 지니게 하면 얼음을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 131,
@@ -1075,7 +1085,9 @@
     "description": "포켓몬에게 지니게 하면 PP를 10만큼 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 132,
@@ -1084,7 +1096,9 @@
     "description": "포켓몬에게 지니게 하면 HP를 10만큼 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 133,
@@ -1093,7 +1107,9 @@
     "description": "포켓몬에게 지니게 하면 혼란을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 134,
@@ -1102,7 +1118,9 @@
     "description": "포켓몬에게 지니게 하면 모든 상태 이상을 회복한다.",
     "cost": 80,
     "categoryEn": "medicine",
-    "categoryKo": "medicine"
+    "categoryKo": "medicine",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 135,
@@ -1111,7 +1129,9 @@
     "description": " 자신의 체력이 1/2이하일 때. 최대 체력의 1/4만큼을 회복한다.",
     "cost": 80,
     "categoryEn": "held-items",
-    "categoryKo": "held-items"
+    "categoryKo": "held-items",
+    "battlePoint": 0,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 136,
@@ -1345,7 +1365,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 불꽃 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 162,
@@ -1354,7 +1376,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 물 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 163,
@@ -1363,7 +1387,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 전기 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 164,
@@ -1372,7 +1398,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 풀 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 165,
@@ -1381,7 +1409,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 얼음 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 166,
@@ -1390,7 +1420,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 격투 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 167,
@@ -1399,7 +1431,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 독 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 168,
@@ -1408,7 +1442,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 땅 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 169,
@@ -1417,7 +1453,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 비행 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 170,
@@ -1426,7 +1464,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 에스퍼 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 171,
@@ -1435,7 +1475,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 벌레 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 172,
@@ -1444,7 +1486,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 바위 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 173,
@@ -1453,7 +1497,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 고스트 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 174,
@@ -1462,7 +1508,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 드래곤 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 175,
@@ -1471,7 +1519,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 악 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 176,
@@ -1480,7 +1530,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 강철 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 177,
@@ -1489,7 +1541,9 @@
     "description": "포켓몬에게 지니게 하면 노말 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 178,
@@ -6213,7 +6267,9 @@
     "description": "포켓몬에게 지니게 하면 효과가 뛰어난 페어리 기술을 당했을 때 위력이 약해진다.",
     "cost": 80,
     "categoryEn": "type-protection",
-    "categoryKo": "type-protection"
+    "categoryKo": "type-protection",
+    "battlePoint": 400,
+    "availableTypes": ["poChams"]
   },
   {
     "id": 724,
