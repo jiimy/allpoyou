@@ -10,6 +10,16 @@
   gap: 8px;
 }
 
+.subFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
 .filterBtnActive {
   border-color: #333;
   background: #333;

@@ -38,3 +38,6 @@ select {
     outline: none;
   }
 }
+summary {
+  cursor: pointer;
+}

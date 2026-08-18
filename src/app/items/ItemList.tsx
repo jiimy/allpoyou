@@ -9,8 +9,11 @@ import {
   getItemGroupId,
   getItemSpriteFallbackUrl,
   getItemSpriteUrl,
+  getPochamsHeldSubGroupId,
   ITEM_GROUPS,
+  POCHAMS_HELD_SUB_GROUPS,
   type ItemGroupId,
+  type PochamsHeldSubGroupId,
 } from '@/constants/itemCategoryGroups';
 import { useItemPickStore } from '@/store/ItemPickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
@@ -111,6 +114,8 @@ function ItemCard({
 export default function ItemList() {
   const [keyword, setKeyword] = useState('');
   const [activeGroup, setActiveGroup] = useState<ItemGroupId>('all');
+  const [heldSubGroup, setHeldSubGroup] =
+    useState<PochamsHeldSubGroupId>('all');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const setPendingItem = useItemPickStore((state) => state.setPendingItem);
@@ -118,24 +123,40 @@ export default function ItemList() {
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
   const pochampsActive = pochampsHydrated && pochampsEnabled;
+  const showHeldSubTabs = pochampsActive && activeGroup === 'held';
 
   const handleItemSelect = (item: ItemKr) => {
     setPendingItem(item);
     setTeamModalOpen(true);
   };
 
+  const handleMainGroupChange = (groupId: ItemGroupId) => {
+    setActiveGroup(groupId);
+    if (groupId !== 'held') setHeldSubGroup('all');
+  };
+
   const filteredItems = useMemo(() => {
-    const activeCategories =
-      ITEM_GROUPS.find((group) => group.id === activeGroup)?.categories ?? null;
+    let byCategory: ItemKr[];
 
-    let byCategory =
-      activeGroup === 'all'
-        ? items
-        : items.filter((item) => activeCategories?.includes(item.categoryKo));
-
-    // 포챔스 ON + 지참/전투: availableTypes에 poChams가 있는 항목만
     if (pochampsActive && activeGroup === 'held') {
-      byCategory = byCategory.filter(isPochamsItem);
+      // 포챔스 ON + 지참/전투: availableTypes에 poChams가 있는 항목 전체
+      byCategory = items.filter(isPochamsItem);
+      if (heldSubGroup !== 'all') {
+        byCategory = byCategory.filter(
+          (item) => getPochamsHeldSubGroupId(item.nameKo) === heldSubGroup,
+        );
+      }
+    } else {
+      const activeCategories =
+        ITEM_GROUPS.find((group) => group.id === activeGroup)?.categories ??
+        null;
+
+      byCategory =
+        activeGroup === 'all'
+          ? items
+          : items.filter((item) =>
+              activeCategories?.includes(item.categoryKo),
+            );
     }
 
     const q = keyword.trim();
@@ -148,7 +169,7 @@ export default function ItemList() {
         item.description.includes(q) ||
         item.name.toLowerCase().includes(qLower),
     );
-  }, [activeGroup, keyword, pochampsActive]);
+  }, [activeGroup, heldSubGroup, keyword, pochampsActive]);
 
   const visibleItems = useMemo(
     () => filteredItems.slice(0, visibleCount),
@@ -158,9 +179,9 @@ export default function ItemList() {
   const hasMore = visibleCount < filteredItems.length;
 
   const [prevFilterKey, setPrevFilterKey] = useState(
-    `${activeGroup}\u0000${keyword}\u0000${pochampsActive}`,
+    `${activeGroup}\u0000${heldSubGroup}\u0000${keyword}\u0000${pochampsActive}`,
   );
-  const filterKey = `${activeGroup}\u0000${keyword}\u0000${pochampsActive}`;
+  const filterKey = `${activeGroup}\u0000${heldSubGroup}\u0000${keyword}\u0000${pochampsActive}`;
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
     setVisibleCount(PAGE_SIZE);
@@ -200,17 +221,35 @@ export default function ItemList() {
             key={group.id}
             type="button"
             active={activeGroup === group.id}
-            onClick={() => setActiveGroup(group.id)}
+            onClick={() => handleMainGroupChange(group.id)}
           >
             {group.label}
           </FilterButton>
         ))}
       </div>
 
+      {showHeldSubTabs ? (
+        <div className={s.subFilters}>
+          {POCHAMS_HELD_SUB_GROUPS.map((group) => (
+            <FilterButton
+              key={group.id}
+              type="button"
+              active={heldSubGroup === group.id}
+              onClick={() => setHeldSubGroup(group.id)}
+            >
+              {group.label}
+            </FilterButton>
+          ))}
+        </div>
+      ) : null}
+
       <p className={s.resultCount}>
         {filteredItems.length.toLocaleString()}개 /{' '}
-        {items.length.toLocaleString()}개
-        {pochampsActive && activeGroup === 'held' ? ' · 포챔스' : ''}
+        {showHeldSubTabs
+          ? items.filter(isPochamsItem).length.toLocaleString()
+          : items.length.toLocaleString()}
+        개
+        {showHeldSubTabs ? ' · 포챔스' : ''}
       </p>
 
       <div className={s.grid}>

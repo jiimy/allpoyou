@@ -120,6 +120,31 @@ export function getItemGroupId(categoryKo: string): ItemGroupId {
   return categoryToGroup.get(categoryKo) ?? 'other';
 }
 
+/** 포챔스 ON + 지참/전투 하위 분류 */
+export type PochamsHeldSubGroupId = 'all' | 'tool' | 'mega' | 'berry';
+
+export type PochamsHeldSubGroup = {
+  id: PochamsHeldSubGroupId;
+  label: string;
+};
+
+export const POCHAMS_HELD_SUB_GROUPS: PochamsHeldSubGroup[] = [
+  { id: 'all', label: '전체' },
+  { id: 'tool', label: '도구' },
+  { id: 'mega', label: '메가스톤' },
+  { id: 'berry', label: '열매' },
+];
+
+/** nameKo 끝글자 기준: 나이트→메가스톤, 열매→열매, 그 외→도구 */
+export function getPochamsHeldSubGroupId(nameKo: string): Exclude<
+  PochamsHeldSubGroupId,
+  'all'
+> {
+  if (nameKo.endsWith('나이트')) return 'mega';
+  if (nameKo.endsWith('열매')) return 'berry';
+  return 'tool';
+}
+
 export const ITEM_SPRITE_BASE =
   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items';
 

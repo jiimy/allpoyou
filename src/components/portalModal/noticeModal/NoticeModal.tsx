@@ -19,7 +19,7 @@ import s from './noticeModal.module.scss';
  * 새 업데이트마다 이 값과 안내 문구를 함께 수정하세요.
  * "다음 업데이트 전까지 보지 않기"는 이 버전 기준으로 숨깁니다.
  */
-const CURRENT_UPDATE_VERSION = '2026-08-03';
+const CURRENT_UPDATE_VERSION = '2026-08-18';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -79,24 +79,30 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
         <ul className={s.list}>
           <li className={s.item}>
-            26.08.03 - 타입 상성 추천의 n번째 포켓몬 선택의 각 항목에서 바로 팀에서 제거하는 기능 추가. 
+            26.08.18 - 포챔스에서 사용가능한 도구 추가. 
             <span className={s.subText}>
-              - 위로 올라가지 않고도 팀에서 포켓몬 제거 가능.
+              - 포챔스데이터 상태일때 도구 페이지에서 지참/전투 탭에 추가. 
             </span>
-          </li>
-          <li className={s.item}>
-            26.08.03 - 타입 상성 추천시 현재 포켓몬이 아닌 파티 전체의 타입으로도 추천할수있게 추가.
-            <span className={s.subText}>
-              - (물라오스 - 팬텀 - 오롱털 순서일때 오롱털의 추천 상성 타입이 땅, 불꽃뿐이라 포켓몬 추천 범위가 좁아 파티 전체까지 확장할수있게)
-            </span>
-          </li>
-          <li className={s.item}>
-            타입 상성표에서 공격 상성 추가
           </li>
         </ul>
         <details>
           <summary>지난 업데이트 내역</summary>
           <ul className={s.list}>
+            <li className={s.item}>
+              26.08.03 - 타입 상성 추천의 n번째 포켓몬 선택의 각 항목에서 바로 팀에서 제거하는 기능 추가.
+              <span className={s.subText}>
+                - 위로 올라가지 않고도 팀에서 포켓몬 제거 가능.
+              </span>
+            </li>
+            <li className={s.item}>
+              26.08.03 - 타입 상성 추천시 현재 포켓몬이 아닌 파티 전체의 타입으로도 추천할수있게 추가.
+              <span className={s.subText}>
+                - (물라오스 - 팬텀 - 오롱털 순서일때 오롱털의 추천 상성 타입이 땅, 불꽃뿐이라 포켓몬 추천 범위가 좁아 파티 전체까지 확장할수있게)
+              </span>
+            </li>
+            <li className={s.item}>
+              26.08.03 - 타입 상성표에서 공격 상성 추가
+            </li>
             <li className={s.item}>
               26.07.29 - 포챔스 배울 수 있는 기술 반영
               <span className={s.subText}>
