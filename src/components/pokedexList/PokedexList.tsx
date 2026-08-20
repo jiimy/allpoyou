@@ -261,7 +261,7 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
           ? `${filteredPokemons.length.toLocaleString()}마리 / ${sourcePokemons.length.toLocaleString()}마리`
           : `${filteredPokemons.length.toLocaleString()}마리${
               pochampsActive ? ' · 포챔스' : ''
-            }`}
+            } / ${sourcePokemons.length.toLocaleString()}마리`}
       </p>
 
       <div className={s.grid}>
