@@ -4,8 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   MOVE_DAMAGE_CLASS_OPTIONS,
+  MOVE_SORT_OPTIONS,
   MOVE_TYPE_OPTIONS,
   type MoveDamageClassFilter,
+  type MoveSortDirection,
+  type MoveSortKey,
 } from '@/constants/moveFilters';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import type { MoveDbEntry } from '@/types/move';
@@ -13,7 +16,7 @@ import {
   formatMoveStat,
   getDamageClassLabel,
   getMoveTypeKo,
-  sortMovesByKoreanName,
+  sortMoves,
 } from '@/utils/moveDisplay';
 
 import s from './moves.module.scss';
@@ -151,12 +154,24 @@ export default function MoveList({
   );
   const [pokemonMovesDamageClass, setPokemonMovesDamageClass] =
     useState<MoveDamageClassFilter>('all');
+  const [sortKey, setSortKey] = useState<MoveSortKey>('name');
+  const [sortDirection, setSortDirection] = useState<MoveSortDirection>('asc');
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pokemonMovesSentinelRef = useRef<HTMLDivElement>(null);
 
+  const handleSortClick = (key: MoveSortKey) => {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+    setVisibleCount(PAGE_SIZE);
+  };
+
   const sortedMoves = useMemo(
-    () => sortMovesByKoreanName(moves),
-    [moves],
+    () => sortMoves(moves, sortKey, sortDirection),
+    [moves, sortKey, sortDirection],
   );
 
   const visibleMoves = useMemo(
@@ -168,7 +183,7 @@ export default function MoveList({
 
   const filteredPokemonMoves = useMemo(
     () =>
-      sortMovesByKoreanName(
+      sortMoves(
         pokemonMoves.filter((move) => {
           if (pokemonMovesType !== 'all' && move.type !== pokemonMovesType) {
             return false;
@@ -181,8 +196,16 @@ export default function MoveList({
           }
           return true;
         }),
+        sortKey,
+        sortDirection,
       ),
-    [pokemonMoves, pokemonMovesType, pokemonMovesDamageClass],
+    [
+      pokemonMoves,
+      pokemonMovesType,
+      pokemonMovesDamageClass,
+      sortKey,
+      sortDirection,
+    ],
   );
 
   const visiblePokemonMoves = useMemo(
@@ -277,10 +300,10 @@ export default function MoveList({
                 style={
                   activeType === opt.value
                     ? {
-                        background: TYPE_COLOR[opt.label] ?? '#999',
-                        borderColor: TYPE_COLOR[opt.label] ?? '#999',
-                        color: '#fff',
-                      }
+                      background: TYPE_COLOR[opt.label] ?? '#999',
+                      borderColor: TYPE_COLOR[opt.label] ?? '#999',
+                      color: '#fff',
+                    }
                     : undefined
                 }
                 onClick={() => onTypeChange(opt.value)}
@@ -290,21 +313,50 @@ export default function MoveList({
             ))}
           </div>
         </div>
-        <div className={s.filterGroup}>
-          <span className={s.filterLabel}>분류</span>
-          <div className={s.filterRow}>
-            {MOVE_DAMAGE_CLASS_OPTIONS.map((opt) => (
-              <FilterButton
-                key={opt.value}
-                type="button"
-                active={activeDamageClass === opt.value}
-                onClick={() => onDamageClassChange(opt.value)}
-              >
-                {opt.label}
-              </FilterButton>
-            ))}
+        <div className="flex justify-between">
+          <div className={s.filterGroup}>
+            <span className={s.filterLabel}>분류</span>
+            <div className={s.filterRow}>
+              {MOVE_DAMAGE_CLASS_OPTIONS.map((opt) => (
+                <FilterButton
+                  key={opt.value}
+                  type="button"
+                  variant="small"
+                  active={activeDamageClass === opt.value}
+                  onClick={() => onDamageClassChange(opt.value)}
+                >
+                  {opt.label}
+                </FilterButton>
+              ))}
+            </div>
+          </div>
+          <div className={s.filterGroup}>
+            <span className={s.filterLabel}>정렬</span>
+            <div className={s.filterRow}>
+              {MOVE_SORT_OPTIONS.map((opt) => {
+                const active = sortKey === opt.value;
+                const arrow = active
+                  ? sortDirection === 'asc'
+                    ? ' ↑'
+                    : ' ↓'
+                  : '';
+                return (
+                  <FilterButton
+                    key={opt.value}
+                    type="button"
+                    variant="small"
+                    active={active}
+                    onClick={() => handleSortClick(opt.value)}
+                  >
+                    {opt.label}
+                    {arrow}
+                  </FilterButton>
+                );
+              })}
+            </div>
           </div>
         </div>
+
         {canShowLearnablePokemon ? (
           <label className={s.learnableCheck}>
             <input
@@ -371,7 +423,7 @@ export default function MoveList({
       ) : moves.length === 0 ? (
         <p className={s.empty}>조건에 맞는 기술이 없습니다.</p>
       ) : (
-            <ul className={s.list}>
+        <ul className={s.list}>
           {visibleMoves.map((move) => (
             <MoveRow
               key={move.id}
@@ -420,10 +472,10 @@ export default function MoveList({
                         style={
                           pokemonMovesType === opt.value
                             ? {
-                                background: TYPE_COLOR[opt.label] ?? '#999',
-                                borderColor: TYPE_COLOR[opt.label] ?? '#999',
-                                color: '#fff',
-                              }
+                              background: TYPE_COLOR[opt.label] ?? '#999',
+                              borderColor: TYPE_COLOR[opt.label] ?? '#999',
+                              color: '#fff',
+                            }
                             : undefined
                         }
                         onClick={() => handlePokemonMovesTypeChange(opt.value)}
@@ -451,7 +503,7 @@ export default function MoveList({
                   </div>
                 </div>
               </div>
-              <br/>
+              <br />
               <p className={s.resultCount}>
                 {filteredPokemonMoves.length.toLocaleString()}개 /{' '}
                 {pokemonMoves.length.toLocaleString()}개

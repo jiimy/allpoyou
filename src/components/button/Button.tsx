@@ -10,7 +10,7 @@ type ButtonProps = {
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
   size?: 'small' | 'medium' | 'large';
-  variant?: 'primary' | 'secondary' | 'tertiary';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'small';
   loading?: boolean;
   active?: boolean;
 };
@@ -25,7 +25,7 @@ const Button = ({ children, onClick, className, disabled, type, size, variant, l
 
 const FilterButton = ({ children, onClick, className, style, disabled, type, size, variant, loading, active }: ButtonProps) => {
   return (
-    <button className={classnames(s.filterBtn, className, { [s.filterBtnActive]: active })} style={style} disabled={disabled} type={type} onClick={onClick}>
+    <button className={classnames(s.filterBtn, className, { [s.filterBtnActive]: active }, { [s.small]: variant === 'small' })} style={style} disabled={disabled} type={type} onClick={onClick}>
       {children}
     </button>
   );

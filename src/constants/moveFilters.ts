@@ -16,3 +16,15 @@ export const MOVE_DAMAGE_CLASS_OPTIONS: {
   { value: 'special', label: '특수기' },
   { value: 'status', label: '변화기' },
 ];
+
+export type MoveSortKey = 'name' | 'type' | 'power';
+export type MoveSortDirection = 'asc' | 'desc';
+
+export const MOVE_SORT_OPTIONS: {
+  value: MoveSortKey;
+  label: string;
+}[] = [
+  { value: 'name', label: '이름' },
+  { value: 'type', label: '타입' },
+  { value: 'power', label: '위력' },
+];

@@ -145,13 +145,14 @@ export const POKEDEX_TAGS: string[] = [
   '전설',
   '초전설',
   '준전설',
+  '환상',
 ];
 
 /**
  * 태그(세대/전설 계열)로 포켓몬 목록을 필터링합니다.
  * - `N세대`: generation === N
- * - `전설`: note에 '전설' 포함 (초전설·준전설 모두 포함)
- * - `초전설` / `준전설`: 해당 note만
+ * - `전설`: note에 '전설' 포함 (초전설·준전설 모두 포함, 환상 제외)
+ * - `초전설` / `준전설` / `환상`: 해당 note만
  */
 export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon[] {
   if (!tag) return list;
@@ -165,6 +166,7 @@ export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon
   if (tag === '전설') return list.filter((p) => p.note.includes('전설'));
   if (tag === '초전설') return list.filter((p) => p.note.includes('초전설'));
   if (tag === '준전설') return list.filter((p) => p.note.includes('준전설'));
+  if (tag === '환상') return list.filter((p) => p.note.includes('환상'));
 
   return list;
 }
