@@ -42,6 +42,7 @@ import {
   type PokemonBaseStats,
 } from '@/utils/pokemonBaseStats';
 import s from '@/app/make-team/maekTeam.module.scss';
+import Image from 'next/image';
 
 const MOVE_SLOT_PLACEHOLDERS = ['기술1', '기술2', '기술3', '기술4'] as const;
 
@@ -74,12 +75,12 @@ export {
 } from '@/utils/pokemonName';
 
 const PLACEHOLDERS = [
-  '첫번째 포켓몬',
-  '두번째 포켓몬',
-  '세번째 포켓몬',
-  '네번째 포켓몬',
-  '다섯번째 포켓몬',
-  '여섯번째 포켓몬',
+  '첫번째 포켓몬 검색',
+  '두번째 포켓몬 검색',
+  '세번째 포켓몬 검색',
+  '네번째 포켓몬 검색',
+  '다섯번째 포켓몬 검색',
+  '여섯번째 포켓몬 검색',
 ] as const;
 
 export type TeamProps = {
@@ -409,7 +410,7 @@ const Team: React.FC<TeamProps> = ({
     if (activeMoveSlot !== null) {
       activeFieldDropdownRef.current =
         moveInputWrapRefs.current[activeMoveSlot.pokemon]?.[
-          activeMoveSlot.move
+        activeMoveSlot.move
         ] ?? null;
       return;
     }
@@ -495,10 +496,10 @@ const Team: React.FC<TeamProps> = ({
         const hasSelectedNature = selectedNatures[index] != null;
         const highestStatLabels = selected
           ? new Set(
-              [...getRowMaxStatKeys(selected)].map(
-                (key) => STAT_LABEL_BY_KEY[key],
-              ),
-            )
+            [...getRowMaxStatKeys(selected)].map(
+              (key) => STAT_LABEL_BY_KEY[key],
+            ),
+          )
           : new Set<string>();
         const originalBaseStats = originalBaseStatsBySlot[index];
         const maxStatChanged =
@@ -536,7 +537,17 @@ const Team: React.FC<TeamProps> = ({
                   className="object-contain w-full h-full max-h-full"
                   priority
                 />
-              ) : null}
+              ) : (
+                <div className={s.thumbnailDefaultImg}>
+                  <Image
+                    src="/images/open_monster_ball2.jpg"
+                    alt=""
+                    width={150}
+                    height={150}
+                    // className="object-contain w-full h-full max-h-full"
+                  />
+                </div>
+              )}
               {pendingMoveLearnable && pendingMovePick ? (
                 <span className={s.moveLearnableBadge}>
                   + {pendingMovePick.koreanName}
@@ -587,16 +598,16 @@ const Team: React.FC<TeamProps> = ({
               >
                 {selected
                   ? [...maxStatKeys].map((key, i, arr) => (
-                      <span
-                        key={key}
-                        className={cn({
-                          [s.statLabelHighlight]: maxStatChanged,
-                        })}
-                      >
-                        {STAT_LABEL_BY_KEY[key]}
-                        {i < arr.length - 1 ? ' / ' : ''}
-                      </span>
-                    ))
+                    <span
+                      key={key}
+                      className={cn({
+                        [s.statLabelHighlight]: maxStatChanged,
+                      })}
+                    >
+                      {STAT_LABEL_BY_KEY[key]}
+                      {i < arr.length - 1 ? ' / ' : ''}
+                    </span>
+                  ))
                   : null}
               </div>
             </span>
@@ -705,8 +716,8 @@ const Team: React.FC<TeamProps> = ({
                     suppressHydrationWarning
                   />
                   {isClient &&
-                  activeAbilityIndex === index &&
-                  selected != null ? (
+                    activeAbilityIndex === index &&
+                    selected != null ? (
                     <div className={s.abilityDropdown}>
                       {hasAbilities ? (
                         <ul className={s.abilityNativeList}>
@@ -1227,8 +1238,8 @@ const Team: React.FC<TeamProps> = ({
         );
       })}
       {statModalIndex != null &&
-      selectedPokemons[statModalIndex] &&
-      originalBaseStatsBySlot[statModalIndex] ? (
+        selectedPokemons[statModalIndex] &&
+        originalBaseStatsBySlot[statModalIndex] ? (
         <StatCountModal
           setOnModal={(value) => {
             const nextOpen =

@@ -113,6 +113,11 @@ const MyInfoPage = async () => {
               </div>
             )}
           </div>
+          {/* <div className={s.section}>
+            <div className={s.sectionTitle}>
+              단축키 설정
+            </div>
+          </div> */}
         </div>
       </div>
     </div>
