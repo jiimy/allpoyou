@@ -257,3 +257,102 @@
   max-width: none;
   align-items: stretch;
 }
+
+.shortcutPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcutHint {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.shortcutGroupTitle {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.shortcutList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcutRow {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(140px, 1.4fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.shortcutLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color);
+}
+
+.shortcutKeyBtn {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #111827;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+  }
+}
+
+.shortcutKeyBtnListening {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  color: #2563eb;
+}
+
+.shortcutResetBtn {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    color: #374151;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.shortcutResetAll {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f9fafb;
+  }
+}

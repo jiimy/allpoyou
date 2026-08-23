@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import classNames from 'classnames';
 import ModalFrame from '../ModalFrame';
 import { ChildrenModalType } from '@/types/modal';
@@ -9,6 +9,7 @@ import TypeTable, {
   TypeTablePokemon,
 } from '@/components/typeTable/TypeTable';
 import { useActiveTeamTypeTablePokemons } from '@/hooks/useActiveTeamTypeTablePokemons';
+import { useModalShortcut } from '@/hooks/useModalShortcut';
 import s from './typeTableModal.module.scss';
 
 type TypeTableModalProps = ChildrenModalType & {
@@ -16,30 +17,11 @@ type TypeTableModalProps = ChildrenModalType & {
   pokemons?: (TypeTablePokemon | null)[];
 };
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  return target.isContentEditable;
-}
-
-/** Shift+F로 타입 상성표 모달 열기/닫기 (모달 마운트 여부와 무관하게 동작) */
+/** 타입 상성표 모달 열기/닫기 단축키 */
 export function useTypeTableModalShortcut(
   setOnModal: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
-      if (e.key !== 'f' && e.key !== 'F') return;
-      if (isEditableTarget(e.target)) return;
-
-      e.preventDefault();
-      setOnModal((open) => !open);
-    };
-
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [setOnModal]);
+  useModalShortcut('modal-type-table', setOnModal);
 }
 
 const TABS: { id: TypeTableMode; label: string }[] = [

@@ -198,10 +198,16 @@ const FloatingBtn = () => {
                   onClick={() => handleItemClick(item)}
                 >
                   {item.label}
-                  {item.id === 'type-calc' && <Command command="+V" />}
-                  {item.id === 'type-table' && <Command command="+F" />}
-                  {item.id === 'team' && <Command command="+D" />}
-                  {item.id === 'nature' && <Command command="+C" />}
+                  {item.id === 'type-calc' && (
+                    <Command shortcutId="modal-type-calc" />
+                  )}
+                  {item.id === 'type-table' && (
+                    <Command shortcutId="modal-type-table" />
+                  )}
+                  {item.id === 'team' && <Command shortcutId="modal-team" />}
+                  {item.id === 'nature' && (
+                    <Command shortcutId="modal-nature" />
+                  )}
                 </button>
               )}
             </li>

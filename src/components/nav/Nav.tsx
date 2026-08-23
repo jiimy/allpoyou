@@ -6,22 +6,23 @@ import { useEffect, useState } from 'react';
 import Command from '../command/Command';
 import { useRememberLastPage } from './useRememberLastPage';
 import { useNavShortcuts } from './useNavShortcuts';
+import type { ShortcutId } from '@/utils/shortcuts';
 import s from './nav.module.scss';
 
 type NavItem = {
   href: string;
   label: string;
-  command?: string;
+  command?: ShortcutId;
   exact?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: '메인', exact: true },
-  { href: '/pokedex', label: '도감', command: '+Q' },
-  { href: '/abilities', label: '특성', command: '+W' },
-  { href: '/items', label: '도구', command: '+E' },
-  { href: '/moves', label: '기술', command: '+R' },
-  { href: '/make-team', label: '팀만들기', command: '+T' },
+  { href: '/', label: '메인', exact: true, command: 'nav-main' },
+  { href: '/pokedex', label: '도감', command: 'nav-pokedex' },
+  { href: '/abilities', label: '특성', command: 'nav-abilities' },
+  { href: '/items', label: '도구', command: 'nav-items' },
+  { href: '/moves', label: '기술', command: 'nav-moves' },
+  { href: '/make-team', label: '팀만들기', command: 'nav-make-team' },
   { href: '/my-info', label: '내정보' },
 ];
 
@@ -103,7 +104,7 @@ const Nav = () => {
                   onClick={() => setMenuSession(null)}
                 >
                   {item.label}
-                  {item.command ? <Command command={item.command} /> : null}
+                  {item.command ? <Command shortcutId={item.command} /> : null}
                 </Link>
               </li>
             );

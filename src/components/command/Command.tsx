@@ -1,9 +1,23 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+
+import { useShortcutStore } from '@/store/ShortcutStore';
+import {
+  formatShortcutBadge,
+  modifiersMatchBinding,
+  type ShortcutId,
+} from '@/utils/shortcuts';
+
 import s from './command.module.scss';
 
-let leftShiftHeld = false;
+type HeldModifiers = {
+  shift: boolean;
+  ctrl: boolean;
+  alt: boolean;
+};
+
+let held: HeldModifiers = { shift: false, ctrl: false, alt: false };
 let listenersInitialized = false;
 const subscribers = new Set<() => void>();
 
@@ -16,54 +30,65 @@ function subscribe(onStoreChange: () => void) {
 }
 
 function getSnapshot() {
-  return leftShiftHeld;
+  return held;
 }
 
-function getServerSnapshot() {
-  return false;
+function getServerSnapshot(): HeldModifiers {
+  return { shift: false, ctrl: false, alt: false };
 }
 
 function notifySubscribers() {
   subscribers.forEach((listener) => listener());
 }
 
+function setHeld(next: HeldModifiers) {
+  if (
+    next.shift === held.shift &&
+    next.ctrl === held.ctrl &&
+    next.alt === held.alt
+  ) {
+    return;
+  }
+  held = next;
+  notifySubscribers();
+}
+
 function ensureListeners() {
   if (listenersInitialized || typeof window === 'undefined') return;
   listenersInitialized = true;
 
-  window.addEventListener('keydown', (event) => {
-    if (event.code !== 'ShiftLeft' || leftShiftHeld) return;
-    leftShiftHeld = true;
-    notifySubscribers();
-  });
+  const syncFromEvent = (event: KeyboardEvent) => {
+    setHeld({
+      shift: event.shiftKey,
+      ctrl: event.ctrlKey,
+      alt: event.altKey,
+    });
+  };
 
-  window.addEventListener('keyup', (event) => {
-    if (event.code !== 'ShiftLeft' || !leftShiftHeld) return;
-    leftShiftHeld = false;
-    notifySubscribers();
-  });
-
+  window.addEventListener('keydown', syncFromEvent);
+  window.addEventListener('keyup', syncFromEvent);
   window.addEventListener('blur', () => {
-    if (!leftShiftHeld) return;
-    leftShiftHeld = false;
-    notifySubscribers();
+    setHeld({ shift: false, ctrl: false, alt: false });
   });
 }
 
 type CommandProps = {
-  command: string;
+  shortcutId: ShortcutId;
 };
 
-const Command = ({ command }: CommandProps) => {
-  const shiftHeld = useSyncExternalStore(
+const Command = ({ shortcutId }: CommandProps) => {
+  const modifiers = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot,
   );
+  const binding = useShortcutStore((state) => state.bindings[shortcutId]);
+  const hasHydrated = useShortcutStore((state) => state.hasHydrated);
 
-  if (!shiftHeld) return null;
+  if (!hasHydrated) return null;
+  if (!modifiersMatchBinding(modifiers, binding)) return null;
 
-  return <div className={s.command}>{command}</div>;
+  return <div className={s.command}>{formatShortcutBadge(binding)}</div>;
 };
 
 export default Command;

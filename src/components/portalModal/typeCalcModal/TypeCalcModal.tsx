@@ -1,40 +1,22 @@
 'use client';
 
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import ModalFrame from '@/components/portalModal/ModalFrame';
 import TypePicker from '@/components/type/TypePicker';
 import TypeResult from '@/components/type/TypeResult';
+import { useModalShortcut } from '@/hooks/useModalShortcut';
 import { useTypeCalcStore } from '@/store/TypeCalcStore';
 import type { ChildrenModalType } from '@/types/modal';
 
 import s from './typeCalcModal.module.scss';
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  return target.isContentEditable;
-}
-
-/** Shift+V로 타입 계산기 모달 열기/닫기 */
+/** 타입 계산기 모달 열기/닫기 단축키 */
 export function useTypeCalcModalShortcut(
   setOnModal: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
-      if (e.key !== 'v' && e.key !== 'V') return;
-      if (isEditableTarget(e.target)) return;
-
-      e.preventDefault();
-      setOnModal((open) => !open);
-    };
-
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [setOnModal]);
+  useModalShortcut('modal-type-calc', setOnModal);
 }
 
 type TypeCalcModalProps = ChildrenModalType;

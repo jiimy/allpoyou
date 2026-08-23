@@ -12,6 +12,7 @@ import { logout } from './actions';
 import AuthForm from './AuthForm';
 import GoogleLinkButton from '@/components/loginButton/GoogleLinkButton';
 import GoogleLinkFlashMessage from '@/components/loginButton/GoogleLinkFlashMessage';
+import PcShortcutSettingsSection from '@/components/shortcutSettings/PcShortcutSettingsSection';
 import s from './myInfo.module.scss';
 import teamS from '@/components/publicTeam/publicTeam.module.scss';
 
@@ -20,8 +21,11 @@ const MyInfoPage = async () => {
 
   if (!user) {
     return (
-      <div className={s.wrap}>
-        <AuthForm />
+      <div className={s.wrapWide}>
+        <div className={s.wrap}>
+          <AuthForm />
+        </div>
+        <PcShortcutSettingsSection asSection={false} />
       </div>
     );
   }
@@ -113,11 +117,8 @@ const MyInfoPage = async () => {
               </div>
             )}
           </div>
-          {/* <div className={s.section}>
-            <div className={s.sectionTitle}>
-              단축키 설정
-            </div>
-          </div> */}
+
+          <PcShortcutSettingsSection />
         </div>
       </div>
     </div>
