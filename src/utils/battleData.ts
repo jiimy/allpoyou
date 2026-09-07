@@ -72,6 +72,13 @@ export function getSeoulDateString(now = new Date()): string {
   }).format(now);
 }
 
+/** 한국 날짜 기준 N일 전 YYYY-MM-DD */
+export function getSeoulDateDaysAgo(daysAgo: number, now = new Date()): string {
+  return getSeoulDateString(
+    new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000),
+  );
+}
+
 export function normalizeBattleFormat(raw: string): BattleFormat | null {
   const key = raw.trim().toLowerCase();
   if (key === 'doubles' || key === 'double') return 'Doubles';

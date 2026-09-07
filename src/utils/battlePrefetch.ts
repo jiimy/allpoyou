@@ -7,6 +7,7 @@ import {
   normalizePokemonSlug,
   type BattleFormat,
 } from '@/utils/battleData';
+import { cleanupOldBattleCsvs } from '@/utils/championsStorageCleanup';
 
 /** 요청 간 대기 (ms). 235마리 × 3.8s ≈ 15분/포맷 + API 시간 */
 export const BATTLE_PREFETCH_DELAY_MS = 3800;
@@ -14,9 +15,10 @@ export const BATTLE_PREFETCH_DELAY_MS = 3800;
 /** 서버리스 배치당 작업 예산 (Hobby maxDuration 300s 대비 여유) */
 export const BATTLE_PREFETCH_BATCH_BUDGET_MS = 250_000;
 
+/** Doubles를 먼저 돌려 일일 갱신이 누락되지 않게 함 */
 export const BATTLE_PREFETCH_FORMAT_ORDER: BattleFormat[] = [
-  'Singles',
   'Doubles',
+  'Singles',
 ];
 
 export type BattlePrefetchItemResult = {
@@ -26,6 +28,7 @@ export type BattlePrefetchItemResult = {
   ok: boolean;
   cached?: boolean;
   storagePath?: string;
+  cleaned?: number;
   error?: string;
 };
 
@@ -36,6 +39,7 @@ export type BattlePrefetchBatchResult = {
   processed: number;
   succeeded: number;
   failed: number;
+  cleanedFiles: number;
   done: boolean;
   /** 현재 포맷이 끝났을 때 다음 포맷 (있으면) */
   nextFormat: BattleFormat | null;
@@ -55,8 +59,9 @@ export function toBattlePokemonSlug(displayName: string): string {
 
 /**
  * POCHAMS_POKEMON_DATA 를 3800ms 간격으로 순회하며
- * championsbattledata `/api/battle/{Singles|Doubles}/:slug` → CSV Storage 저장.
+ * championsbattledata `/api/battle/{Doubles|Singles}/:slug` → CSV Storage 저장.
  * 일일 cron은 항상 forceRefresh 로 기존 당일 CSV를 지우고 다시 받습니다.
+ * 갱신 후 Singles|Doubles/{slug}/ 에서 3일 전(및 이전) CSV는 삭제합니다.
  */
 export async function runBattlePrefetchBatch(options: {
   format: BattleFormat;
@@ -77,6 +82,7 @@ export async function runBattlePrefetchBatch(options: {
 
   const results: BattlePrefetchItemResult[] = [];
   let index = offset;
+  let cleanedFiles = 0;
 
   while (index < POCHAMS_POKEMON_DATA.length) {
     if (Date.now() - startedAt >= timeBudgetMs) {
@@ -95,6 +101,8 @@ export async function runBattlePrefetchBatch(options: {
 
     try {
       const data = await getDailyBattleData(format, slug, { forceRefresh });
+      const cleanup = await cleanupOldBattleCsvs(format, slug);
+      cleanedFiles += cleanup.deleted.length;
       results.push({
         name,
         slug,
@@ -102,8 +110,15 @@ export async function runBattlePrefetchBatch(options: {
         ok: true,
         cached: data.cached,
         storagePath: data.storagePath,
+        cleaned: cleanup.deleted.length,
       });
     } catch (error) {
+      try {
+        const cleanup = await cleanupOldBattleCsvs(format, slug);
+        cleanedFiles += cleanup.deleted.length;
+      } catch {
+        // ignore
+      }
       results.push({
         name,
         slug,
@@ -139,6 +154,7 @@ export async function runBattlePrefetchBatch(options: {
     processed: results.length,
     succeeded,
     failed,
+    cleanedFiles,
     done: formatDone && nextFormat == null,
     nextFormat,
     results,

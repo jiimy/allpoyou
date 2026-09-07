@@ -67,15 +67,16 @@ function scheduleNextBatch(
  * GET /api/cron/battle-prefetch
  *
  * 매일 KST 02:00 (UTC 17:00, vercel.json) 시작
- * → championsbattledata.com/api/battle/{Singles|Doubles}/:slug 전수 호출
+ * → championsbattledata.com/api/battle/{Doubles|Singles}/:slug 전수 호출
  * → 기존 당일 CSV 삭제 후 재저장 (forceRefresh)
- * → Singles 완료 후 Doubles
+ * → Doubles 완료 후 Singles
+ * → 각 포켓몬 폴더에서 3일 전(및 이전) CSV 자동 삭제
  * → 홈에서 포켓몬 클릭 시 상세(/api/battle/...) 에 사용
  *
  * 랭킹은 pokemon-prefetch(`/api/pokemon/:slug`) 쪽에서 생성합니다.
  *
  * 예: /api/cron/battle-prefetch
- *     /api/cron/battle-prefetch?format=Singles&offset=0
+ *     /api/cron/battle-prefetch?format=Doubles&offset=0
  */
 export async function GET(request: NextRequest) {
   if (!authorize(request)) {

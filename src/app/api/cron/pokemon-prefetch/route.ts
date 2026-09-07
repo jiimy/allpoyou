@@ -64,6 +64,7 @@ function scheduleNextBatch(request: NextRequest, offset: number) {
  * 매일 KST 01:00 (UTC 16:00, vercel.json) 시작
  * → championsbattledata.com/api/pokemon/:slug 전수 호출
  * → 기존 당일 CSV 삭제 후 재저장 (forceRefresh)
+ * → Pokemon/{slug}/ 에서 3일 전(및 이전) CSV 자동 삭제
  * → Doubles/Singles position 1~15 랭킹 CSV 갱신
  */
 export async function GET(request: NextRequest) {
