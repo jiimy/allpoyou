@@ -1,0 +1,16 @@
+{
+  "startedAt": "2026-09-07T13:14:39.690Z",
+  "total": 235,
+  "ok": 234,
+  "fail": 1,
+  "errors": [
+    {
+      "format": "Doubles",
+      "name": "Rotom Fan",
+      "slug": "rotomfan",
+      "status": 404,
+      "error": "championsbattledata 요청 실패: 404 Not Found (https://championsbattledata.com/api/battle/Doubles/rotomfan)"
+    }
+  ],
+  "finishedAt": "2026-09-07T13:32:09.985Z"
+}

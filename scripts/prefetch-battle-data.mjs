@@ -15,7 +15,10 @@ const names = [...t.matchAll(/'([^']+)'/g)]
 const slug = (raw) => raw.trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
 const DELAY = 3800;
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
-const formats = ['Singles', 'Doubles'];
+const formats = (process.env.FORMATS || 'Doubles,Singles')
+  .split(',')
+  .map((f) => f.trim())
+  .filter(Boolean);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

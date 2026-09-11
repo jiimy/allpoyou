@@ -4,10 +4,13 @@ import { type NextRequest } from 'next/server';
 import {
   BATTLE_PREFETCH_BATCH_BUDGET_MS,
   BATTLE_PREFETCH_DELAY_MS,
-  BATTLE_PREFETCH_FORMAT_ORDER,
+  BATTLE_PREFETCH_FORMATS,
   runBattlePrefetchBatch,
 } from '@/utils/battlePrefetch';
-import { normalizeBattleFormat } from '@/utils/battleData';
+import {
+  normalizeBattleFormat,
+  type BattleFormat,
+} from '@/utils/battleData';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -42,14 +45,11 @@ function getBaseUrl(request: NextRequest): string {
   return `${proto}://${host}`;
 }
 
-function scheduleNextBatch(
-  request: NextRequest,
-  next: { format: string; offset: number },
-) {
+function scheduleNextBatch(request: NextRequest, offset: number, formatsParam: string | null) {
   const secret = process.env.CRON_SECRET;
   const url = new URL('/api/cron/battle-prefetch', getBaseUrl(request));
-  url.searchParams.set('format', next.format);
-  url.searchParams.set('offset', String(next.offset));
+  url.searchParams.set('offset', String(offset));
+  if (formatsParam) url.searchParams.set('formats', formatsParam);
 
   const headers: HeadersInit = { Accept: 'application/json' };
   if (secret) headers.Authorization = `Bearer ${secret}`;
@@ -63,35 +63,31 @@ function scheduleNextBatch(
   });
 }
 
+function parseFormatsParam(raw: string | null): BattleFormat[] | undefined {
+  if (!raw?.trim()) return undefined;
+  const list: BattleFormat[] = [];
+  for (const part of raw.split(',')) {
+    const format = normalizeBattleFormat(part);
+    if (format && !list.includes(format)) list.push(format);
+  }
+  return list.length > 0 ? list : undefined;
+}
+
 /**
  * GET /api/cron/battle-prefetch
  *
  * 매일 KST 02:00 (UTC 17:00, vercel.json) 시작
- * → championsbattledata.com/api/battle/{Doubles|Singles}/:slug 전수 호출
- * → 기존 당일 CSV 삭제 후 재저장 (forceRefresh)
- * → Doubles 완료 후 Singles
- * → 각 포켓몬 폴더에서 3일 전(및 이전) CSV 자동 삭제
- * → 홈에서 포켓몬 클릭 시 상세(/api/battle/...) 에 사용
+ * → 포켓몬마다 Doubles → Singles 연속 갱신 (Singles 누락 방지)
+ * → forceRefresh + 3일 이전 CSV 삭제
  *
- * 랭킹은 pokemon-prefetch(`/api/pokemon/:slug`) 쪽에서 생성합니다.
- *
- * 예: /api/cron/battle-prefetch
- *     /api/cron/battle-prefetch?format=Doubles&offset=0
+ * 예:
+ *   /api/cron/battle-prefetch
+ *   /api/cron/battle-prefetch?offset=40
+ *   /api/cron/battle-prefetch?formats=Singles   (Singles만)
  */
 export async function GET(request: NextRequest) {
   if (!authorize(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const rawFormat =
-    request.nextUrl.searchParams.get('format') ??
-    BATTLE_PREFETCH_FORMAT_ORDER[0]!;
-  const format = normalizeBattleFormat(rawFormat);
-  if (!format) {
-    return Response.json(
-      { error: 'format은 Singles 또는 Doubles 여야 합니다.' },
-      { status: 400 },
-    );
   }
 
   const offset = Number(request.nextUrl.searchParams.get('offset') ?? '0');
@@ -99,20 +95,24 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'offset이 올바르지 않습니다.' }, { status: 400 });
   }
 
+  const formatsParam = request.nextUrl.searchParams.get('formats');
+  const formats = parseFormatsParam(formatsParam);
+
   const batch = await runBattlePrefetchBatch({
-    format,
     offset: Math.floor(offset),
     delayMs: BATTLE_PREFETCH_DELAY_MS,
     timeBudgetMs: BATTLE_PREFETCH_BATCH_BUDGET_MS,
     forceRefresh: true,
+    formats,
   });
 
   if (batch.next) {
-    scheduleNextBatch(request, batch.next);
+    scheduleNextBatch(request, batch.next.offset, formatsParam);
     return Response.json({
       message: '배치 처리 후 다음 배치를 예약했습니다.',
       delayMs: BATTLE_PREFETCH_DELAY_MS,
       batchBudgetMs: BATTLE_PREFETCH_BATCH_BUDGET_MS,
+      formats: formats ?? BATTLE_PREFETCH_FORMATS,
       ...batch,
     });
   }
@@ -121,6 +121,7 @@ export async function GET(request: NextRequest) {
     message: 'Battle prefetch 완료',
     delayMs: BATTLE_PREFETCH_DELAY_MS,
     batchBudgetMs: BATTLE_PREFETCH_BATCH_BUDGET_MS,
+    formats: formats ?? BATTLE_PREFETCH_FORMATS,
     ...batch,
   });
 }
