@@ -230,6 +230,22 @@ async function getDicts(): Promise<Dicts> {
   return dictsPromise;
 }
 
+function lookupPokemonKo(
+  dict: Map<string, string>,
+  englishOrSlug: string,
+): string | undefined {
+  const slug = toLookupSlug(englishOrSlug);
+  const lower = englishOrSlug.trim().toLowerCase();
+  const direct = dict.get(slug) ?? dict.get(lower);
+  if (direct) return direct;
+
+  // pokemon.csv 는 aegislash-shield 처럼 폼 슬러그만 있는 경우가 있음
+  for (const [key, ko] of dict) {
+    if (key.startsWith(`${slug}-`)) return ko;
+  }
+  return undefined;
+}
+
 function translateName(
   category: string,
   nameEn: string,
@@ -253,7 +269,7 @@ function translateName(
     return dicts.ability.get(slug) ?? dicts.ability.get(lower) ?? nameEn;
   }
   if (category === 'teammate') {
-    return dicts.pokemon.get(slug) ?? dicts.pokemon.get(lower) ?? nameEn;
+    return lookupPokemonKo(dicts.pokemon, nameEn) ?? nameEn;
   }
   if (category === 'stat_alignment') {
     return NATURE_EN_TO_KO[slug] ?? NATURE_EN_TO_KO[lower] ?? nameEn;
@@ -288,8 +304,7 @@ export async function localizeBattleRows(rows: BattleRow[]): Promise<BattleRow[]
     const pokemonEn =
       pokemonEnRaw || (hasHangul(pokemonRaw) ? '' : pokemonRaw) || pokemonRaw;
     const pokemonKo = pokemonEn
-      ? (dicts.pokemon.get(toLookupSlug(pokemonEn)) ??
-        dicts.pokemon.get(pokemonEn.toLowerCase()) ??
+      ? (lookupPokemonKo(dicts.pokemon, pokemonEn) ??
         (hasHangul(pokemonRaw) ? pokemonRaw : pokemonEn))
       : pokemonRaw;
 
@@ -358,10 +373,5 @@ export function groupBattleByCategory(
 
 export async function resolvePokemonNameKo(englishOrSlug: string): Promise<string> {
   const dicts = await getDicts();
-  const slug = toLookupSlug(englishOrSlug);
-  return (
-    dicts.pokemon.get(slug) ??
-    dicts.pokemon.get(englishOrSlug.toLowerCase()) ??
-    englishOrSlug
-  );
+  return lookupPokemonKo(dicts.pokemon, englishOrSlug) ?? englishOrSlug;
 }

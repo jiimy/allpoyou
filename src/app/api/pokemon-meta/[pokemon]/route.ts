@@ -13,10 +13,13 @@ type RouteContext = {
  *
  * championsbattledata /api/pokemon/:slug 호출 후 CSV를 Storage에 저장합니다.
  */
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { pokemon: rawPokemon } = await context.params;
     const pokemonSlug = normalizePokemonSlug(rawPokemon);
+    const forceRefresh =
+      request.nextUrl.searchParams.get('refresh') === '1' ||
+      request.nextUrl.searchParams.get('force') === '1';
 
     if (!pokemonSlug) {
       return Response.json(
@@ -25,7 +28,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    const data = await getDailyPokemonMetaData(pokemonSlug);
+    const data = await getDailyPokemonMetaData(pokemonSlug, { forceRefresh });
     return Response.json(data, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',

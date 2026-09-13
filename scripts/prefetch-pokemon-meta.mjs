@@ -30,7 +30,7 @@ console.log('[pokemon-meta] count=', names.length, 'delay=', DELAY);
 for (let i = 0; i < names.length; i++) {
   const name = names[i];
   const s = slug(name);
-  const url = `${BASE}/api/pokemon-meta/${encodeURIComponent(s)}`;
+  const url = `${BASE}/api/pokemon-meta/${encodeURIComponent(s)}?refresh=1`;
   const n = i + 1;
 
   try {

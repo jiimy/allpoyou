@@ -1,7 +1,7 @@
 export const POCHAMS_POKEMON_DATA = [
   'Abomasnow',
   'Absol',
-  'Aegislash Shield Forme',
+  'Aegislash',
   'Aerodactyl',
   'Aggron',
   'Alakazam',
@@ -88,9 +88,7 @@ export const POCHAMS_POKEMON_DATA = [
   'Gliscor',
   'Golurk',
   'Goodra',
-  'Gourgeist Jumbo Variety',
-  'Gourgeist Large Variety',
-  'Gourgeist Small Variety',
+  'Gourgeist',
   'Gourgeist',
   'Greninja',
   'Grimmsnarl',
@@ -151,10 +149,7 @@ export const POCHAMS_POKEMON_DATA = [
   'Oranguru',
   'Orthworm',
   'Overqwil',
-  'Palafin Zero Form',
-  'Paldean Tauros Aqua Breed',
-  'Paldean Tauros Blaze Breed',
-  'Paldean Tauros Combat Breed',
+  'Tauros',
   'Pangoro',
   'Passimian',
   'Pelipper',
@@ -234,6 +229,23 @@ export const POCHAMS_POKEMON_DATA = [
   'Whimsicott',
   'Wyrdeer',
   'Zoroark',
+  'Swalot', // 꿀꺽몬
+  'Salamence',
+  'Golisopod',
+  'Rillaboom',
+  'Cinderace',
+  'Inteleon',
+  'Thievul',
+  'Toxtricity',
+  'Grapploct',
+  'Perrserker',
+  'Sirfetchd', // 창파나이트
+  'Pincurchin',
+  'Indeedee',
+  'Pawmot',
+  'Arboliva',
+  'Mabosstiff',
+  'Baxcalibur'
 ] as const;
 
 export type PochamsPokemonDataName = (typeof POCHAMS_POKEMON_DATA)[number];
