@@ -505,8 +505,8 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
           <>
             <p className={s.meta}>랭킹 순위 · {rankings.date}</p>
             <div className={s.categories}>
-              {renderRankingList('Doubles', rankings.doubles)}
               {renderRankingList('Singles', rankings.singles)}
+              {renderRankingList('Doubles', rankings.doubles)}
             </div>
           </>
         ) : (

@@ -727,12 +727,13 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
 
     for (const result of settled) {
       if (result.status !== 'fulfilled') continue;
-      const { data } = result.value;
+      const { data, displayName, slug } = result.value;
       const positions = extractCurrentPositions(data);
+      // 리스트 표기명/슬러그를 우선 (예: API가 Aegislash Shield Forme 를 돌려도 Aegislash 유지)
       const base = {
-        name: data.name ?? result.value.displayName,
-        slug: data.slug ?? result.value.slug,
-        showdownId: data.showdownId ?? result.value.slug,
+        name: displayName,
+        slug,
+        showdownId: data.showdownId ?? slug,
       };
 
       if (

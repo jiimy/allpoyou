@@ -242,6 +242,7 @@ export const POCHAMS_POKEMON_DATA = [
   'Sirfetchd', // 창파나이트
   'Pincurchin',
   'Indeedee',
+  'Indeedee Female',
   'Pawmot',
   'Arboliva',
   'Mabosstiff',
