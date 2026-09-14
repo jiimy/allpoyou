@@ -1,6 +1,7 @@
 export const POCHAMS_POKEMON_DATA = [
   'Abomasnow',
   'Absol',
+  'Absol-mega-z',
   'Aegislash',
   'Aerodactyl',
   'Aggron',
@@ -78,6 +79,7 @@ export const POCHAMS_POKEMON_DATA = [
   'Gallade',
   'Garbodor',
   'Garchomp',
+  'Garchomp-mega-z',
   'Gardevoir',
   'Garganacl',
   'Gengar',
@@ -122,6 +124,7 @@ export const POCHAMS_POKEMON_DATA = [
   'Liepard',
   'Lopunny',
   'Lucario',
+  'Lucario-mega-z',
   'Luxray',
   'Lycanroc Dusk Form',
   'Lycanroc Midnight Form',
@@ -231,7 +234,9 @@ export const POCHAMS_POKEMON_DATA = [
   'Zoroark',
   'Swalot', // 꿀꺽몬
   'Salamence',
+  'Salamence-mega',
   'Golisopod',
+  'Golisopod-mega',
   'Rillaboom',
   'Cinderace',
   'Inteleon',
@@ -246,7 +251,8 @@ export const POCHAMS_POKEMON_DATA = [
   'Pawmot',
   'Arboliva',
   'Mabosstiff',
-  'Baxcalibur'
+  'Baxcalibur',
+  'Baxcalibur-mega'
 ] as const;
 
 export type PochamsPokemonDataName = (typeof POCHAMS_POKEMON_DATA)[number];
