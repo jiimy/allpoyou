@@ -16,6 +16,7 @@ import {
   formatMoveStat,
   getDamageClassLabel,
   getMoveTypeKo,
+  resolveMoveStat,
   sortMoves,
 } from '@/utils/moveDisplay';
 
@@ -30,11 +31,13 @@ function MoveRow({
   onMoveClick,
   onMoveSearch,
   searchDisabled = false,
+  pochampsActive = false,
 }: {
   move: MoveDbEntry;
   onMoveClick?: (move: MoveDbEntry) => void;
   onMoveSearch?: (move: MoveDbEntry) => void;
   searchDisabled?: boolean;
+  pochampsActive?: boolean;
 }) {
   const typeKo = getMoveTypeKo(move.type);
 
@@ -72,7 +75,7 @@ function MoveRow({
         </span>
         <span>
           <span className={s.metaLabel}>위력 </span>
-          {formatMoveStat(move.power)}
+          {formatMoveStat(resolveMoveStat(move.power, pochampsActive))}
         </span>
         <span>
           <span className={s.metaLabel}>명중률 </span>
@@ -80,7 +83,7 @@ function MoveRow({
         </span>
         <span>
           <span className={s.metaLabel}>PP </span>
-          {formatMoveStat(move.pp)}
+          {formatMoveStat(resolveMoveStat(move.pp, pochampsActive))}
         </span>
       </p>
     </li>
@@ -170,8 +173,8 @@ export default function MoveList({
   };
 
   const sortedMoves = useMemo(
-    () => sortMoves(moves, sortKey, sortDirection),
-    [moves, sortKey, sortDirection],
+    () => sortMoves(moves, sortKey, sortDirection, pochampsOnly),
+    [moves, sortKey, sortDirection, pochampsOnly],
   );
 
   const visibleMoves = useMemo(
@@ -198,6 +201,7 @@ export default function MoveList({
         }),
         sortKey,
         sortDirection,
+        pochampsOnly,
       ),
     [
       pokemonMoves,
@@ -205,6 +209,7 @@ export default function MoveList({
       pokemonMovesDamageClass,
       sortKey,
       sortDirection,
+      pochampsOnly,
     ],
   );
 
@@ -431,6 +436,7 @@ export default function MoveList({
               onMoveClick={onMoveClick}
               onMoveSearch={onMoveSearch}
               searchDisabled={isMoveSearchActive(move)}
+              pochampsActive={pochampsOnly}
             />
           ))}
         </ul>
@@ -519,6 +525,7 @@ export default function MoveList({
                       onMoveClick={onMoveClick}
                       onMoveSearch={onMoveSearch}
                       searchDisabled={isMoveSearchActive(move)}
+                      pochampsActive={pochampsOnly}
                     />
                   ))}
                 </ul>

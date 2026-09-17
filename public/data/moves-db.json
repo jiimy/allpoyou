@@ -1789,7 +1789,10 @@
     "description": "발톱이나 낫 등으로 상대를 베어 갈라서 공격한다. 급소에 맞기 쉽다.",
     "type": "normal",
     "damage_class": "physical",
-    "power": 70,
+    "power": {
+      "default": 70,
+      "pochams": 80
+    },
     "accuracy": 100,
     "pp": 20
   },
@@ -3001,7 +3004,10 @@
     "damage_class": "status",
     "power": null,
     "accuracy": null,
-    "pp": 10
+    "pp":  {
+      "default": 10,
+      "pochams": 8
+    }
   },
   "assist": {
     "id": 274,
@@ -7346,7 +7352,10 @@
     "damage_class": "status",
     "power": null,
     "accuracy": 100,
-    "pp": 10
+    "pp": {
+      "default": 10,
+      "pochams": 8
+    }
   },
   "solar-blade": {
     "id": 669,
@@ -8191,7 +8200,10 @@
     "description": "상대의 기술을 끌어모으는 특성이나 기술의 영향을 무시하고 선택한 상대를 공격할 수 있다.",
     "type": "water",
     "damage_class": "special",
-    "power": 80,
+    "power": {
+      "default": 80,
+      "pochams": 85
+    },
     "accuracy": 100,
     "pp": 15
   },
@@ -8730,7 +8742,10 @@
     "description": "굵은 줄기를 휘둘러서 공격한다. 단 자신도 비틀거리기 때문에 다음 턴은 움직일 수 없다.",
     "type": "fighting",
     "damage_class": "physical",
-    "power": 150,
+    "power": {
+      "default": 150,
+      "pochams": 170
+    },
     "accuracy": 100,
     "pp": 5
   },

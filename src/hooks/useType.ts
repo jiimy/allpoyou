@@ -146,11 +146,11 @@ function getDefenseMultiplierAgainst(
 
 /**
  * 파티 전체 약점 보완(ON):
- * 1) 상성표 강점(0 / 0.5)이 없는 공격 타입(구멍)을 찾음
+ * 1) 파티 누군가가 2배 이상 받으면서, 누구도 0/0.5로 받지 못하는 공격 타입(미커버 약점)
  * 2) 그 공격을 ≤0.5배로 받는 방어 타입을 후보로 모음
  * 3) 이미 파티에 있는 타입은 제외
- * 4) 구멍 공격에 2배 이상 약점이 있는 타입은 제외
- *    (단, 구멍에 대한 면역(0배)이 있고 ≤0.5 저항이 2개 이상이면 유지 — 예: 강철)
+ * 4) 해당 약점 공격에 2배 이상 약점이 있는 타입은 제외
+ *    (단, 면역(0배)이 있고 ≤0.5 저항이 2개 이상이면 유지 — 예: 강철)
  * 5) 남은 타입을 기존 추천처럼 뱃지·포켓몬 매칭에 사용
  */
 export function getPartyResistHoleDetails(
@@ -175,6 +175,11 @@ export function getPartyResistHoleDetails(
 
   const holeAttackTypes: Type[] = [];
   for (const attacker of Object.keys(typeChart) as Type[]) {
+    const partyHasWeakness = members.some(
+      (defs) => getDefenseMultiplierAgainst(defs, attacker) >= 2,
+    );
+    if (!partyHasWeakness) continue;
+
     const partyHasStrength = members.some((defs) =>
       isTypeTableStrengthMultiplier(
         getDefenseMultiplierAgainst(defs, attacker),

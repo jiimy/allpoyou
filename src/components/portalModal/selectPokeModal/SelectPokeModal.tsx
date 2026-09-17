@@ -504,7 +504,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                     }}
                   >
                     <span className={s.moveName}>{move.koreanName}</span>
-                    <span className={s.moveStats}>{getMoveStatsTitle(move)}</span>
+                    <span className={s.moveStats}>{getMoveStatsTitle(move, pochampsActive)}</span>
                     <span
                       className={s.moveTypeBadge}
                       style={{ background: TYPE_COLOR[typeKo] ?? '#999' }}
