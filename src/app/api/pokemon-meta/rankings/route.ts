@@ -60,7 +60,8 @@ export async function GET(request: NextRequest) {
 
     return Response.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
+        // 메인 랭킹은 당일 CSV 갱신 직후 바로 반영되어야 함
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {

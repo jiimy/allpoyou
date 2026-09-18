@@ -601,10 +601,11 @@ async function collectPositionsFromPokemonCsvs(
       const position = Number(row.rank);
       if (!Number.isFinite(position) || position < 1 || position > limit) continue;
 
+      // 리스트 표기명을 우선 (CSV API 원문명이 Shield Forme 등이어도 목록명 유지)
       const entry: PokemonPositionEntry = {
         position,
-        name: String(row.name || displayName),
-        slug: String(row.slug || slug),
+        name: displayName,
+        slug,
         showdownId: String(row.showdown_id || slug),
         nameKo: undefined,
       };
@@ -700,8 +701,9 @@ export async function saveDailyPositionRankings(
 }
 
 /**
- * POCHAMS_POKEMON_DATA 전수 API 조회로 position 랭킹 CSV만 빠르게 재생성합니다.
- * (개별 Pokemon CSV 전체 갱신은 하지 않음)
+ * 일일 랭킹 CSV 재생성.
+ * 1) 오늘자 Pokemon/{slug}/{date}.csv 의 battle_summary 우선
+ * 2) 비어 있는 1~limit 순위만 champions API 로 보강
  */
 export async function rebuildDailyPositionRankingsFromApi(options?: {
   limit?: number;
@@ -710,53 +712,78 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
   const limit = options?.limit ?? 15;
   const concurrency = Math.max(1, options?.concurrency ?? 8);
   const date = getSeoulDateString();
-  const doubles = new Map<number, PokemonPositionEntry>();
-  const singles = new Map<number, PokemonPositionEntry>();
 
-  const names = [...POCHAMS_POKEMON_DATA];
+  const fromStorage = await collectPositionsFromPokemonCsvs(date, limit);
+  const doubles = new Map(
+    fromStorage.doubles.map((entry) => [entry.position, entry] as const),
+  );
+  const singles = new Map(
+    fromStorage.singles.map((entry) => [entry.position, entry] as const),
+  );
 
-  for (let start = 0; start < names.length; start += concurrency) {
-    const chunk = names.slice(start, start + concurrency);
-    const settled = await Promise.allSettled(
-      chunk.map(async (displayName) => {
-        const slug = normalizePokemonSlug(displayName);
-        const data = await fetchChampionsPokemonData(slug);
-        return { displayName, slug, data };
-      }),
-    );
+  const missingPositions = (map: Map<number, PokemonPositionEntry>) => {
+    const missing: number[] = [];
+    for (let pos = 1; pos <= limit; pos++) {
+      if (!map.has(pos)) missing.push(pos);
+    }
+    return missing;
+  };
 
-    for (const result of settled) {
-      if (result.status !== 'fulfilled') continue;
-      const { data, displayName, slug } = result.value;
-      const positions = extractCurrentPositions(data);
-      // 리스트 표기명/슬러그를 우선 (예: API가 Aegislash Shield Forme 를 돌려도 Aegislash 유지)
-      const base = {
-        name: displayName,
-        slug,
-        showdownId: data.showdownId ?? slug,
-      };
+  if (
+    missingPositions(doubles).length > 0 ||
+    missingPositions(singles).length > 0
+  ) {
+    const names = [...POCHAMS_POKEMON_DATA];
 
+    for (let start = 0; start < names.length; start += concurrency) {
       if (
-        positions.doubles != null &&
-        positions.doubles >= 1 &&
-        positions.doubles <= limit &&
-        !doubles.has(positions.doubles)
+        missingPositions(doubles).length === 0 &&
+        missingPositions(singles).length === 0
       ) {
-        doubles.set(positions.doubles, {
-          ...base,
-          position: positions.doubles,
-        });
+        break;
       }
-      if (
-        positions.singles != null &&
-        positions.singles >= 1 &&
-        positions.singles <= limit &&
-        !singles.has(positions.singles)
-      ) {
-        singles.set(positions.singles, {
-          ...base,
-          position: positions.singles,
-        });
+
+      const chunk = names.slice(start, start + concurrency);
+      const settled = await Promise.allSettled(
+        chunk.map(async (displayName) => {
+          const slug = normalizePokemonSlug(displayName);
+          const data = await fetchChampionsPokemonData(slug);
+          return { displayName, slug, data };
+        }),
+      );
+
+      for (const result of settled) {
+        if (result.status !== 'fulfilled') continue;
+        const { data, displayName, slug } = result.value;
+        const positions = extractCurrentPositions(data);
+        const base = {
+          name: displayName,
+          slug,
+          showdownId: data.showdownId ?? slug,
+        };
+
+        if (
+          positions.doubles != null &&
+          positions.doubles >= 1 &&
+          positions.doubles <= limit &&
+          !doubles.has(positions.doubles)
+        ) {
+          doubles.set(positions.doubles, {
+            ...base,
+            position: positions.doubles,
+          });
+        }
+        if (
+          positions.singles != null &&
+          positions.singles >= 1 &&
+          positions.singles <= limit &&
+          !singles.has(positions.singles)
+        ) {
+          singles.set(positions.singles, {
+            ...base,
+            position: positions.singles,
+          });
+        }
       }
     }
   }
