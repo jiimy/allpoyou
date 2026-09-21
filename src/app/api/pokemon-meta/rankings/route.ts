@@ -1,4 +1,3 @@
-import { after } from 'next/server';
 import { type NextRequest } from 'next/server';
 
 import { getSeoulDateString } from '@/utils/battleData';
@@ -13,7 +12,7 @@ export const maxDuration = 300;
 /**
  * GET /api/pokemon-meta/rankings
  * - 기본: 캐시된 Doubles/Singles position 1~15 (오늘 → 어제 → 최근 파일)
- * - 오늘자 캐시가 없으면 백그라운드에서 재생성
+ * - 오늘자 캐시가 없으면 동기 재생성 후 반환 (after 백그라운드는 Hobby에서 자주 유실됨)
  * - ?rebuild=1 : pokemon API(`/api/pokemon/:slug`) battle_summary 기준 재생성
  */
 export async function GET(request: NextRequest) {
@@ -35,32 +34,32 @@ export async function GET(request: NextRequest) {
         limit: safeLimit,
         concurrency: 8,
       });
-      return Response.json(data);
+      return Response.json(data, {
+        headers: { 'Cache-Control': 'no-store' },
+      });
     }
 
-    const data = await getDailyPositionRankings(safeLimit);
     const today = getSeoulDateString();
+    let data = await getDailyPositionRankings(safeLimit);
 
-    // 오늘자 랭킹이 없으면 백그라운드로 갱신 (응답은 어제/최근 데이터로 즉시 반환)
+    // 오늘자 랭킹이 없으면 즉시 재생성 (메인이 어제 날짜로 남는 것 방지)
     if (
       data.date !== today ||
       (data.doubles.length === 0 && data.singles.length === 0)
     ) {
-      after(async () => {
-        try {
-          await rebuildDailyPositionRankingsFromApi({
-            limit: safeLimit,
-            concurrency: 8,
-          });
-        } catch (error) {
-          console.error('[pokemon-meta/rankings] background rebuild 실패', error);
-        }
-      });
+      try {
+        data = await rebuildDailyPositionRankingsFromApi({
+          limit: safeLimit,
+          concurrency: 8,
+        });
+      } catch (error) {
+        console.error('[pokemon-meta/rankings] 오늘자 재생성 실패', error);
+        // 실패 시 어제/최근 데이터라도 반환
+      }
     }
 
     return Response.json(data, {
       headers: {
-        // 메인 랭킹은 당일 CSV 갱신 직후 바로 반영되어야 함
         'Cache-Control': 'no-store',
       },
     });

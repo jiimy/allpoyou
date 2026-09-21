@@ -14,12 +14,7 @@ import {
 
 import s from './noticeModal.module.scss';
 
-/**
- * 현재 업데이트 공지 버전.
- * 새 업데이트마다 이 값과 안내 문구를 함께 수정하세요.
- * "다음 업데이트 전까지 보지 않기"는 이 버전 기준으로 숨깁니다.
- */
-const CURRENT_UPDATE_VERSION = '2026-08-18';
+const CURRENT_UPDATE_VERSION = '2026-09-21';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -77,55 +72,93 @@ const NoticeModal = () => {
     >
       <div className={s.content}>
         <h2 className={s.title}>업데이트 안내</h2>
-        <ul className={s.list}>
-          <li className={s.item}>
-            26.08.18 - 포챔스에서 사용가능한 도구 추가. 
-            <span className={s.subText}>
-              - 포챔스데이터 상태일때 도구 페이지에서 지참/전투 탭에 추가. 
-            </span>
-          </li>
-        </ul>
-        <details>
-          <summary>지난 업데이트 내역</summary>
+
+        <div className={s.currentSection}>
+          26.09.21
           <ul className={s.list}>
             <li className={s.item}>
-              26.08.03 - 타입 상성 추천의 n번째 포켓몬 선택의 각 항목에서 바로 팀에서 제거하는 기능 추가.
+              포챔스 레귤레이션 M-C 랭킹 반영
               <span className={s.subText}>
-                - 위로 올라가지 않고도 팀에서 포켓몬 제거 가능.
+                - 레귤레이션 M-C에 추가된 포켓몬 기준의 랭킹 데이터 반영.
+                <br/>
+                - 변경된 기술 및 도구는 추후 반영.
               </span>
             </li>
             <li className={s.item}>
-              26.08.03 - 타입 상성 추천시 현재 포켓몬이 아닌 파티 전체의 타입으로도 추천할수있게 추가.
+              타입계산기에 도감 추가
               <span className={s.subText}>
-                - (물라오스 - 팬텀 - 오롱털 순서일때 오롱털의 추천 상성 타입이 땅, 불꽃뿐이라 포켓몬 추천 범위가 좁아 파티 전체까지 확장할수있게)
-              </span>
-            </li>
-            <li className={s.item}>
-              26.08.03 - 타입 상성표에서 공격 상성 추가
-            </li>
-            <li className={s.item}>
-              26.07.29 - 포챔스 배울 수 있는 기술 반영
-              <span className={s.subText}>
-                - &quot;기술&quot; 페이지에서 포챔스 기준으로 기술을 검색하고 배울수있는 기술을 검색할 수 있습니다.
-              </span>
-            </li>
-            <li className={s.item}>
-              26.07.27 - 포챔스 랭킹 데이터 반영
-            </li>
-            <li className={s.item}>
-              26.07.22 - 포챔스 데이터 팀에 추가 기능 추가
-              <span className={s.subText}>
-                - 포챔스 데이터 검색 후 상세 스탯을 선택후 팀에 추가 기능 추가.
-              </span>
-            </li>
-            <li className={s.item}>
-              26.07.20 - 우측 상단에 포챔스데이터를 가져오는 기능 추가.
-              <span className={s.subText}>
-                - 메인메뉴에서 포켓몬 이름 검색시 포챔스 데이터 기준으로              배틀데이터 제공
+                - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
               </span>
             </li>
           </ul>
+        </div>
+
+        <details className={s.pastDetails}>
+          <summary className={s.pastSummary}>지난 업데이트 내역</summary>
+          <div className={s.pastBody}>
+            26.08.18
+            <ul className={s.list}>
+              <li className={s.item}>
+                포챔스에서 사용가능한 도구 추가.
+                <span className={s.subText}>
+                  - 포챔스데이터 상태일때 도구 페이지에서 지참/전투 탭에 추가.
+                </span>
+              </li>
+            </ul>
+            26.08.03
+            <ul className={s.list}>
+              <li className={s.item}>
+                타입 상성 추천의 n번째 포켓몬 선택의 각 항목에서 바로 팀에서 제거하는 기능 추가.
+                <span className={s.subText}>
+                  - 위로 올라가지 않고도 팀에서 포켓몬 제거 가능.
+                </span>
+              </li>
+              <li className={s.item}>
+                2타입 상성 추천시 현재 포켓몬이 아닌 파티 전체의 타입으로도 추천할수있게 추가.
+                <span className={s.subText}>
+                  - (물라오스 - 팬텀 - 오롱털 순서일때 오롱털의 추천 상성 타입이 땅, 불꽃뿐이라 포켓몬 추천 범위가 좁아 파티 전체까지 확장할수있게)
+                </span>
+              </li>
+              <li className={s.item}>
+                타입 상성표에서 공격 상성 추가
+              </li>
+            </ul>
+            26.07.29
+            <ul className={s.list}>
+              <li className={s.item}>
+                포챔스 배울 수 있는 기술 반영
+                <span className={s.subText}>
+                  - &quot;기술&quot; 페이지에서 포챔스 기준으로 기술을 검색하고 배울수있는 기술을 검색할 수 있습니다.
+                </span>
+              </li>
+            </ul>
+            26.07.27
+            <ul className={s.list}>
+              <li className={s.item}>
+                포챔스 랭킹 데이터 반영
+              </li>
+            </ul>
+            26.07.22
+            <ul className={s.list}>
+              <li className={s.item}>
+                포챔스 데이터 팀에 추가 기능 추가
+                <span className={s.subText}>
+                  - 포챔스 데이터 검색 후 상세 스탯을 선택후 팀에 추가 기능 추가.
+                </span>
+              </li>
+            </ul>
+            26.07.20
+            <ul className={s.list}>
+              <li className={s.item}>
+                우측 상단에 포챔스데이터를 가져오는 기능 추가.
+                <span className={s.subText}>
+                  - 메인메뉴에서 포켓몬 이름 검색시 포챔스 데이터 기준으로              배틀데이터 제공
+                </span>
+              </li>
+            </ul>
+          </div>
         </details>
+
         <div className={s.footer}>
           <label className={s.checkbox}>
             <input
