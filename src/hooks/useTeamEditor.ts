@@ -1448,14 +1448,20 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   }, [rememberFocusedSlot]);
 
   const applyPochamsPendingToSlot = useCallback(
-    (index: number) => {
+    (index: number, options?: { replace?: boolean }) => {
       if (!pendingPochamsBuild) return false;
-      // 빈 슬롯에만 적용
-      if (selectedPokemons[index] != null) return false;
+      const occupied = selectedPokemons[index] != null;
+      if (occupied && !options?.replace) return false;
+      if (options?.replace) {
+        if (!occupied) return false;
+        if (!selectedPokemons.every((pokemon) => pokemon != null)) return false;
+      }
       // 이미 팀에 들어간 포켓몬은 다른 슬롯에 중복 추가 불가
       if (
         selectedPokemons.some(
-          (pokemon) => pokemon?.id === pendingPochamsBuild.pokemon.id,
+          (pokemon, slotIndex) =>
+            pokemon?.id === pendingPochamsBuild.pokemon.id &&
+            (!options?.replace || slotIndex !== index),
         )
       ) {
         return false;
@@ -1567,13 +1573,24 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   );
 
   const applyPendingPokemonToSlot = useCallback(
-    (index: number) => {
-      if (applyPochamsPendingToSlot(index)) return true;
+    (index: number, options?: { replace?: boolean }) => {
+      if (applyPochamsPendingToSlot(index, options)) return true;
       if (!pendingPokemon) return false;
-      // 빈 슬롯에만 적용
-      if (selectedPokemons[index] != null) return false;
+      const occupied = selectedPokemons[index] != null;
+      if (occupied && !options?.replace) return false;
+      if (options?.replace) {
+        if (!occupied) return false;
+        if (!selectedPokemons.every((pokemon) => pokemon != null)) return false;
+      }
       // 이미 팀에 들어간 포켓몬은 다른 슬롯에 중복 추가 불가
-      if (selectedPokemons.some((pokemon) => pokemon?.id === pendingPokemon.id)) {
+      // (교체 대상 슬롯에 있는 동일 id는 허용)
+      if (
+        selectedPokemons.some(
+          (pokemon, slotIndex) =>
+            pokemon?.id === pendingPokemon.id &&
+            (!options?.replace || slotIndex !== index),
+        )
+      ) {
         return false;
       }
       handleSelect(index, pendingPokemon);
@@ -1588,8 +1605,8 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   );
 
   const handleThumbnailActivate = useCallback(
-    (index: number) => {
-      applyPendingPokemonToSlot(index);
+    (index: number, options?: { replace?: boolean }) => {
+      applyPendingPokemonToSlot(index, options);
     },
     [applyPendingPokemonToSlot],
   );

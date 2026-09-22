@@ -66,3 +66,27 @@ export function resolveMoveLookupPokemonId(
   const baseForm = pokemonList.find((entry) => entry.nameKo === lookupName);
   return baseForm?.id ?? pokemon.id;
 }
+
+/** 나무위키 검색용 — 리전/메가/거다이 등 폼 접두 단어 제거 */
+const NAMU_STRIP_WORDS = new Set([
+  '거다이',
+  '메가',
+  '알로라',
+  '가라르',
+  '팔데아',
+  '히스이',
+]);
+
+/**
+ * 나무위키 이동용 한글명.
+ * `히스이 윈디` → `윈디` (공백으로 나뉜 토큰만 제거, 메가니움 등은 유지)
+ */
+export function getNamuWikiNameKo(nameKo: string): string {
+  const stripped = nameKo
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 0 && !NAMU_STRIP_WORDS.has(token))
+    .join(' ')
+    .trim();
+  return stripped || nameKo.trim();
+}

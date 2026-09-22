@@ -41,6 +41,37 @@ export function useTypeCalcModalShortcut(
 
 type TypeCalcModalProps = ChildrenModalType;
 type PanelView = 'calc' | 'pokemon';
+type PokemonSortKey = 'name' | 'type';
+type PokemonSortDirection = 'asc' | 'desc';
+
+const POKEMON_SORT_LABELS: { key: PokemonSortKey; label: string }[] = [
+  { key: 'name', label: '이름' },
+  { key: 'type', label: '타입' },
+];
+
+const DEFAULT_POKEMON_SORT_DIRS: Record<PokemonSortKey, PokemonSortDirection> = {
+  name: 'asc',
+  type: 'desc',
+};
+
+function comparePokemonSort(
+  a: Pokemon,
+  b: Pokemon,
+  key: PokemonSortKey,
+  direction: PokemonSortDirection,
+): number {
+  const dir = direction === 'asc' ? 1 : -1;
+  if (key === 'name') {
+    const byName = a.nameKo.localeCompare(b.nameKo, 'ko') * dir;
+    if (byName !== 0) return byName;
+    return a.number - b.number;
+  }
+  const typeA = a.types.join(' ');
+  const typeB = b.types.join(' ');
+  const byType = typeA.localeCompare(typeB, 'ko') * dir;
+  if (byType !== 0) return byType;
+  return a.nameKo.localeCompare(b.nameKo, 'ko');
+}
 
 const TypeCalcModal = ({
   setOnModal,
@@ -64,6 +95,9 @@ const TypeCalcModal = ({
   const [panel, setPanel] = useState<PanelView>('calc');
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [infoPokemon, setInfoPokemon] = useState<Pokemon | null>(null);
+  const [finalEvolutionOnly, setFinalEvolutionOnly] = useState(false);
+  const [pokemonSortKey, setPokemonSortKey] = useState<PokemonSortKey>('name');
+  const [pokemonSortDirs, setPokemonSortDirs] = useState(DEFAULT_POKEMON_SORT_DIRS);
   const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
 
@@ -79,8 +113,22 @@ const TypeCalcModal = ({
 
     return allPokemon
       .filter((p) => typesKo.every((type) => p.types.includes(type)))
-      .sort((a, b) => a.number - b.number || a.nameKo.localeCompare(b.nameKo, 'ko'));
-  }, [allPokemon, selected]);
+      .filter((p) => !finalEvolutionOnly || p.grade === 3)
+      .sort((a, b) =>
+        comparePokemonSort(a, b, pokemonSortKey, pokemonSortDirs[pokemonSortKey]),
+      );
+  }, [allPokemon, selected, finalEvolutionOnly, pokemonSortKey, pokemonSortDirs]);
+
+  const handlePokemonSortClick = useCallback((key: PokemonSortKey) => {
+    if (pokemonSortKey === key) {
+      setPokemonSortDirs((prev) => ({
+        ...prev,
+        [key]: prev[key] === 'asc' ? 'desc' : 'asc',
+      }));
+      return;
+    }
+    setPokemonSortKey(key);
+  }, [pokemonSortKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -236,6 +284,48 @@ const TypeCalcModal = ({
                   {matchedPokemon.length}마리 · {toKoreanTypes(selected).join(' / ')}
                 </span>
               </h2>
+              <div className={s.listControls}>
+                <label className={s.checkbox}>
+                  <input
+                    type="checkbox"
+                    className={s.checkboxInput}
+                    checked={finalEvolutionOnly}
+                    onChange={(e) => setFinalEvolutionOnly(e.target.checked)}
+                  />
+                  최종진화
+                </label>
+                <span className={s.controlSep} aria-hidden>
+                  /
+                </span>
+                <div className={s.sortRow} role="group" aria-label="포켓몬 정렬">
+                  {POKEMON_SORT_LABELS.map(({ key, label }, index) => {
+                    const dir = pokemonSortDirs[key];
+                    const arrow = dir === 'asc' ? '↑' : '↓';
+                    const active = pokemonSortKey === key;
+                    return (
+                      <React.Fragment key={key}>
+                        {index > 0 ? (
+                          <span className={s.controlSep} aria-hidden>
+                            /
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={classNames(s.sortBtn, {
+                            [s.sortBtnActive]: active,
+                          })}
+                          onClick={() => handlePokemonSortClick(key)}
+                          aria-pressed={active}
+                          aria-label={`${label} ${dir === 'asc' ? '오름차순' : '내림차순'} 정렬`}
+                        >
+                          {label}
+                          {arrow}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
               <div className={s.pokemonList}>
                 {matchedPokemon.length === 0 ? (
                   <p className={s.empty}>해당 타입의 포켓몬이 없습니다.</p>

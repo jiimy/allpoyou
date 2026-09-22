@@ -248,6 +248,14 @@
   }
 }
 
+.thumbnailReplaceable {
+  outline-color: #f0d9a8;
+
+  &:hover {
+    outline-color: #e0a33a;
+  }
+}
+
 .thumbnailDefaultImg {
   display: flex;
   align-items: center;

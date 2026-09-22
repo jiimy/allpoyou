@@ -132,7 +132,10 @@ export type TeamProps = {
   pendingItemPick?: ItemKr | null;
   pendingPokemonPick?: Pokemon | null;
   onItemSectionActivate: (index: number) => void;
-  onThumbnailActivate: (index: number) => void;
+  onThumbnailActivate: (
+    index: number,
+    options?: { replace?: boolean },
+  ) => void;
   selectedNatures: (string | null)[];
   natureSearchValues: string[];
   activeNatureIndex: number | null;
@@ -296,6 +299,13 @@ const Team: React.FC<TeamProps> = ({
   );
 
   const [statModalIndex, setStatModalIndex] = useState<number | null>(null);
+
+  const isTeamFull = useMemo(
+    () =>
+      selectedPokemons.length > 0 &&
+      selectedPokemons.every((pokemon) => pokemon != null),
+    [selectedPokemons],
+  );
 
   const teamStatSlots = useMemo((): TeamStatSlot[] => {
     const slots: TeamStatSlot[] = [];
@@ -512,6 +522,11 @@ const Team: React.FC<TeamProps> = ({
           (pokemonMoveIdSets[selected.id]?.has(pendingMovePick.id) ?? false) &&
           !selectedMoveIds[index].includes(pendingMovePick.id);
 
+        const canAddPending =
+          pendingPokemonPick != null && selected == null;
+        const canReplacePending =
+          pendingPokemonPick != null && selected != null && isTeamFull;
+
         return (
           <div
             key={index}
@@ -519,13 +534,23 @@ const Team: React.FC<TeamProps> = ({
           >
             <div
               className={cn(s.thumbnail, {
-                [s.thumbnailPickable]:
-                  pendingPokemonPick != null && selected == null,
+                [s.thumbnailPickable]: canAddPending || canReplacePending,
+                [s.thumbnailReplaceable]: canReplacePending,
                 [s.thumbnailMoveLearnable]: pendingMoveLearnable,
               })}
               onClick={() => {
-                if (!pendingPokemonPick || selected != null) return;
-                onThumbnailActivate(index);
+                if (!pendingPokemonPick) return;
+                if (selected == null) {
+                  onThumbnailActivate(index);
+                  return;
+                }
+                if (!isTeamFull) return;
+                const confirmed = window.confirm(
+                  `${selected.nameKo}을(를) ${pendingPokemonPick.nameKo}(으)로 교체할까요?`,
+                );
+                if (confirmed) {
+                  onThumbnailActivate(index, { replace: true });
+                }
               }}
             >
               {selected && hasPokemonImage(selected.images) ? (

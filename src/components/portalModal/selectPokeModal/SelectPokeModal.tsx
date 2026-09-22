@@ -15,8 +15,16 @@ import {
 import type { MoveDbEntry } from '@/types/move';
 import { getAbilitySummary } from '@/utils/abilitySearch';
 import { getLearnableMovesFromLocalFiles } from '@/utils/localPokemonMoves';
-import { getMoveStatsTitle, getMoveTypeKo } from '@/utils/moveDisplay';
+import {
+  getMoveStatsTitle,
+  getMoveTypeKo,
+  sortMoves,
+} from '@/utils/moveDisplay';
 import { ALL_MOVES } from '@/utils/movesIndex';
+import {
+  type MoveSortDirection,
+  type MoveSortKey,
+} from '@/constants/moveFilters';
 import {
   filterMovesByPochampsNames,
   resolvePochampsStorageSlug,
@@ -27,8 +35,11 @@ import {
   BASE_STAT_MAX,
 } from '@/utils/pokemonBaseStats';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import { getNamuWikiNameKo } from '@/utils/pokemonName';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
+import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
+import { useTeamModalStore } from '@/store/TeamModalStore';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -48,6 +59,18 @@ const STAT_BAR_COLORS: Record<(typeof BASE_STAT_KEYS)[number], string> = {
 const KO_TO_EN_TYPE: Record<string, string> = Object.fromEntries(
   Object.entries(typeTranslation).map(([en, ko]) => [ko, en]),
 );
+
+const MOVE_SORT_LABELS: { key: MoveSortKey; label: string }[] = [
+  { key: 'name', label: '기술명' },
+  { key: 'power', label: '위력' },
+  { key: 'type', label: '타입' },
+];
+
+const DEFAULT_SORT_DIRS: Record<MoveSortKey, MoveSortDirection> = {
+  name: 'asc',
+  power: 'desc',
+  type: 'desc',
+};
 
 type SelectPokeModalProps = {
   pokemon: Pokemon;
@@ -111,10 +134,15 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const [prevMovesPokemonKey, setPrevMovesPokemonKey] = useState<string | null>(
     null,
   );
+  const [moveSortKey, setMoveSortKey] = useState<MoveSortKey>('name');
+  const [moveSortDirs, setMoveSortDirs] =
+    useState<Record<MoveSortKey, MoveSortDirection>>(DEFAULT_SORT_DIRS);
 
   const setTypeCalcMode = useTypeCalcStore((state) => state.setMode);
   const setAttackSelected = useTypeCalcStore((state) => state.setAttackSelected);
   const setDefenseSelected = useTypeCalcStore((state) => state.setDefenseSelected);
+  const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
+  const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
   const pochampsActive = pochampsHydrated && pochampsEnabled;
@@ -149,7 +177,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
         setPokemonList(list);
         setActivePokemon((current) => enrichPokemon(current, list));
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => {
       cancelled = true;
@@ -163,8 +191,8 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   // 메가 진화일 경우, 진화전은 이 포켓몬을 nextEvolutions로 가진 기본형(비-메가)으로 표시한다.
   const megaBaseName = isMegaEvolution
     ? pokemonList.find((entry) =>
-        ensureStringArray(entry.nextEvolutions).includes(activePokemon.nameKo),
-      )?.nameKo ?? null
+      ensureStringArray(entry.nextEvolutions).includes(activePokemon.nameKo),
+    )?.nameKo ?? null
     : null;
 
   const prevEvolutionNames = megaBaseName
@@ -222,6 +250,27 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
       setTypeCalcOpen(true);
     },
     [activePokemon.types, setTypeCalcMode, setAttackSelected, setDefenseSelected],
+  );
+
+  const handleAddToTeam = useCallback(() => {
+    setPendingPokemon(activePokemon);
+    setTeamModalOpen(true);
+  }, [activePokemon, setPendingPokemon, setTeamModalOpen]);
+
+  const handleMoveSortClick = useCallback((key: MoveSortKey) => {
+    if (moveSortKey === key) {
+      setMoveSortDirs((prev) => ({
+        ...prev,
+        [key]: prev[key] === 'asc' ? 'desc' : 'asc',
+      }));
+      return;
+    }
+    setMoveSortKey(key);
+  }, [moveSortKey]);
+
+  const sortedMoves = useMemo(
+    () => sortMoves(moves, moveSortKey, moveSortDirs[moveSortKey], pochampsActive),
+    [moves, moveSortKey, moveSortDirs, pochampsActive],
   );
 
   const imageUrl = getPokemonStaticImage(activePokemon.images);
@@ -300,228 +349,266 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
 
   return (
     <>
-    <ModalFrame
-      setOnModal={setOnModal}
-      isDim
-      onClose
-      dimClick
-      className={s.modal}
-    >
-      <div className={s.content}>
-        <div className={s.header}>
-          <div className={s.imageWrap}>
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={activePokemon.nameKo}
-                width={96}
-                height={96}
-                className={s.image}
-              />
-            ) : null}
-          </div>
-          <div className={s.headerMeta}>
-            <p className={s.number}>#{activePokemon.number}</p>
-            <h2 className={s.name}>{activePokemon.nameKo}</h2>
-            <div className={s.types}>
-              {ensureStringArray(activePokemon.types).map((type) => (
-                <span
-                  key={type}
-                  className={s.typeBadge}
-                  style={{ background: TYPE_COLOR[type] ?? '#999' }}
-                >
-                  {type}
+      <ModalFrame
+        setOnModal={setOnModal}
+        isDim
+        onClose
+        dimClick
+        className={s.modal}
+      >
+        <div className={s.content}>
+          <div className={s.header}>
+            <div className={s.imageWrap}>
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt={activePokemon.nameKo}
+                  width={96}
+                  height={96}
+                  className={s.image}
+                />
+              ) : null}
+            </div>
+            <div className={s.headerMeta}>
+              <p className={s.number}>#{activePokemon.number}</p>
+              <h2 className={s.name}>{activePokemon.nameKo}</h2>
+              <div className={s.types}>
+                {ensureStringArray(activePokemon.types).map((type) => (
+                  <span
+                    key={type}
+                    className={s.typeBadge}
+                    style={{ background: TYPE_COLOR[type] ?? '#999' }}
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+              <span className={s.typeCalc}>
+                <span>
+                  <button type="button" onClick={handleAddToTeam}>
+                    팀에 추가
+                  </button>
+                  <a
+                    href={`https://namu.wiki/w/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    나무위키
+                  </a>
                 </span>
+                <button
+                  type="button"
+                  className={`${s.typeCalcBtn} ${s.typeCalcAttack}`}
+                  onClick={() => handleOpenTypeCalc('attack')}
+                  title="공격 상성 계산"
+                  aria-label="공격 상성 계산"
+                >
+                  <GiCrossedSwords />
+                </button>
+                <button
+                  type="button"
+                  className={`${s.typeCalcBtn} ${s.typeCalcDefense}`}
+                  onClick={() => handleOpenTypeCalc('defense')}
+                  title="방어 상성 계산"
+                  aria-label="방어 상성 계산"
+                >
+                  <GiCheckedShield />
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <section>
+            <h3 className={s.sectionTitle}>종족값</h3>
+            <div className={s.statGrid}>
+              {BASE_STAT_KEYS.map((key) => (
+                <React.Fragment key={key}>
+                  <span className={s.statLabel}>{BASE_STAT_LABEL[key]}</span>
+                  <span className={s.statValue}>{activePokemon[key]}</span>
+                  <div className={s.statBarTrack}>
+                    <div
+                      className={s.statBarFill}
+                      style={{
+                        width: `${(activePokemon[key] / BASE_STAT_MAX) * 100}%`,
+                        background: STAT_BAR_COLORS[key],
+                      }}
+                    />
+                  </div>
+                </React.Fragment>
               ))}
             </div>
-            <span className={s.typeCalc}>
-              <button
-                type="button"
-                className={`${s.typeCalcBtn} ${s.typeCalcAttack}`}
-                onClick={() => handleOpenTypeCalc('attack')}
-                title="공격 상성 계산"
-                aria-label="공격 상성 계산"
-              >
-                <GiCrossedSwords />
-              </button>
-              <button
-                type="button"
-                className={`${s.typeCalcBtn} ${s.typeCalcDefense}`}
-                onClick={() => handleOpenTypeCalc('defense')}
-                title="방어 상성 계산"
-                aria-label="방어 상성 계산"
-              >
-                <GiCheckedShield />
-              </button>
-            </span>
-          </div>
-        </div>
-
-        <section>
-          <h3 className={s.sectionTitle}>종족값</h3>
-          <div className={s.statGrid}>
-            {BASE_STAT_KEYS.map((key) => (
-              <React.Fragment key={key}>
-                <span className={s.statLabel}>{BASE_STAT_LABEL[key]}</span>
-                <span className={s.statValue}>{activePokemon[key]}</span>
-                <div className={s.statBarTrack}>
-                  <div
-                    className={s.statBarFill}
-                    style={{
-                      width: `${(activePokemon[key] / BASE_STAT_MAX) * 100}%`,
-                      background: STAT_BAR_COLORS[key],
-                    }}
-                  />
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-          <div className={s.statTotalRow}>
-            <span>합계</span>
-            <strong>{activePokemon.total}</strong>
-          </div>
-        </section>
-
-        {showEvolutionNav ? (
-          <section className={s.evolutionSection}>
-            <div className={s.evolutionRow}>
-              <div className={s.evolutionSidePrev}>
-                {prevEvolutionTargets.map(({ nameKo, pokemon: target }) => (
-                  <button
-                    key={`prev-${nameKo}`}
-                    type="button"
-                    className={s.evolutionBtn}
-                    disabled={!target}
-                    onClick={() => handleEvolutionSelect(target)}
-                  >
-                    <span className={s.evolutionArrow} aria-hidden>
-                      &lt;
-                    </span>
-                    <span className={s.evolutionLabel}>진화전</span>
-                    <span className={s.evolutionName}>{nameKo}</span>
-                  </button>
-                ))}
-              </div>
-              <div className={s.evolutionSideNext}>
-                {nextEvolutionTargets.map(({ nameKo, pokemon: target }) => (
-                  <button
-                    key={`next-${nameKo}`}
-                    type="button"
-                    className={`${s.evolutionBtn} ${s.evolutionBtnNext}`}
-                    disabled={!target}
-                    onClick={() => handleEvolutionSelect(target)}
-                  >
-                    <span className={s.evolutionName}>{nameKo}</span>
-                    <span className={s.evolutionLabel}>진화후</span>
-                    <span className={s.evolutionArrow} aria-hidden>
-                      &gt;
-                    </span>
-                  </button>
-                ))}
-              </div>
+            <div className={s.statTotalRow}>
+              <span>합계</span>
+              <strong>{activePokemon.total}</strong>
             </div>
           </section>
-        ) : null}
 
-        <section>
-          <h3 className={s.sectionTitle}>특성 <p>항목 클릭시 특성 페이지로 이동됩니다.</p></h3>
-          {regularAbilities.length === 0 && hiddenAbilities.length === 0 ? (
-            <p className={s.statusText}>특성 정보 없음</p>
-          ) : (
-            <ul className={s.abilityList}>
-              {regularAbilities.map((name) => (
-                <li
-                  key={`ability-${name}`}
-                  className={s.abilityItem}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleAbilitySelect(name)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleAbilitySelect(name);
-                    }
-                  }}
-                >
-                  <span className={s.abilityName}>{name}</span>
-                  <p className={s.abilitySummary}>
-                    {getAbilitySummary(name) ?? '설명 없음'}
-                  </p>
-                </li>
-              ))}
-              {hiddenAbilities.map((name) => (
-                <li
-                  key={`s-ability-${name}`}
-                  className={`${s.abilityItem} ${s.abilityHidden}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleAbilitySelect(name)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      handleAbilitySelect(name);
-                    }
-                  }}
-                >
-                  <span className={s.abilityName}>{name}</span>
-                  <p className={s.abilitySummary}>
-                    {getAbilitySummary(name) ?? '설명 없음'}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          {showEvolutionNav ? (
+            <section className={s.evolutionSection}>
+              <div className={s.evolutionRow}>
+                <div className={s.evolutionSidePrev}>
+                  {prevEvolutionTargets.map(({ nameKo, pokemon: target }) => (
+                    <button
+                      key={`prev-${nameKo}`}
+                      type="button"
+                      className={s.evolutionBtn}
+                      disabled={!target}
+                      onClick={() => handleEvolutionSelect(target)}
+                    >
+                      <span className={s.evolutionArrow} aria-hidden>
+                        &lt;
+                      </span>
+                      <span className={s.evolutionLabel}>진화전</span>
+                      <span className={s.evolutionName}>{nameKo}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className={s.evolutionSideNext}>
+                  {nextEvolutionTargets.map(({ nameKo, pokemon: target }) => (
+                    <button
+                      key={`next-${nameKo}`}
+                      type="button"
+                      className={`${s.evolutionBtn} ${s.evolutionBtnNext}`}
+                      disabled={!target}
+                      onClick={() => handleEvolutionSelect(target)}
+                    >
+                      <span className={s.evolutionName}>{nameKo}</span>
+                      <span className={s.evolutionLabel}>진화후</span>
+                      <span className={s.evolutionArrow} aria-hidden>
+                        &gt;
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : null}
 
-        <section className={s.skillSection}>
-          <h3 className={s.sectionTitle}>
-            배울 수 있는 기술
-            {pochampsActive ? ' · 포챔스' : ''}{' '}
-            <p>항목 클릭시 기술 페이지로 이동합니다.</p>
-          </h3>
-          {movesLoading ? (
-            <p className={s.statusText}>기술 목록 불러오는 중…</p>
-          ) : movesError ? (
-            <p className={s.errorText}>{movesError}</p>
-          ) : moves.length === 0 ? (
-            <p className={s.statusText}>배울 수 있는 기술이 없습니다.</p>
-          ) : (
-            <ul className={s.moveList}>
-              {moves.map((move) => {
-                const typeKo = getMoveTypeKo(move.type);
-                return (
+          <section>
+            <h3 className={s.sectionTitle}>특성 <p>항목 클릭시 특성 페이지로 이동됩니다.</p></h3>
+            {regularAbilities.length === 0 && hiddenAbilities.length === 0 ? (
+              <p className={s.statusText}>특성 정보 없음</p>
+            ) : (
+              <ul className={s.abilityList}>
+                {regularAbilities.map((name) => (
                   <li
-                    key={move.id}
-                    className={s.moveItem}
+                    key={`ability-${name}`}
+                    className={s.abilityItem}
                     role="button"
                     tabIndex={0}
-                    onClick={() => handleMoveSelect(move)}
+                    onClick={() => handleAbilitySelect(name)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
-                        handleMoveSelect(move);
+                        handleAbilitySelect(name);
                       }
                     }}
                   >
-                    <span className={s.moveName}>{move.koreanName}</span>
-                    <span className={s.moveStats}>{getMoveStatsTitle(move, pochampsActive)}</span>
-                    <span
-                      className={s.moveTypeBadge}
-                      style={{ background: TYPE_COLOR[typeKo] ?? '#999' }}
-                    >
-                      {typeKo}
-                    </span>
+                    <span className={s.abilityName}>{name}</span>
+                    <p className={s.abilitySummary}>
+                      {getAbilitySummary(name) ?? '설명 없음'}
+                    </p>
                   </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      </div>
-    </ModalFrame>
-    {typeCalcOpen ? (
-      <TypeCalcModal setOnModal={setTypeCalcOpen} dimClick />
-    ) : null}
+                ))}
+                {hiddenAbilities.map((name) => (
+                  <li
+                    key={`s-ability-${name}`}
+                    className={`${s.abilityItem} ${s.abilityHidden}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleAbilitySelect(name)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleAbilitySelect(name);
+                      }
+                    }}
+                  >
+                    <span className={s.abilityName}>{name}</span>
+                    <p className={s.abilitySummary}>
+                      {getAbilitySummary(name) ?? '설명 없음'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className={s.skillSection}>
+            <h3 className={s.sectionTitle}>
+              배울 수 있는 기술
+              {pochampsActive ? ' · 포챔스' : ''}{' '}
+              <p>항목 클릭시 기술 페이지로 이동합니다.</p>
+              <div className={s.moveSortRow} role="group" aria-label="기술 정렬">
+                {MOVE_SORT_LABELS.map(({ key, label }, index) => {
+                  const dir = moveSortDirs[key];
+                  const arrow = dir === 'asc' ? '↑' : '↓';
+                  const active = moveSortKey === key;
+                  return (
+                    <React.Fragment key={key}>
+                      {index > 0 ? (
+                        <span className={s.moveSortSep} aria-hidden>
+                          /
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={`${s.moveSortBtn} ${active ? s.moveSortBtnActive : ''}`}
+                        onClick={() => handleMoveSortClick(key)}
+                        aria-pressed={active}
+                        aria-label={`${label} ${dir === 'asc' ? '오름차순' : '내림차순'} 정렬`}
+                      >
+                        {label}
+                        {arrow}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </h3>
+            {movesLoading ? (
+              <p className={s.statusText}>기술 목록 불러오는 중…</p>
+            ) : movesError ? (
+              <p className={s.errorText}>{movesError}</p>
+            ) : sortedMoves.length === 0 ? (
+              <p className={s.statusText}>배울 수 있는 기술이 없습니다.</p>
+            ) : (
+              <ul className={s.moveList}>
+                {sortedMoves.map((move) => {
+                  const typeKo = getMoveTypeKo(move.type);
+                  return (
+                    <li
+                      key={move.id}
+                      className={s.moveItem}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleMoveSelect(move)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleMoveSelect(move);
+                        }
+                      }}
+                    >
+                      <span className={s.moveName}>{move.koreanName}</span>
+                      <span className={s.moveStats}>{getMoveStatsTitle(move, pochampsActive)}</span>
+                      <span
+                        className={s.moveTypeBadge}
+                        style={{ background: TYPE_COLOR[typeKo] ?? '#999' }}
+                      >
+                        {typeKo}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+      </ModalFrame>
+      {typeCalcOpen ? (
+        <TypeCalcModal setOnModal={setTypeCalcOpen} dimClick />
+      ) : null}
     </>
   );
 };

@@ -26,6 +26,8 @@ import { usePochamsPickStore } from '@/store/PochamsPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { useNoticeModalStore } from '@/store/NoticeModalStore';
 import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
+import { useSearchBarFocusStore } from '@/store/SearchBarFocusStore';
+import { useHeldModifiers } from '@/hooks/useHeldModifiers';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
 
@@ -85,6 +87,11 @@ const FloatingBtn = () => {
 
   const isOpen = useFloatingBtnStore((state) => state.isOpen);
   const setIsOpen = useFloatingBtnStore((state) => state.setIsOpen);
+  const searchBarFocused = useSearchBarFocusStore((state) => state.isFocused);
+  const heldModifiers = useHeldModifiers();
+  const shiftMenuOpen =
+    heldModifiers.shift && !searchBarFocused;
+  const menuOpen = isOpen || shiftMenuOpen;
   const [typeTableModalOpen, setTypeTableModalOpen] = useState(false);
   const [typeCalcModalOpen, setTypeCalcModalOpen] = useState(false);
   const [natureTableModalOpen, setNatureTableModalOpen] = useState(false);
@@ -176,12 +183,12 @@ const FloatingBtn = () => {
         />
       )}
       <div ref={containerRef} className={s.container}>
-        <ul className={`${s.menuList} ${isOpen ? s.menuListOpen : ''}`}>
+        <ul className={`${s.menuList} ${menuOpen ? s.menuListOpen : ''}`}>
           {menuItems.map((item, index) => (
             <li
               key={item.id}
               className={s.menuItem}
-              style={{ transitionDelay: isOpen ? `${index * 50}ms` : '0ms' }}
+              style={{ transitionDelay: menuOpen ? `${index * 50}ms` : '0ms' }}
             >
               {item.href ? (
                 <Link
@@ -216,9 +223,9 @@ const FloatingBtn = () => {
 
         <button
           type="button"
-          className={`${s.floatingBtn} ${isOpen ? s.floatingBtnOpen : ''}`}
-          aria-label={isOpen ? '메뉴 닫기' : '메뉴 열기'}
-          aria-expanded={isOpen}
+          className={`${s.floatingBtn} ${menuOpen ? s.floatingBtnOpen : ''}`}
+          aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+          aria-expanded={menuOpen}
           onClick={() => setIsOpen((prev) => !prev)}
         >
           <span className={s.icon} aria-hidden="true" />

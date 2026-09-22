@@ -27,6 +27,7 @@ const ConfirmModal = ({
       isDim={isDim}
       onClose
       dimClick={dimClick}
+      zindex={40}
       className={classNames([s.confirm_modal], className)}
     >
       <Modal.Title>{title}</Modal.Title>

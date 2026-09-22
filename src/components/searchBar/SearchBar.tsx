@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { track } from '@vercel/analytics';
 import { usePochampsStore } from '@/store/PochampsStore';
+import { useSearchBarFocusStore } from '@/store/SearchBarFocusStore';
 import PochamsData from '@/components/pochamsData/PochamsData';
 import s from './searchBar.module.scss';
 
@@ -39,6 +40,7 @@ export default function SearchBar({
 }: SearchBarProps) {
   const [inputValue, setInputValue] = useState(keyword);
   const [prevKeyword, setPrevKeyword] = useState(keyword);
+  const setSearchBarFocused = useSearchBarFocusStore((state) => state.setFocused);
 
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
@@ -48,6 +50,10 @@ export default function SearchBar({
     setPrevKeyword(keyword);
     setInputValue(keyword);
   }
+
+  useEffect(() => {
+    return () => setSearchBarFocused(false);
+  }, [setSearchBarFocused]);
 
   useEffect(() => {
     onDebouncingChange?.(inputValue !== keyword);
@@ -92,6 +98,8 @@ export default function SearchBar({
         }
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
+        onFocus={() => setSearchBarFocused(true)}
+        onBlur={() => setSearchBarFocused(false)}
         autoComplete="off"
       />
       {showPokemonHint ? (

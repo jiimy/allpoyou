@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
+import { useHeldModifiers } from '@/hooks/useHeldModifiers';
 import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
+import { useSearchBarFocusStore } from '@/store/SearchBarFocusStore';
 
 import s from './topbutton.module.scss';
 
@@ -11,7 +13,10 @@ const SCROLL_THRESHOLD = 50;
 const TopButton = () => {
   const [isScrollPastThreshold, setIsScrollPastThreshold] = useState(false);
   const floatingMenuOpen = useFloatingBtnStore((state) => state.isOpen);
-  const visible = isScrollPastThreshold && !floatingMenuOpen;
+  const searchBarFocused = useSearchBarFocusStore((state) => state.isFocused);
+  const heldModifiers = useHeldModifiers();
+  const shiftMenuOpen = heldModifiers.shift && !searchBarFocused;
+  const visible = isScrollPastThreshold && !floatingMenuOpen && !shiftMenuOpen;
 
   useEffect(() => {
     const onScroll = () => {
