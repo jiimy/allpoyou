@@ -14,7 +14,7 @@ import {
 
 import s from './noticeModal.module.scss';
 
-const CURRENT_UPDATE_VERSION = '2026-09-21';
+const CURRENT_UPDATE_VERSION = '2026-09-22';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -74,14 +74,18 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
 
         <div className={s.currentSection}>
-          26.09.21
+          26.09.22
           <ul className={s.list}>
             <li className={s.item}>
-              포챔스 레귤레이션 M-C 랭킹 반영
+              각종 편의성 추가
               <span className={s.subText}>
-                - 레귤레이션 M-C에 추가된 포켓몬 기준의 랭킹 데이터 반영.
-                <br/>
-                - 변경된 기술 및 도구는 추후 반영.
+                - 포켓몬 상세 정보에서 팀에 추가, 나무위키로 이동 기능
+                <br />
+                - 포켓몬 상세 정보에서 배울 수 있는 기술 정렬 (이름, 위력, 타입)
+                <br />
+                - 키보드의 shift 키 누를 시 플로팅 버튼이 열리고, 입력창에 포커스 시에는 기능하지 않음.
+                <br />
+                - 타입 계산기의 추천 포켓몬 정렬 (최종진화, 이름, 타입)
               </span>
             </li>
             <li className={s.item}>
@@ -96,6 +100,23 @@ const NoticeModal = () => {
         <details className={s.pastDetails}>
           <summary className={s.pastSummary}>지난 업데이트 내역</summary>
           <div className={s.pastBody}>
+            26.09.21
+            <ul className={s.list}>
+              <li className={s.item}>
+                포챔스 레귤레이션 M-C 랭킹 반영
+                <span className={s.subText}>
+                  - 레귤레이션 M-C에 추가된 포켓몬 기준의 랭킹 데이터 반영.
+                  <br />
+                  - 변경된 기술 및 도구는 추후 반영.
+                </span>
+              </li>
+              <li className={s.item}>
+                타입계산기에 도감 추가
+                <span className={s.subText}>
+                  - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
+                </span>
+              </li>
+            </ul>
             26.08.18
             <ul className={s.list}>
               <li className={s.item}>
