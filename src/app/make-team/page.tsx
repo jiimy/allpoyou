@@ -17,7 +17,7 @@ import type { Pokemon } from '@/store/PokemonStore';
 import { PokemonSpriteImage } from '@/components/PokemonSpriteImage';
 import { hasPokemonImage } from '@/utils/pokemonDisplay';
 import { ensureStringArray } from '@/utils/pokemonNormalize';
-import { isMegaDisplayName } from '@/utils/pokemonName';
+import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
 import Team from '@/components/team/Team';
 import { PokemonTypePicker } from '@/components/team/PokemonTypePicker';
 import { TeamLinkPrompt } from '@/components/team/TeamLinkPrompt';
@@ -26,6 +26,7 @@ import { useDebouncedTeamDbSync } from '@/hooks/useDebouncedTeamDbSync';
 import { useTeamEditor } from '@/hooks/useTeamEditor';
 import { useLoggedInUserId } from '@/hooks/useLoggedInUserId';
 import { TEAM_SLOT_COUNT } from '@/store/PokemonTeamStore';
+import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
 import s from './maekTeam.module.scss';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 
@@ -383,7 +384,6 @@ const MakeTeam = () => {
   );
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
-  const [finalEvolutionOnly, setFinalEvolutionOnly] = useState(true);
   /** 슬롯별 OFF: 해당 포켓몬 기준 / ON: 그때까지 파티 약점 기준 보완 */
   const [partyWideComplement, setPartyWideComplement] = useState<boolean[]>(
     () => Array.from({ length: TEAM_SIZE }, () => false),
@@ -391,8 +391,10 @@ const MakeTeam = () => {
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
     Array.from({ length: TEAM_SIZE }, () => true),
   );
-  const [excludeMegaEvolution, setExcludeMegaEvolution] = useState<boolean[]>(
-    () => Array.from({ length: TEAM_SIZE }, () => false),
+  const excludeMega = usePokemonListFilterStore((state) => state.excludeMega);
+  const excludeGmax = usePokemonListFilterStore((state) => state.excludeGmax);
+  const finalEvolutionOnly = usePokemonListFilterStore(
+    (state) => state.finalEvolutionOnly,
   );
 
   const handleSelectFromRecommendation = (index: number, suggestion: Pokemon) => {
@@ -507,24 +509,6 @@ const MakeTeam = () => {
                 />
                 선택한 포켓몬과 다른 타입만 보기
               </label>
-              <label
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 13,
-                  color: '#555',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={finalEvolutionOnly}
-                  onChange={(e) => setFinalEvolutionOnly(e.target.checked)}
-                />
-                최종 진화체만 보기
-              </label>
             </div>
           </div>
         </div>
@@ -563,26 +547,26 @@ const MakeTeam = () => {
 
           const recSet = new Set(visibleCounters.map((c) => c.type));
           const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
-          const matchingPokemons = allPokemons.filter((p) => {
-            if (selectedPokemonIds.has(p.id)) return false;
+          const matchingPokemons = applyPokemonListFilters(
+            allPokemons.filter((p) => {
+              if (selectedPokemonIds.has(p.id)) return false;
 
-            // OFF/ON 공통: 추천 타입을 가진 포켓몬
-            const matches = ensureStringArray(p.types).filter((t) =>
-              recSet.has(t),
-            );
-            if (matches.length < minRecTypeCount) return false;
-
-            if (excludeMegaEvolution[idx] && isMegaDisplayName(p.nameKo))
-              return false;
-            if (finalEvolutionOnly && p.grade !== 3) return false;
-            if (teamTypes) {
-              const overlapsTeam = ensureStringArray(p.types).some((t) =>
-                teamTypes.has(t),
+              // OFF/ON 공통: 추천 타입을 가진 포켓몬
+              const matches = ensureStringArray(p.types).filter((t) =>
+                recSet.has(t),
               );
-              if (overlapsTeam) return false;
-            }
-            return true;
-          });
+              if (matches.length < minRecTypeCount) return false;
+
+              if (teamTypes) {
+                const overlapsTeam = ensureStringArray(p.types).some((t) =>
+                  teamTypes.has(t),
+                );
+                if (overlapsTeam) return false;
+              }
+              return true;
+            }),
+            { excludeMega, excludeGmax, finalEvolutionOnly },
+          );
 
           return (
             <>
@@ -866,31 +850,6 @@ const MakeTeam = () => {
                       }}
                     />
                     추천 타입 2가지 이상만 보기
-                  </label>
-                  <label
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: 12,
-                      color: '#555',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={excludeMegaEvolution[idx]}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setExcludeMegaEvolution((prev) => {
-                          const next = [...prev];
-                          next[idx] = checked;
-                          return next;
-                        });
-                      }}
-                    />
-                    메가진화 제외
                   </label>
                 </div>
                 {matchingPokemons.length === 0 ? (

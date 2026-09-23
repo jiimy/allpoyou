@@ -32,3 +32,15 @@
     color: #fff;
   }
 }
+
+.tagBtnExclude {
+  border-color: #c44;
+  background: #fff5f5;
+  color: #b33;
+
+  &:hover {
+    border-color: #b33;
+    background: #ffeaea;
+    color: #a22;
+  }
+}

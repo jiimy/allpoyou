@@ -19,8 +19,10 @@ import {
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { useTypeCalcStore } from '@/store/TypeCalcStore';
+import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
 import type { ChildrenModalType } from '@/types/modal';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
 
 import s from './typeCalcModal.module.scss';
 
@@ -95,11 +97,15 @@ const TypeCalcModal = ({
   const [panel, setPanel] = useState<PanelView>('calc');
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [infoPokemon, setInfoPokemon] = useState<Pokemon | null>(null);
-  const [finalEvolutionOnly, setFinalEvolutionOnly] = useState(false);
   const [pokemonSortKey, setPokemonSortKey] = useState<PokemonSortKey>('name');
   const [pokemonSortDirs, setPokemonSortDirs] = useState(DEFAULT_POKEMON_SORT_DIRS);
   const setPendingPokemon = usePokemonPickStore((state) => state.setPendingPokemon);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const excludeMega = usePokemonListFilterStore((state) => state.excludeMega);
+  const excludeGmax = usePokemonListFilterStore((state) => state.excludeGmax);
+  const finalEvolutionOnly = usePokemonListFilterStore(
+    (state) => state.finalEvolutionOnly,
+  );
 
   const hasTypeSelected = selected.some((t) => Boolean(t));
   const canGoPokemon = recommendOn && hasTypeSelected;
@@ -111,13 +117,21 @@ const TypeCalcModal = ({
     const typesKo = toKoreanTypes(selected);
     if (typesKo.length === 0) return [];
 
-    return allPokemon
-      .filter((p) => typesKo.every((type) => p.types.includes(type)))
-      .filter((p) => !finalEvolutionOnly || p.grade === 3)
-      .sort((a, b) =>
-        comparePokemonSort(a, b, pokemonSortKey, pokemonSortDirs[pokemonSortKey]),
-      );
-  }, [allPokemon, selected, finalEvolutionOnly, pokemonSortKey, pokemonSortDirs]);
+    return applyPokemonListFilters(
+      allPokemon.filter((p) => typesKo.every((type) => p.types.includes(type))),
+      { excludeMega, excludeGmax, finalEvolutionOnly },
+    ).sort((a, b) =>
+      comparePokemonSort(a, b, pokemonSortKey, pokemonSortDirs[pokemonSortKey]),
+    );
+  }, [
+    allPokemon,
+    selected,
+    excludeMega,
+    excludeGmax,
+    finalEvolutionOnly,
+    pokemonSortKey,
+    pokemonSortDirs,
+  ]);
 
   const handlePokemonSortClick = useCallback((key: PokemonSortKey) => {
     if (pokemonSortKey === key) {
@@ -285,18 +299,6 @@ const TypeCalcModal = ({
                 </span>
               </h2>
               <div className={s.listControls}>
-                <label className={s.checkbox}>
-                  <input
-                    type="checkbox"
-                    className={s.checkboxInput}
-                    checked={finalEvolutionOnly}
-                    onChange={(e) => setFinalEvolutionOnly(e.target.checked)}
-                  />
-                  최종진화
-                </label>
-                <span className={s.controlSep} aria-hidden>
-                  /
-                </span>
                 <div className={s.sortRow} role="group" aria-label="포켓몬 정렬">
                   {POKEMON_SORT_LABELS.map(({ key, label }, index) => {
                     const dir = pokemonSortDirs[key];

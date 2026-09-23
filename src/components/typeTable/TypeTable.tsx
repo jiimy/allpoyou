@@ -226,9 +226,9 @@ const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
   const hasPokemon = slots.some(Boolean);
 
   const weaknessHead =
-    mode === 'defense' ? '총 약점수' : '총 별로·없음';
+    mode === 'defense' ? '약점수' : '별로·없음';
   const strengthHead =
-    mode === 'defense' ? '총 강점 수' : '총 굉장함';
+    mode === 'defense' ? '강점 수' : '굉장함';
   const cornerLabel = mode === 'defense' ? '공격↓' : '방어↓';
 
   return (

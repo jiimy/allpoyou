@@ -148,6 +148,49 @@ export const POKEDEX_TAGS: string[] = [
   '환상',
 ];
 
+export type PokedexTagMode = 'include' | 'exclude';
+
+export type PokedexTagSelection = {
+  tag: string;
+  mode: PokedexTagMode;
+};
+
+/** 단일 태그에 포켓몬이 해당하는지 */
+export function pokemonMatchesPokedexTag(pokemon: Pokemon, tag: string): boolean {
+  const genMatch = /^(\d+)세대$/.exec(tag);
+  if (genMatch) {
+    return pokemon.generation === Number(genMatch[1]);
+  }
+
+  if (tag === '전설') return pokemon.note.includes('전설');
+  if (tag === '초전설') return pokemon.note.includes('초전설');
+  if (tag === '준전설') return pokemon.note.includes('준전설');
+  if (tag === '환상') return pokemon.note.includes('환상');
+
+  return false;
+}
+
+/**
+ * 태그 선택(포함/제외, 복수 AND)으로 필터링합니다.
+ * - include: 해당 태그에 반드시 속해야 함
+ * - exclude: 해당 태그에 속하면 제외
+ */
+export function filterPokemonByTagSelections(
+  list: Pokemon[],
+  selections: PokedexTagSelection[],
+): Pokemon[] {
+  if (selections.length === 0) return list;
+
+  return list.filter((pokemon) => {
+    for (const { tag, mode } of selections) {
+      const matched = pokemonMatchesPokedexTag(pokemon, tag);
+      if (mode === 'include' && !matched) return false;
+      if (mode === 'exclude' && matched) return false;
+    }
+    return true;
+  });
+}
+
 /**
  * 태그(세대/전설 계열)로 포켓몬 목록을 필터링합니다.
  * - `N세대`: generation === N
@@ -156,19 +199,62 @@ export const POKEDEX_TAGS: string[] = [
  */
 export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon[] {
   if (!tag) return list;
+  return filterPokemonByTagSelections(list, [{ tag, mode: 'include' }]);
+}
 
-  const genMatch = /^(\d+)세대$/.exec(tag);
-  if (genMatch) {
-    const gen = Number(genMatch[1]);
-    return list.filter((p) => p.generation === gen);
+/** URL `tags` 쿼리 직렬화. 예: `전설,-1세대` (앞에 - 는 제외) */
+export function serializePokedexTagSelections(
+  selections: PokedexTagSelection[],
+): string | null {
+  if (selections.length === 0) return null;
+  return selections
+    .map(({ tag, mode }) => (mode === 'exclude' ? `-${tag}` : tag))
+    .join(',');
+}
+
+/** URL `tags` (또는 구버전 `tag`) 파싱 */
+export function parsePokedexTagSelections(
+  tagsParam: string | null,
+  legacyTagParam: string | null = null,
+): PokedexTagSelection[] {
+  const raw = tagsParam?.trim() || legacyTagParam?.trim() || '';
+  if (!raw) return [];
+
+  const allowed = new Set(POKEDEX_TAGS);
+  const result: PokedexTagSelection[] = [];
+  const seen = new Set<string>();
+
+  for (const part of raw.split(',')) {
+    const token = part.trim();
+    if (!token) continue;
+    const exclude = token.startsWith('-');
+    const tag = exclude ? token.slice(1).trim() : token;
+    if (!allowed.has(tag) || seen.has(tag)) continue;
+    seen.add(tag);
+    result.push({ tag, mode: exclude ? 'exclude' : 'include' });
   }
 
-  if (tag === '전설') return list.filter((p) => p.note.includes('전설'));
-  if (tag === '초전설') return list.filter((p) => p.note.includes('초전설'));
-  if (tag === '준전설') return list.filter((p) => p.note.includes('준전설'));
-  if (tag === '환상') return list.filter((p) => p.note.includes('환상'));
+  return result;
+}
 
-  return list;
+/** off → include → exclude → off */
+export function cyclePokedexTagSelection(
+  selections: PokedexTagSelection[],
+  tag: string,
+): PokedexTagSelection[] {
+  const index = selections.findIndex((entry) => entry.tag === tag);
+  if (index < 0) {
+    return [...selections, { tag, mode: 'include' }];
+  }
+
+  const current = selections[index];
+  if (current.mode === 'include') {
+    const next = [...selections];
+    next[index] = { tag, mode: 'exclude' };
+    return next;
+  }
+
+  return selections.filter((entry) => entry.tag !== tag);
 }
 
 export function searchPokemonByName(

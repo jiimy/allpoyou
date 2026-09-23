@@ -32,6 +32,11 @@ export function isMegaDisplayName(displayName: string): boolean {
   return displayName.startsWith('메가 ');
 }
 
+/** DB 표시명이 거다이맥스 접두사(거다이 )로 시작하는지 */
+export function isGmaxDisplayName(displayName: string): boolean {
+  return displayName.startsWith('거다이 ');
+}
+
 const MEGA_NAME_PREFIX = '메가 ';
 const MEGA_XY_SUFFIXES = [' X', ' Y', ' Z'] as const;
 

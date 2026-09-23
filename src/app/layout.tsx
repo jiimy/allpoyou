@@ -12,6 +12,7 @@ import TopButton from "@/components/topButton/TopButton";
 import AuthContext from "@/components/AuthContext";
 import Switch from "@/components/switch/Switch";
 import NoticeModal from "@/components/portalModal/noticeModal/NoticeModal";
+import PokemonListFilterPin from "@/components/pokemonListFilterPin/PokemonListFilterPin";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -94,6 +95,7 @@ export default function RootLayout({
             </div>
             <TopButton />
             <FloatingBtn />
+            <PokemonListFilterPin />
           </div>
           <Footer />
           <div id="modal" />

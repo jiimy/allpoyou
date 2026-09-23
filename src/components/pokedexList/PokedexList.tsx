@@ -6,9 +6,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import {
   fetchPokemonList,
-  filterPokemonByTag,
+  filterPokemonByTagSelections,
   filterPokemonList,
   type Pokemon,
+  type PokedexTagSelection,
 } from '@/store/PokemonStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
@@ -16,13 +17,99 @@ import { useTeamModalStore } from '@/store/TeamModalStore';
 import { formatAbilityTooltipText } from '@/utils/abilitySearch';
 import { filterPokemonByPochampsData } from '@/utils/pochampsMoves';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
 import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
+import type {
+  PokedexStatSortRule,
+  PokedexTypeSlotSort,
+} from '@/components/pokedexStatSort/PokedexStatSort';
+import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from './pokedex.module.scss';
 
 const PAGE_SIZE = 16;
+
+function typeSlotRank(
+  pokemon: Pokemon,
+  tokens: string[],
+  slot: PokedexTypeSlotSort,
+): number {
+  if (slot === 'front') {
+    return tokens.includes(pokemon.types[0] ?? '') ? 0 : 1;
+  }
+  return pokemon.types.length > 1 && tokens.includes(pokemon.types[1] ?? '')
+    ? 0
+    : 1;
+}
+
+function compareStatRules(
+  a: Pokemon,
+  b: Pokemon,
+  rules: PokedexStatSortRule[],
+): number {
+  for (const rule of rules) {
+    const av = Number(a[rule.key]);
+    const bv = Number(b[rule.key]);
+    if (!Number.isFinite(av) && !Number.isFinite(bv)) continue;
+    if (!Number.isFinite(av)) return 1;
+    if (!Number.isFinite(bv)) return -1;
+    if (av === bv) continue;
+    // asc: 작은 값 먼저 / desc: 큰 값 먼저
+    return rule.direction === 'asc' ? av - bv : bv - av;
+  }
+  return 0;
+}
+
+function sortPokemonsComposite(
+  list: Pokemon[],
+  options: {
+    typeSlotSort: PokedexTypeSlotSort | null;
+    typeSearchTokens: string[] | null;
+    statSorts: PokedexStatSortRule[];
+  },
+): Pokemon[] {
+  const { typeSlotSort, typeSearchTokens, statSorts } = options;
+  const hasTypeSlot =
+    typeSlotSort != null &&
+    typeSearchTokens != null &&
+    typeSearchTokens.length > 0;
+  const hasStatSort = statSorts.length > 0;
+
+  if (!hasTypeSlot && !hasStatSort) return list;
+
+  return list
+    .map((pokemon, index) => ({ pokemon, index }))
+    .sort((left, right) => {
+      if (hasTypeSlot && typeSlotSort && typeSearchTokens) {
+        const bySlot =
+          typeSlotRank(left.pokemon, typeSearchTokens, typeSlotSort) -
+          typeSlotRank(right.pokemon, typeSearchTokens, typeSlotSort);
+        if (bySlot !== 0) return bySlot;
+      }
+
+      const byStats = compareStatRules(
+        left.pokemon,
+        right.pokemon,
+        statSorts,
+      );
+      if (byStats !== 0) return byStats;
+
+      const byNumber = left.pokemon.number - right.pokemon.number;
+      if (byNumber !== 0) return byNumber;
+
+      const byName = left.pokemon.nameKo.localeCompare(
+        right.pokemon.nameKo,
+        'ko',
+      );
+      if (byName !== 0) return byName;
+
+      // 안정 정렬: 원래 순서 유지
+      return left.index - right.index;
+    })
+    .map(({ pokemon }) => pokemon);
+}
 
 function PokemonCard({
   pokemon,
@@ -143,10 +230,19 @@ function PokemonCard({
 
 type PokedexListProps = {
   keyword?: string;
-  tag?: string | null;
+  tagSelections?: PokedexTagSelection[];
+  statSorts?: PokedexStatSortRule[];
+  typeSlotSort?: PokedexTypeSlotSort | null;
+  typeSearchTokens?: string[] | null;
 };
 
-export default function PokedexList({ keyword = '', tag = null }: PokedexListProps) {
+export default function PokedexList({
+  keyword = '',
+  tagSelections = [],
+  statSorts = [],
+  typeSlotSort = null,
+  typeSearchTokens = null,
+}: PokedexListProps) {
   const { replaceParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,6 +254,11 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
   const pochampsActive = pochampsHydrated && pochampsEnabled;
+  const excludeMega = usePokemonListFilterStore((state) => state.excludeMega);
+  const excludeGmax = usePokemonListFilterStore((state) => state.excludeGmax);
+  const finalEvolutionOnly = usePokemonListFilterStore(
+    (state) => state.finalEvolutionOnly,
+  );
 
   const urlPokemonId = parseIntParam('pokemonId');
 
@@ -205,26 +306,50 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
     return sourcePokemons.find((entry) => entry.id === urlPokemonId) ?? null;
   }, [urlPokemonId, sourcePokemons, loading]);
 
-  const filteredPokemons = useMemo(
-    () => filterPokemonByTag(filterPokemonList(sourcePokemons, keyword), tag),
-    [sourcePokemons, keyword, tag],
-  );
+  const sortKeySig = statSorts
+    .map((rule) => `${rule.key}:${rule.direction}`)
+    .join(',');
 
-  const visiblePokemons = useMemo(
-    () => filteredPokemons.slice(0, visibleCount),
-    [filteredPokemons, visibleCount],
-  );
+  const filteredPokemons = useMemo(() => {
+    const filtered = applyPokemonListFilters(
+      filterPokemonByTagSelections(
+        filterPokemonList(sourcePokemons, keyword),
+        tagSelections,
+      ),
+      { excludeMega, excludeGmax, finalEvolutionOnly },
+    );
+
+    return sortPokemonsComposite(filtered, {
+      typeSlotSort,
+      typeSearchTokens,
+      statSorts,
+    });
+    // sortKeySig로 규칙 변경(3개 이상·방향 토글 포함)을 확실히 구독
+  }, [
+    sourcePokemons,
+    keyword,
+    tagSelections,
+    sortKeySig,
+    statSorts,
+    typeSlotSort,
+    typeSearchTokens,
+    excludeMega,
+    excludeGmax,
+    finalEvolutionOnly,
+  ]);
+
+  const visiblePokemons = filteredPokemons.slice(0, visibleCount);
 
   const hasMore = visibleCount < filteredPokemons.length;
 
-  const [prevFilterKey, setPrevFilterKey] = useState(
-    `${keyword}\u0000${tag ?? ''}\u0000${pochampsActive}`,
-  );
-  const filterKey = `${keyword}\u0000${tag ?? ''}\u0000${pochampsActive}`;
-  if (prevFilterKey !== filterKey) {
-    setPrevFilterKey(filterKey);
+  const tagKey = tagSelections
+    .map((entry) => `${entry.mode}:${entry.tag}`)
+    .join(',');
+  const filterKey = `${keyword}\u0000${tagKey}\u0000${pochampsActive}\u0000${sortKeySig}\u0000${typeSlotSort ?? ''}\u0000${excludeMega}\u0000${excludeGmax}\u0000${finalEvolutionOnly}`;
+
+  useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }
+  }, [filterKey]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -264,7 +389,7 @@ export default function PokedexList({ keyword = '', tag = null }: PokedexListPro
             } / ${sourcePokemons.length.toLocaleString()}마리`}
       </p>
 
-      <div className={s.grid}>
+      <div className={s.grid} key={sortKeySig || 'default-sort'}>
         {visiblePokemons.length > 0 ? (
           visiblePokemons.map((pokemon) => (
             <PokemonCard

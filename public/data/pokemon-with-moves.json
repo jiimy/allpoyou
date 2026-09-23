@@ -148227,6 +148227,12 @@
         "version_group": "scarlet-violet"
       },
       {
+        "move_id": 488,
+        "pokemon_move_method": "level",
+        "level": 14,
+        "version_group": "scarlet-violet"
+      },
+      {
         "move_id": 492,
         "pokemon_move_method": "machine",
         "level": null,

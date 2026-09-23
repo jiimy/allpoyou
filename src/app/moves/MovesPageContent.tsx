@@ -16,10 +16,16 @@ import {
   toChampionsMoveLookupKey,
   toPokemonMetaSlug,
 } from '@/utils/pochampsMoves';
-import { fetchPokemonList } from '@/store/PokemonStore';
+import { fetchPokemonList, getCachedPokemonList } from '@/store/PokemonStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
+import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
+import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
+import {
+  isGmaxDisplayName,
+  isMegaDisplayName,
+} from '@/utils/pokemonName';
 import movesData from '../../../public/data/moves-db.json';
 
 import MoveList from './MoveList';
@@ -109,11 +115,19 @@ export default function MovesPageContent() {
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
   const pochampsActive = pochampsHydrated && pochampsEnabled;
+  const excludeMega = usePokemonListFilterStore((state) => state.excludeMega);
+  const excludeGmax = usePokemonListFilterStore((state) => state.excludeGmax);
+  const finalEvolutionOnly = usePokemonListFilterStore(
+    (state) => state.finalEvolutionOnly,
+  );
   const [pochampsMoveNames, setPochampsMoveNames] = useState<string[] | null>(
     null,
   );
   const [pochampsMovesError, setPochampsMovesError] = useState<string | null>(
     null,
+  );
+  const [pokemonCatalog, setPokemonCatalog] = useState(() =>
+    getCachedPokemonList(),
   );
   const [pochampsFetchKey, setPochampsFetchKey] = useState(false);
   if (pochampsFetchKey !== pochampsActive) {
@@ -126,6 +140,12 @@ export default function MovesPageContent() {
     setPokemonMovesLoadingId(null);
     setSelectedPokemon(null);
   }
+
+  useEffect(() => {
+    void fetchPokemonList()
+      .then((list) => setPokemonCatalog(list))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!pochampsActive) return;
@@ -706,9 +726,42 @@ export default function MovesPageContent() {
       : (selectedPokemonMoves?.moves ?? []);
   const canShowLearnablePanel =
     showLearnablePokemon && moveIdsByNameMatch.length > 0;
-  const learnablePokemonList = canShowLearnablePanel
-    ? (learnableCacheEntry?.pokemon ?? [])
-    : [];
+  const learnablePokemonList = useMemo(() => {
+    if (!canShowLearnablePanel) return [];
+    const raw = learnableCacheEntry?.pokemon ?? [];
+    if (!excludeMega && !excludeGmax && !finalEvolutionOnly) return raw;
+
+    // moves API id는 도감번호라 pokemon.csv row id와 다름 → nameKo로 매칭
+    const byNameKo = new Map(
+      pokemonCatalog.map((pokemon) => [pokemon.nameKo, pokemon]),
+    );
+
+    return raw.filter((learner) => {
+      if (excludeMega && isMegaDisplayName(learner.nameKo)) return false;
+      if (excludeGmax && isGmaxDisplayName(learner.nameKo)) return false;
+
+      const full = byNameKo.get(learner.nameKo);
+      if (!full) {
+        // grade 정보가 없으면 최종진화 필터는 통과
+        return true;
+      }
+
+      return (
+        applyPokemonListFilters([full], {
+          excludeMega,
+          excludeGmax,
+          finalEvolutionOnly,
+        }).length > 0
+      );
+    });
+  }, [
+    canShowLearnablePanel,
+    learnableCacheEntry,
+    pokemonCatalog,
+    excludeMega,
+    excludeGmax,
+    finalEvolutionOnly,
+  ]);
   const learnablePokemonLoading =
     canShowLearnablePanel &&
     !learnableCacheEntry &&

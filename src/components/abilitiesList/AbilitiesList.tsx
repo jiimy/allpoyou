@@ -6,12 +6,14 @@ import { type KeyboardEvent, useEffect, useMemo, useState } from 'react';
 import { fetchPokemonList, type Pokemon } from '@/store/PokemonStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
+import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
 import {
   ALL_ABILITIES,
   filterAbilities,
   getPokemonsWithAbilityName,
 } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
+import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
 import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
@@ -110,6 +112,11 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
     (state) => state.setPendingPokemon,
   );
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
+  const excludeMega = usePokemonListFilterStore((state) => state.excludeMega);
+  const excludeGmax = usePokemonListFilterStore((state) => state.excludeGmax);
+  const finalEvolutionOnly = usePokemonListFilterStore(
+    (state) => state.finalEvolutionOnly,
+  );
 
   const urlAbilityId = parseIntParam('abilityId');
   const urlPokemonId = parseIntParam('pokemonId');
@@ -146,9 +153,19 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
     };
   }, []);
 
+  const filteredPokemons = useMemo(
+    () =>
+      applyPokemonListFilters(pokemons, {
+        excludeMega,
+        excludeGmax,
+        finalEvolutionOnly,
+      }),
+    [pokemons, excludeMega, excludeGmax, finalEvolutionOnly],
+  );
+
   const filteredAbilities = useMemo(
-    () => filterAbilities(ALL_ABILITIES, pokemons, keyword),
-    [pokemons, keyword],
+    () => filterAbilities(ALL_ABILITIES, filteredPokemons, keyword),
+    [filteredPokemons, keyword],
   );
 
   const handleAbilitySelect = (abilityId: number) => {
@@ -199,7 +216,7 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
           filteredAbilities.map((ability) => {
             const isSelected = selectedAbilityId === ability.id;
             const displayPokemons = isSelected
-              ? getPokemonsWithAbilityName(pokemons, ability.nameKo)
+              ? getPokemonsWithAbilityName(filteredPokemons, ability.nameKo)
               : trimmedKeyword
                 ? ability.matchedPokemons
                 : [];

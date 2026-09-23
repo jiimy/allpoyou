@@ -237,7 +237,9 @@ function buildDisplayName(englishName: string, nameKo: string): string {
   else if (englishName.includes('-hisui')) prefix = '히스이 ';
   else if (englishName.includes('-alola')) prefix = '알로라 ';
 
-  return `${prefix}${baseName}${megaSuffix}`;
+  const totemSuffix = englishName.includes('-totem') ? '(토템)' : '';
+
+  return `${prefix}${baseName}${megaSuffix}${totemSuffix}`;
 }
 
 /** 한글 타입명을 ㄱ~ㅎ 오름차순으로 정렬 */
