@@ -2,10 +2,10 @@
 
 import classNames from 'classnames';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import ModalFrame from '@/components/portalModal/ModalFrame';
-import SelectPokeModal from '@/components/portalModal/selectPokeModal/SelectPokeModal';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
 import TypePicker from '@/components/type/TypePicker';
 import TypeResult from '@/components/type/TypeResult';
@@ -20,11 +20,18 @@ import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { useTypeCalcStore } from '@/store/TypeCalcStore';
 import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
+import { useSearchHistoryStore } from '@/store/SearchHistoryStore';
 import type { ChildrenModalType } from '@/types/modal';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
 
 import s from './typeCalcModal.module.scss';
+
+/** SelectPokeModal ↔ TypeCalcModal 순환 import 방지 */
+const SelectPokeModal = dynamic(
+  () => import('@/components/portalModal/selectPokeModal/SelectPokeModal'),
+  { ssr: false },
+);
 
 /** TypePicker 선택값(영문) → 포켓몬 types(한글) */
 function toKoreanTypes(selected: string[]): string[] {
@@ -106,6 +113,10 @@ const TypeCalcModal = ({
   const finalEvolutionOnly = usePokemonListFilterStore(
     (state) => state.finalEvolutionOnly,
   );
+
+  useEffect(() => {
+    useSearchHistoryStore.getState().addModalEntry('type-calc');
+  }, []);
 
   const hasTypeSelected = selected.some((t) => Boolean(t));
   const canGoPokemon = recommendOn && hasTypeSelected;

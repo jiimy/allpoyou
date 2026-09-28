@@ -54,11 +54,43 @@ function collectPokemonAbilities(pokemon: Pokemon): string[] {
   return [...pokemon.ability, ...pokemon.s_ability];
 }
 
+/** 해당 특성이 숨겨진 특성(숨특)인지 */
+export function isPokemonHiddenAbility(
+  pokemon: Pokemon,
+  abilityName: string,
+): boolean {
+  return pokemon.s_ability.includes(abilityName);
+}
+
+export type PokemonWithAbilityFlag = {
+  pokemon: Pokemon;
+  isHidden: boolean;
+};
+
 export function getPokemonsWithAbilityName(
   pokemons: Pokemon[],
   abilityName: string,
 ): Pokemon[] {
   return sortPokemons(getPokemonsWithAbility(pokemons, abilityName));
+}
+
+/** 특성 보유 포켓몬 + 숨특 여부 (일반 특성 → 숨특 순) */
+export function getPokemonsWithAbilityFlags(
+  pokemons: Pokemon[],
+  abilityName: string,
+): PokemonWithAbilityFlag[] {
+  return getPokemonsWithAbility(pokemons, abilityName)
+    .map((pokemon) => ({
+      pokemon,
+      isHidden: isPokemonHiddenAbility(pokemon, abilityName),
+    }))
+    .sort((a, b) => {
+      if (a.isHidden !== b.isHidden) return a.isHidden ? 1 : -1;
+      return (
+        a.pokemon.number - b.pokemon.number ||
+        a.pokemon.nameKo.localeCompare(b.pokemon.nameKo, 'ko')
+      );
+    });
 }
 
 function getPokemonsWithAbility(pokemons: Pokemon[], abilityName: string): Pokemon[] {

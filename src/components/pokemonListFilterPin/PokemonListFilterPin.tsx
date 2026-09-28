@@ -1,12 +1,21 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
+import {
+  buildSearchHistoryHref,
+  formatSearchHistoryLabel,
+  getSearchHistoryKind,
+  useSearchHistoryStore,
+  type SearchHistoryEntry,
+} from '@/store/SearchHistoryStore';
 
 import s from './pokemonListFilterPin.module.scss';
 
 export default function PokemonListFilterPin() {
+  const router = useRouter();
   const menuOpen = usePokemonListFilterStore((state) => state.menuOpen);
   const setMenuOpen = usePokemonListFilterStore((state) => state.setMenuOpen);
   const toggleMenu = usePokemonListFilterStore((state) => state.toggleMenu);
@@ -24,6 +33,12 @@ export default function PokemonListFilterPin() {
   const setFinalEvolutionOnly = usePokemonListFilterStore(
     (state) => state.setFinalEvolutionOnly,
   );
+  const historyEntries = useSearchHistoryStore((state) => state.entries);
+  const clearHistory = useSearchHistoryStore((state) => state.clearEntries);
+  const removeHistory = useSearchHistoryStore((state) => state.removeEntry);
+  const requestModalOpen = useSearchHistoryStore(
+    (state) => state.requestModalOpen,
+  );
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -33,6 +48,17 @@ export default function PokemonListFilterPin() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [menuOpen, setMenuOpen]);
+
+  const handleHistoryClick = (entry: SearchHistoryEntry) => {
+    setMenuOpen(false);
+    const kind = getSearchHistoryKind(entry);
+    if (kind === 'type-calc' || kind === 'type-table') {
+      requestModalOpen(kind);
+      return;
+    }
+    const href = buildSearchHistoryHref(entry);
+    if (href) router.push(href);
+  };
 
   const activeCount =
     Number(excludeMega) + Number(excludeGmax) + Number(finalEvolutionOnly);
@@ -116,6 +142,46 @@ export default function PokemonListFilterPin() {
             />
             최종진화만
           </label>
+        </div>
+
+        <div className={s.historySection}>
+          <div className={s.historyHeader}>
+            <h3 className={s.historyTitle}>검색 기록</h3>
+            {historyEntries.length > 0 ? (
+              <button
+                type="button"
+                className={s.historyClear}
+                onClick={clearHistory}
+              >
+                전체 삭제
+              </button>
+            ) : null}
+          </div>
+          {historyEntries.length === 0 ? (
+            <p className={s.historyEmpty}>아직 검색 기록이 없습니다.</p>
+          ) : (
+            <ul className={s.historyList}>
+              {historyEntries.map((entry) => (
+                <li key={entry.id} className={s.historyItem}>
+                  <button
+                    type="button"
+                    className={s.historyLink}
+                    onClick={() => handleHistoryClick(entry)}
+                  >
+                    {formatSearchHistoryLabel(entry)}
+                  </button>
+                  <button
+                    type="button"
+                    className={s.historyRemove}
+                    aria-label={`${formatSearchHistoryLabel(entry)} 삭제`}
+                    onClick={() => removeHistory(entry.id)}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </aside>
     </>

@@ -25,11 +25,14 @@ import type {
   PokedexTypeSlotSort,
 } from '@/components/pokedexStatSort/PokedexStatSort';
 import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
+import { usePokemonFavoriteStore } from '@/store/PokemonFavoriteStore';
+import { useSearchHistoryStore } from '@/store/SearchHistoryStore';
 import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 
 import s from './pokedex.module.scss';
 
 const PAGE_SIZE = 16;
+const EMPTY_FAVORITE_IDS: number[] = [];
 
 function typeSlotRank(
   pokemon: Pokemon,
@@ -122,12 +125,48 @@ function PokemonCard({
 }) {
   const [imageError, setImageError] = useState(false);
   const imageUrl = getPokemonStaticImage(pokemon.images);
+  const isFavorite = usePokemonFavoriteStore((state) =>
+    state.favoriteIds.includes(pokemon.id),
+  );
+  const toggleFavorite = usePokemonFavoriteStore((state) => state.toggleFavorite);
 
   return (
     <article
       className={`${s.card} ${s.cardSelectable} pokemonTooltipHost`}
       tabIndex={0}
     >
+      <button
+        type="button"
+        className={`${s.favoriteBtn} ${isFavorite ? s.favoriteBtnActive : ''}`}
+        aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+        aria-pressed={isFavorite}
+        onMouseDown={(event) => {
+          // 포커스를 받지 않아 focus-within 툴팁이 남지 않게 함
+          event.preventDefault();
+        }}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleFavorite(pokemon.id);
+          (event.currentTarget as HTMLButtonElement).blur();
+        }}
+      >
+        <svg
+          className={s.favoriteIcon}
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          aria-hidden
+        >
+          <path
+            d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+            fill={isFavorite ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
       # {pokemon.number}
       {pokemon.tag ? <span className={s.tag}>{pokemon.tag}</span> : null}
       <div className={s.imageWrap}>
@@ -259,6 +298,15 @@ export default function PokedexList({
   const finalEvolutionOnly = usePokemonListFilterStore(
     (state) => state.finalEvolutionOnly,
   );
+  const usesFavoriteTag = tagSelections.some((entry) => entry.tag === '즐겨찾기');
+  // 즐겨찾기 탭이 꺼져 있으면 목록이 favorite 변경에 구독하지 않음 (별 아이콘만 카드에서 갱신)
+  const favoriteIds = usePokemonFavoriteStore((state) =>
+    usesFavoriteTag ? state.favoriteIds : EMPTY_FAVORITE_IDS,
+  );
+  const favoriteIdSet = useMemo(() => {
+    if (!usesFavoriteTag) return undefined;
+    return new Set(favoriteIds);
+  }, [usesFavoriteTag, favoriteIds]);
 
   const urlPokemonId = parseIntParam('pokemonId');
 
@@ -269,6 +317,9 @@ export default function PokedexList({
 
   const handlePokemonViewInfo = (pokemon: Pokemon) => {
     replaceParams({ pokemonId: String(pokemon.id) });
+    useSearchHistoryStore
+      .getState()
+      .addPokemonInfoEntry(pokemon.id, pokemon.nameKo);
   };
 
   const handleCloseInfoModal = () => {
@@ -315,6 +366,7 @@ export default function PokedexList({
       filterPokemonByTagSelections(
         filterPokemonList(sourcePokemons, keyword),
         tagSelections,
+        favoriteIdSet ? { favoriteIds: favoriteIdSet } : undefined,
       ),
       { excludeMega, excludeGmax, finalEvolutionOnly },
     );
@@ -329,6 +381,7 @@ export default function PokedexList({
     sourcePokemons,
     keyword,
     tagSelections,
+    favoriteIdSet,
     sortKeySig,
     statSorts,
     typeSlotSort,
@@ -345,7 +398,9 @@ export default function PokedexList({
   const tagKey = tagSelections
     .map((entry) => `${entry.mode}:${entry.tag}`)
     .join(',');
-  const filterKey = `${keyword}\u0000${tagKey}\u0000${pochampsActive}\u0000${sortKeySig}\u0000${typeSlotSort ?? ''}\u0000${excludeMega}\u0000${excludeGmax}\u0000${finalEvolutionOnly}`;
+  // 즐겨찾기 탭이 켜진 경우에만 favoriteIds를 넣어 목록 리셋
+  const favoriteFilterKey = usesFavoriteTag ? favoriteIds.join(',') : '';
+  const filterKey = `${keyword}\u0000${tagKey}\u0000${pochampsActive}\u0000${sortKeySig}\u0000${typeSlotSort ?? ''}\u0000${excludeMega}\u0000${excludeGmax}\u0000${finalEvolutionOnly}\u0000${favoriteFilterKey}`;
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);

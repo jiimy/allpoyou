@@ -1,7 +1,6 @@
 'use client';
 
 import ModalFrame from '@/components/portalModal/ModalFrame';
-import TypeCalcModal from '@/components/portalModal/typeCalcModal/TypeCalcModal';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import { typeTranslation } from '@/constants/pokemonType';
 import type { Pokemon } from '@/store/PokemonStore';
@@ -41,9 +40,16 @@ import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import s from './selectPokeModal.module.scss';
+
+/** TypeCalcModal ↔ SelectPokeModal 순환 import 방지 */
+const TypeCalcModal = dynamic(
+  () => import('@/components/portalModal/typeCalcModal/TypeCalcModal'),
+  { ssr: false },
+);
 
 
 const STAT_BAR_COLORS: Record<(typeof BASE_STAT_KEYS)[number], string> = {

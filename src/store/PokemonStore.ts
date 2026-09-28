@@ -141,6 +141,7 @@ export function filterPokemonList(list: Pokemon[], keyword: string): Pokemon[] {
 
 /** 포켓몬덱스 태그 필터 옵션 (표시 순서) */
 export const POKEDEX_TAGS: string[] = [
+  '즐겨찾기',
   ...Array.from({ length: 9 }, (_, i) => `${i + 1}세대`),
   '전설',
   '초전설',
@@ -155,8 +156,20 @@ export type PokedexTagSelection = {
   mode: PokedexTagMode;
 };
 
+export type PokedexTagFilterContext = {
+  favoriteIds?: ReadonlySet<number>;
+};
+
 /** 단일 태그에 포켓몬이 해당하는지 */
-export function pokemonMatchesPokedexTag(pokemon: Pokemon, tag: string): boolean {
+export function pokemonMatchesPokedexTag(
+  pokemon: Pokemon,
+  tag: string,
+  context?: PokedexTagFilterContext,
+): boolean {
+  if (tag === '즐겨찾기') {
+    return context?.favoriteIds?.has(pokemon.id) ?? false;
+  }
+
   const genMatch = /^(\d+)세대$/.exec(tag);
   if (genMatch) {
     return pokemon.generation === Number(genMatch[1]);
@@ -178,12 +191,13 @@ export function pokemonMatchesPokedexTag(pokemon: Pokemon, tag: string): boolean
 export function filterPokemonByTagSelections(
   list: Pokemon[],
   selections: PokedexTagSelection[],
+  context?: PokedexTagFilterContext,
 ): Pokemon[] {
   if (selections.length === 0) return list;
 
   return list.filter((pokemon) => {
     for (const { tag, mode } of selections) {
-      const matched = pokemonMatchesPokedexTag(pokemon, tag);
+      const matched = pokemonMatchesPokedexTag(pokemon, tag, context);
       if (mode === 'include' && !matched) return false;
       if (mode === 'exclude' && matched) return false;
     }

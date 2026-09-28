@@ -59,8 +59,14 @@ function getSnapshot() {
   return held;
 }
 
+const SERVER_SNAPSHOT: HeldModifiers = {
+  shift: false,
+  ctrl: false,
+  alt: false,
+};
+
 function getServerSnapshot(): HeldModifiers {
-  return { shift: false, ctrl: false, alt: false };
+  return SERVER_SNAPSHOT;
 }
 
 /** Shift / Ctrl / Alt 홀드 상태 */

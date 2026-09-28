@@ -56,8 +56,8 @@
 .tag {
   position: absolute;
   top: 12px;
-  right: 12px;
-  max-width: 60%;
+  right: 40px;
+  max-width: calc(60% - 28px);
   padding: 2px 8px;
   border-radius: 999px;
   background: #f0f0f0;
@@ -68,6 +68,44 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.favoriteBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #222;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, transform 0.12s;
+
+  &:hover {
+    background: rgb(0 0 0 / 6%);
+    transform: scale(1.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6390f0;
+    outline-offset: 1px;
+  }
+}
+
+.favoriteBtnActive {
+  color: #f5c518;
+}
+
+.favoriteIcon {
+  display: block;
+  pointer-events: none;
 }
 
 .imageWrap {

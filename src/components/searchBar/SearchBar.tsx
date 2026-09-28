@@ -4,19 +4,23 @@ import { useEffect, useState } from 'react';
 import { track } from '@vercel/analytics';
 import { usePochampsStore } from '@/store/PochampsStore';
 import { useSearchBarFocusStore } from '@/store/SearchBarFocusStore';
+import {
+  useSearchHistoryStore,
+  type SearchHistoryScope,
+} from '@/store/SearchHistoryStore';
 import PochamsData from '@/components/pochamsData/PochamsData';
 import s from './searchBar.module.scss';
 
 const DEBOUNCE_MS = 1000;
 
-type PlaceholderType = 'main' | 'pokemon' | 'moves' | 'item' | 'ability';
+export type PlaceholderType = SearchHistoryScope;
 
 const PLACEHOLDER_BY_TYPE: Record<PlaceholderType, string> = {
   main: '포켓몬 이름 검색',
-  pokemon: '포켓몬 이름, 타입 검색',
+  pokemon: '포켓몬 이름, 타입 검색(예시: 불꽃 물)',
   moves: '기술명, 설명, 포켓몬 이름 검색',
   item: '도구명, 설명 검색',
-  ability: '특성 이름, 특성 설명 검색',
+  ability: '포켓몬 이름, 특성 이름, 특성 설명 검색',
 };
 
 export type SearchBarProps = {
@@ -41,6 +45,7 @@ export default function SearchBar({
   const [inputValue, setInputValue] = useState(keyword);
   const [prevKeyword, setPrevKeyword] = useState(keyword);
   const setSearchBarFocused = useSearchBarFocusStore((state) => state.setFocused);
+  const addSearchHistory = useSearchHistoryStore((state) => state.addEntry);
 
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
   const pochampsHydrated = usePochampsStore((state) => state.hasHydrated);
@@ -76,6 +81,13 @@ export default function SearchBar({
 
     return () => window.clearTimeout(timer);
   }, [inputValue, keyword, onKeywordChange, placeholderType]);
+
+  // 확정된 keyword(직접 입력·URL/외부 반영)를 검색 기록에 남김
+  useEffect(() => {
+    const trimmed = keyword.trim();
+    if (!trimmed) return;
+    addSearchHistory(placeholderType, trimmed);
+  }, [keyword, placeholderType, addSearchHistory]);
 
   const q = keyword.trim();
   const showPokemonHint = placeholderType === 'moves' && q.length > 0;

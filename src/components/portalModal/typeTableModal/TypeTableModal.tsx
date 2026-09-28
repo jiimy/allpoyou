@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
 import ModalFrame from '../ModalFrame';
 import { ChildrenModalType } from '@/types/modal';
@@ -10,6 +10,7 @@ import TypeTable, {
 } from '@/components/typeTable/TypeTable';
 import { useActiveTeamTypeTablePokemons } from '@/hooks/useActiveTeamTypeTablePokemons';
 import { useModalShortcut } from '@/hooks/useModalShortcut';
+import { useSearchHistoryStore } from '@/store/SearchHistoryStore';
 import s from './typeTableModal.module.scss';
 
 type TypeTableModalProps = ChildrenModalType & {
@@ -42,6 +43,10 @@ const TypeTableModal = ({
   const resolvedPokemons = useStoreData ? activeTeamPokemons : pokemons;
   const showLoading = useStoreData && !isReady;
   const [mode, setMode] = useState<TypeTableMode>('defense');
+
+  useEffect(() => {
+    useSearchHistoryStore.getState().addModalEntry('type-table');
+  }, []);
 
   return (
     <ModalFrame

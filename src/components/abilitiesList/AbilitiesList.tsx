@@ -10,7 +10,9 @@ import { usePokemonListFilterStore } from '@/store/PokemonListFilterStore';
 import {
   ALL_ABILITIES,
   filterAbilities,
-  getPokemonsWithAbilityName,
+  getPokemonsWithAbilityFlags,
+  isPokemonHiddenAbility,
+  type PokemonWithAbilityFlag,
 } from '@/utils/abilitySearch';
 import { getPokemonStaticImage } from '@/utils/pokemonDisplay';
 import { applyPokemonListFilters } from '@/utils/pokemonListFilter';
@@ -22,22 +24,26 @@ import PokemonTooltip from '../pokemonTooltip/PokemonTooltip';
 
 type AbilitiesListProps = {
   keyword?: string;
+  /** 포켓몬 클릭 시 검색창(q)에 넣을 이름 */
+  onPokemonSearch?: (pokemonName: string) => void;
 };
 
 function AbilityCard({
   nameKo,
   summary,
-  matchedPokemons,
+  matchedEntries,
   selected,
   onSelect,
+  onPokemonSearch,
   onPokemonSelect,
   onPokemonViewInfo,
 }: {
   nameKo: string;
   summary: string;
-  matchedPokemons: Pokemon[];
+  matchedEntries: PokemonWithAbilityFlag[];
   selected: boolean;
   onSelect: () => void;
+  onPokemonSearch: (pokemon: Pokemon) => void;
   onPokemonSelect: (pokemon: Pokemon) => void;
   onPokemonViewInfo: (pokemon: Pokemon) => void;
 }) {
@@ -60,28 +66,43 @@ function AbilityCard({
       <h3 className={s.name}>{nameKo}</h3>
       <p className={s.summary}>{summary}</p>
 
-      {matchedPokemons.length > 0 ? (
+      {matchedEntries.length > 0 ? (
         <ul className={s.pokemonList}>
-          {matchedPokemons.map((pokemon) => {
+          {matchedEntries.map(({ pokemon, isHidden }) => {
             const imageUrl = getPokemonStaticImage(pokemon.images);
 
             return (
               <li
                 key={pokemon.id}
-                className={`${s.pokemonItem} ${s.pokemonItemSelectable} pokemonTooltipHost`}
-                tabIndex={0}
-                onClick={(event) => event.stopPropagation()}
+                className={`${s.pokemonItem} ${s.pokemonItemSelectable} ${isHidden ? s.pokemonItemHidden : ''} pokemonTooltipHost`}
               >
-                {imageUrl ? (
-                  <Image
-                    src={imageUrl}
-                    alt={pokemon.nameKo}
-                    width={32}
-                    height={32}
-                    className={s.pokemonImage}
-                  />
-                ) : null}
-                <span>{pokemon.nameKo}</span>
+                <button
+                  type="button"
+                  className={s.pokemonSearchBtn}
+                  title={
+                    isHidden
+                      ? `${pokemon.nameKo} (숨특) — 검색`
+                      : `${pokemon.nameKo} — 검색`
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPokemonSearch(pokemon);
+                  }}
+                >
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt=""
+                      width={32}
+                      height={32}
+                      className={s.pokemonImage}
+                    />
+                  ) : null}
+                  <span className={s.pokemonName}>{pokemon.nameKo}</span>
+                  {isHidden ? (
+                    <span>🔓</span>
+                  ) : null}
+                </button>
                 <PokemonTooltip
                   onViewInfo={(event) => {
                     event.stopPropagation();
@@ -103,8 +124,11 @@ function AbilityCard({
   );
 }
 
-export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
-  const { replaceParams, parseIntParam } = useUrlQueryParams();
+export default function AbilitiesList({
+  keyword = '',
+  onPokemonSearch,
+}: AbilitiesListProps) {
+  const { replaceParams, pushParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,9 +200,32 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
       return;
     }
 
+    // 특성 선택 시 검색어 비움 → 뒤로가기 복원 시 특성만 열린 상태 유지
     replaceParams({
       abilityId: String(abilityId),
+      q: null,
       pokemonId: null,
+    });
+  };
+
+  const handlePokemonSearch = (pokemon: Pokemon) => {
+    const name = pokemon.nameKo;
+    if (onPokemonSearch) {
+      onPokemonSearch(name);
+    } else {
+      pushParams({
+        q: name,
+        abilityId: null,
+        pokemonId: null,
+      });
+    }
+
+    window.requestAnimationFrame(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        'input[type="search"]',
+      );
+      input?.focus({ preventScroll: true });
+      input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
   };
 
@@ -215,10 +262,13 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
         {filteredAbilities.length > 0 ? (
           filteredAbilities.map((ability) => {
             const isSelected = selectedAbilityId === ability.id;
-            const displayPokemons = isSelected
-              ? getPokemonsWithAbilityName(filteredPokemons, ability.nameKo)
+            const matchedEntries: PokemonWithAbilityFlag[] = isSelected
+              ? getPokemonsWithAbilityFlags(filteredPokemons, ability.nameKo)
               : trimmedKeyword
-                ? ability.matchedPokemons
+                ? ability.matchedPokemons.map((pokemon) => ({
+                    pokemon,
+                    isHidden: isPokemonHiddenAbility(pokemon, ability.nameKo),
+                  }))
                 : [];
 
             return (
@@ -226,9 +276,10 @@ export default function AbilitiesList({ keyword = '' }: AbilitiesListProps) {
                 key={ability.id}
                 nameKo={ability.nameKo}
                 summary={ability.summary}
-                matchedPokemons={displayPokemons}
+                matchedEntries={matchedEntries}
                 selected={isSelected}
                 onSelect={() => handleAbilitySelect(ability.id)}
+                onPokemonSearch={handlePokemonSearch}
                 onPokemonSelect={handlePokemonSelect}
                 onPokemonViewInfo={handlePokemonViewInfo}
               />

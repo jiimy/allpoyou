@@ -6,7 +6,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   @include media-mo() {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -58,6 +58,7 @@
   // color: #555;
   font-size: 13px;
   line-height: 1.5;
+  min-height: 39px;
 }
 
 .pokemonList {
@@ -80,9 +81,7 @@
 
 .pokemonItemSelectable {
   position: relative;
-  cursor: pointer;
   border-radius: 6px;
-  padding: 4px 6px;
   transition: background 0.15s, color 0.15s;
 
   &:hover,
@@ -90,16 +89,55 @@
     background: #f0f4ff;
     color: #2563eb;
   }
+}
+
+.pokemonSearchBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 
   &:focus-visible {
     outline: 2px solid #6390f0;
     outline-offset: 1px;
   }
-  span {
-    // white-space: pre;
-    word-break: keep-all;
-    max-width: 12ch;
+}
+
+.pokemonName {
+  word-break: keep-all;
+  max-width: 12ch;
+}
+
+.pokemonItemHidden {
+  // background: #fff8ef;
+  // border: 1px solid #f0d9b5;
+
+  &:hover,
+  &:focus-within {
+    background: #ffefd6;
+    color: #9a5b00;
   }
+}
+
+.hiddenBadge {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
 }
 
 .noPokemon {

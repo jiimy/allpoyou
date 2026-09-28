@@ -27,6 +27,7 @@ import { useTeamModalStore } from '@/store/TeamModalStore';
 import { useNoticeModalStore } from '@/store/NoticeModalStore';
 import { useFloatingBtnStore } from '@/store/FloatingBtnStore';
 import { useSearchBarFocusStore } from '@/store/SearchBarFocusStore';
+import { useSearchHistoryStore } from '@/store/SearchHistoryStore';
 import { useHeldModifiers } from '@/hooks/useHeldModifiers';
 import s from './floatingBtn.module.scss';
 import Command from '../command/Command';
@@ -98,6 +99,10 @@ const FloatingBtn = () => {
   const teamModalOpen = useTeamModalStore((state) => state.isOpen);
   const setTeamModalOpen = useTeamModalStore((state) => state.setIsOpen);
   const setNoticeModalOpen = useNoticeModalStore((state) => state.setIsOpen);
+  const pendingModal = useSearchHistoryStore((state) => state.pendingModal);
+  const consumePendingModal = useSearchHistoryStore(
+    (state) => state.consumePendingModal,
+  );
   const clearPendingItem = useItemPickStore((state) => state.clearPendingItem);
   const clearPendingPokemon = usePokemonPickStore((state) => state.clearPendingPokemon);
   const clearPendingMove = useMovePickStore((state) => state.clearPendingMove);
@@ -137,6 +142,13 @@ const FloatingBtn = () => {
   useTypeCalcModalShortcut(setTypeCalcModalOpen);
   useTeamModalShortcut(handleTeamModalOpenChange, !isMakeTeamPage);
   useNatureTableModalShortcut(setNatureTableModalOpen);
+
+  useEffect(() => {
+    if (!pendingModal) return;
+    if (pendingModal === 'type-calc') setTypeCalcModalOpen(true);
+    if (pendingModal === 'type-table') setTypeTableModalOpen(true);
+    consumePendingModal();
+  }, [pendingModal, consumePendingModal]);
 
   const handleOutOfClick = useCallback(() => {
     setIsOpen(false);

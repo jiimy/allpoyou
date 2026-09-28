@@ -14,7 +14,7 @@ import {
 
 import s from './noticeModal.module.scss';
 
-const CURRENT_UPDATE_VERSION = '2026-09-23';
+const CURRENT_UPDATE_VERSION = '2026-09-28';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -74,46 +74,19 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
 
         <div className={s.currentSection}>
-          26.09.23
+          26.09.28
           <ul className={s.list}>
             <li className={s.item}>
-              상세 검색 추가 (도감페이지(/pokedex))
+              사이드 메뉴에 검색 기록 추가
               <span className={s.subText}>
-                -  전체~환상의 필터링 부분에 지외 기능추가(같은 버튼 클릭시 제외)
-                <br />
-                - 검색된 리스트 기준으로 각 값들을 오름차순 내림차순(공격, 방어 등)기능 및 중복 정렬 가능.
-                <br />
-                - 인피니티 퓨전 용도로 앞 타입, 뒷 타입 정렬 추가 (불/악, 악/불)
-                <br />
-                - 사이드메뉴가 추가되어 기존의 공통된 필터링을 관리 (메가진화제외, 거다이제외, 최종진화만)
+                - 검색 기록 누르면 다시 실행
               </span>
             </li>
             <li className={s.item}>
-              타입계산기에 도감 추가
-              <span className={s.subText}>
-                - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
-              </span>
-            </li>
-          </ul>
-          26.09.22
-          <ul className={s.list}>
-            <li className={s.item}>
-              각종 편의성 추가
-              <span className={s.subText}>
-                - 포켓몬 상세 정보에서 팀에 추가, 나무위키로 이동 기능
-                <br />
-                - 포켓몬 상세 정보에서 배울 수 있는 기술 정렬 (이름, 위력, 타입)
-                <br />
-                - 키보드의 shift 키 누를 시 플로팅 버튼이 열리고, 입력창에 포커스 시에는 기능하지 않음.
-                <br />
-                - 타입 계산기의 추천 포켓몬 정렬 (최종진화, 이름, 타입)
-              </span>
+              도감 페이지에서 포켓몬 즐겨찾기 추가
             </li>
             <li className={s.item}>
-              타입계산기에 도감 추가
-              <span className={s.subText}>
-                - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
-              </span>
+              특성 페이지에서 숨특 표시.
             </li>
           </ul>
         </div>
@@ -121,6 +94,48 @@ const NoticeModal = () => {
         <details className={s.pastDetails}>
           <summary className={s.pastSummary}>지난 업데이트 내역</summary>
           <div className={s.pastBody}>
+            26.09.23
+            <ul className={s.list}>
+              <li className={s.item}>
+                상세 검색 추가 (도감페이지(/pokedex))
+                <span className={s.subText}>
+                  -  전체~환상의 필터링 부분에 지외 기능추가(같은 버튼 클릭시 제외)
+                  <br />
+                  - 검색된 리스트 기준으로 각 값들을 오름차순 내림차순(공격, 방어 등)기능 및 중복 정렬 가능.
+                  <br />
+                  - 인피니티 퓨전 용도로 앞 타입, 뒷 타입 정렬 추가 (불/악, 악/불)
+                  <br />
+                  - 사이드메뉴가 추가되어 기존의 공통된 필터링을 관리 (메가진화제외, 거다이제외, 최종진화만)
+                </span>
+              </li>
+              <li className={s.item}>
+                타입계산기에 도감 추가
+                <span className={s.subText}>
+                  - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
+                </span>
+              </li>
+            </ul>
+            26.09.22
+            <ul className={s.list}>
+              <li className={s.item}>
+                각종 편의성 추가
+                <span className={s.subText}>
+                  - 포켓몬 상세 정보에서 팀에 추가, 나무위키로 이동 기능
+                  <br />
+                  - 포켓몬 상세 정보에서 배울 수 있는 기술 정렬 (이름, 위력, 타입)
+                  <br />
+                  - 키보드의 shift 키 누를 시 플로팅 버튼이 열리고, 입력창에 포커스 시에는 기능하지 않음.
+                  <br />
+                  - 타입 계산기의 추천 포켓몬 정렬 (최종진화, 이름, 타입)
+                </span>
+              </li>
+              <li className={s.item}>
+                타입계산기에 도감 추가
+                <span className={s.subText}>
+                  - 타입계산기 모달에서 타입을 선택후 e를 누르거나 버튼 클릭시 타입에 맞는 포켓몬 리스트 출력
+                </span>
+              </li>
+            </ul>
             26.09.21
             <ul className={s.list}>
               <li className={s.item}>

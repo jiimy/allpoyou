@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import {
   MOVE_DAMAGE_CLASS_OPTIONS,
@@ -12,6 +12,11 @@ import {
 } from '@/constants/moveFilters';
 import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
 import type { MoveDbEntry } from '@/types/move';
+import {
+  fetchPokemonList,
+  getCachedPokemonList,
+  type Pokemon,
+} from '@/store/PokemonStore';
 import {
   formatMoveStat,
   getDamageClassLabel,
@@ -25,6 +30,48 @@ import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
 import { FilterButton } from '@/components/button/Button';
 
 const PAGE_SIZE = 30;
+
+type LearnablePokemon = { id: number; number: number; nameKo: string };
+type LearnableStatSortKey = 'H' | 'A' | 'C' | 'B' | 'D' | 'S';
+type LearnableStatSortDirection = 'asc' | 'desc';
+
+const LEARNABLE_STAT_SORT_OPTIONS: {
+  key: LearnableStatSortKey;
+  label: string;
+}[] = [
+  { key: 'H', label: 'HP' },
+  { key: 'A', label: '공격' },
+  { key: 'C', label: '특공' },
+  { key: 'B', label: '방어' },
+  { key: 'D', label: '특방' },
+  { key: 'S', label: '스피드' },
+];
+
+const FALLBACK_TYPE_BORDER = '#e0e0e0';
+
+/** 타입 1개: 전체 border / 2개: 왼쪽=1타입, 오른쪽=2타입 (+ hover 배경용 CSS 변수) */
+function getLearnableTypeStyle(
+  types: string[] | undefined,
+): CSSProperties | undefined {
+  if (!types || types.length === 0) return undefined;
+
+  const left = TYPE_COLOR[types[0]] ?? FALLBACK_TYPE_BORDER;
+  if (types.length === 1) {
+    return {
+      borderColor: left,
+      ['--learnable-hover-bg' as string]: left,
+    };
+  }
+
+  const right = TYPE_COLOR[types[1]] ?? left;
+  return {
+    borderLeftColor: left,
+    borderRightColor: right,
+    borderTopColor: left,
+    borderBottomColor: right,
+    ['--learnable-hover-bg' as string]: `linear-gradient(90deg, ${left} 50%, ${right} 50%)`,
+  };
+}
 
 function MoveRow({
   move,
@@ -105,11 +152,11 @@ type MoveListProps = {
   onShowLearnablePokemonChange: (checked: boolean) => void;
   canShowLearnablePokemon: boolean;
   matchedMoveNames: string[];
-  learnablePokemon: { id: number; number: number; nameKo: string }[];
+  learnablePokemon: LearnablePokemon[];
   learnablePokemonLoading: boolean;
   learnablePokemonError: string | null;
-  selectedPokemon: { id: number; number: number; nameKo: string } | null;
-  onSelectPokemon: (pokemon: { id: number; number: number; nameKo: string }) => void;
+  selectedPokemon: LearnablePokemon | null;
+  onSelectPokemon: (pokemon: LearnablePokemon) => void;
   pokemonMoves: MoveDbEntry[];
   pokemonMovesLoading: boolean;
   pokemonMovesError: string | null;
@@ -159,8 +206,28 @@ export default function MoveList({
     useState<MoveDamageClassFilter>('all');
   const [sortKey, setSortKey] = useState<MoveSortKey>('name');
   const [sortDirection, setSortDirection] = useState<MoveSortDirection>('asc');
+  const [learnableStatSortKey, setLearnableStatSortKey] =
+    useState<LearnableStatSortKey | null>(null);
+  const [learnableStatSortDir, setLearnableStatSortDir] =
+    useState<LearnableStatSortDirection>('desc');
+  const [pokemonCatalog, setPokemonCatalog] = useState<Pokemon[]>(() =>
+    getCachedPokemonList(),
+  );
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pokemonMovesSentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (pokemonCatalog.length > 0) return;
+    let cancelled = false;
+    void fetchPokemonList()
+      .then((list) => {
+        if (!cancelled) setPokemonCatalog(list);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pokemonCatalog.length]);
 
   const handleSortClick = (key: MoveSortKey) => {
     if (sortKey === key) {
@@ -171,6 +238,49 @@ export default function MoveList({
     }
     setVisibleCount(PAGE_SIZE);
   };
+
+  const handleLearnableStatSortClick = (key: LearnableStatSortKey) => {
+    if (learnableStatSortKey === key) {
+      setLearnableStatSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setLearnableStatSortKey(key);
+    setLearnableStatSortDir('desc');
+  };
+
+  const pokemonByNameKo = useMemo(() => {
+    const map = new Map<string, Pokemon>();
+    for (const pokemon of pokemonCatalog) {
+      map.set(pokemon.nameKo, pokemon);
+    }
+    return map;
+  }, [pokemonCatalog]);
+
+  const sortedLearnablePokemon = useMemo(() => {
+    if (!learnableStatSortKey) return learnablePokemon;
+
+    const dirMult = learnableStatSortDir === 'asc' ? 1 : -1;
+    return [...learnablePokemon].sort((a, b) => {
+      const ap = pokemonByNameKo.get(a.nameKo);
+      const bp = pokemonByNameKo.get(b.nameKo);
+      const av = ap ? Number(ap[learnableStatSortKey]) : Number.NaN;
+      const bv = bp ? Number(bp[learnableStatSortKey]) : Number.NaN;
+      const aMissing = !Number.isFinite(av);
+      const bMissing = !Number.isFinite(bv);
+      if (aMissing && bMissing) {
+        return a.nameKo.localeCompare(b.nameKo, 'ko');
+      }
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      if (av !== bv) return (av - bv) * dirMult;
+      return a.nameKo.localeCompare(b.nameKo, 'ko');
+    });
+  }, [
+    learnablePokemon,
+    learnableStatSortKey,
+    learnableStatSortDir,
+    pokemonByNameKo,
+  ]);
 
   const sortedMoves = useMemo(
     () => sortMoves(moves, sortKey, sortDirection, pochampsOnly),
@@ -376,13 +486,38 @@ export default function MoveList({
 
       {showLearnablePokemon && canShowLearnablePokemon ? (
         <section className={s.learnableSection}>
-          <h3 className={s.learnableTitle}>
-            배울 수 있는 포켓몬
-            {pochampsOnly ? ' · 포챔스' : ''}
-            {matchedMoveNames.length > 0
-              ? ` · ${matchedMoveNames.join(', ')}`
-              : ''}
-          </h3>
+          <div className={s.learnableHeader}>
+            <h3 className={s.learnableTitle}>
+              배울 수 있는 포켓몬
+              {pochampsOnly ? ' · 포챔스' : ''}
+              {matchedMoveNames.length > 0
+                ? ` · ${matchedMoveNames.join(', ')}`
+                : ''}
+            </h3>
+            <div
+              className={s.learnableSortRow}
+              role="group"
+              aria-label="종족값 정렬"
+            >
+              {LEARNABLE_STAT_SORT_OPTIONS.map(({ key, label }) => {
+                const active = learnableStatSortKey === key;
+                const arrow = learnableStatSortDir === 'asc' ? '↑' : '↓';
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`${s.learnableSortBtn} ${active ? s.learnableSortBtnActive : ''}`}
+                    aria-pressed={active}
+                    aria-label={`${label} ${active ? (learnableStatSortDir === 'asc' ? '오름차순' : '내림차순') : '정렬'}`}
+                    onClick={() => handleLearnableStatSortClick(key)}
+                  >
+                    {label}
+                    {active ? arrow : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {learnablePokemonLoading ? (
             <p className={s.learnableEmpty}>포켓몬 목록을 불러오는 중…</p>
           ) : learnablePokemonError ? (
@@ -394,20 +529,29 @@ export default function MoveList({
           ) : (
             <>
               <p className={s.learnableCount}>
-                {learnablePokemon.length.toLocaleString()}마리
+                {sortedLearnablePokemon.length.toLocaleString()}마리
               </p>
               <ul className={s.learnableList}>
-                {learnablePokemon.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      className={`${s.learnableItem} ${selectedPokemon?.id === p.id ? s.learnableItemActive : ''}`}
-                      onClick={() => onSelectPokemon(p)}
-                    >
-                      {p.nameKo}
-                    </button>
-                  </li>
-                ))}
+                {sortedLearnablePokemon.map((p) => {
+                  const types = pokemonByNameKo.get(p.nameKo)?.types;
+                  const typeStyle = getLearnableTypeStyle(types);
+                  const isActive = selectedPokemon?.id === p.id;
+                  const typeTitle =
+                    types && types.length > 0 ? types.join(' / ') : undefined;
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        className={`${s.learnableItem} ${typeStyle ? s.learnableItemTyped : ''} ${isActive ? s.learnableItemActive : ''}`}
+                        style={typeStyle}
+                        title={typeTitle}
+                        onClick={() => onSelectPokemon(p)}
+                      >
+                        {p.nameKo}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}
