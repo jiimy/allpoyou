@@ -47,14 +47,33 @@ function typeSlotRank(
     : 1;
 }
 
+function getStatSortValue(
+  pokemon: Pokemon,
+  key: PokedexStatSortRule['key'],
+): number {
+  if (key === 'total') {
+    const stored = Number(pokemon.total);
+    if (Number.isFinite(stored)) return stored;
+    return (
+      Number(pokemon.H) +
+      Number(pokemon.A) +
+      Number(pokemon.B) +
+      Number(pokemon.C) +
+      Number(pokemon.D) +
+      Number(pokemon.S)
+    );
+  }
+  return Number(pokemon[key]);
+}
+
 function compareStatRules(
   a: Pokemon,
   b: Pokemon,
   rules: PokedexStatSortRule[],
 ): number {
   for (const rule of rules) {
-    const av = Number(a[rule.key]);
-    const bv = Number(b[rule.key]);
+    const av = getStatSortValue(a, rule.key);
+    const bv = getStatSortValue(b, rule.key);
     if (!Number.isFinite(av) && !Number.isFinite(bv)) continue;
     if (!Number.isFinite(av)) return 1;
     if (!Number.isFinite(bv)) return -1;
@@ -413,7 +432,9 @@ export default function PokedexList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredPokemons.length));
+          setVisibleCount((prev) =>
+            Math.min(prev + PAGE_SIZE, filteredPokemons.length),
+          );
         }
       },
       { rootMargin: '240px' },
@@ -422,7 +443,8 @@ export default function PokedexList({
     observer.observe(sentinel);
 
     return () => observer.disconnect();
-  }, [filteredPokemons.length, hasMore]);
+    // sortKeySig: 정렬 변경 시 grid remount 후에도 sentinel 재구독
+  }, [filteredPokemons.length, hasMore, sortKeySig, visibleCount]);
 
   if (loading) {
     return <p className={s.status}>포켓몬 목록을 불러오는 중…</p>;
@@ -457,8 +479,10 @@ export default function PokedexList({
         ) : (
           <p className={s.empty}>검색 결과가 없습니다.</p>
         )}
-        {hasMore ? <div ref={sentinelRef} className={s.sentinel} aria-hidden /> : null}
       </div>
+      {hasMore ? (
+        <div ref={sentinelRef} className={s.sentinel} aria-hidden />
+      ) : null}
 
       {infoModalPokemon ? (
         <SelectPokeModal
