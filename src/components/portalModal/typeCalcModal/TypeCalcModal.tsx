@@ -217,7 +217,7 @@ const TypeCalcModal = ({
       isDim={dimClick || isDim}
       onClose
       dimClick={dimClick}
-      className={classNames(s.modal, className)}
+      className={classNames(className, s.modal)}
     >
       <button
         type="button"
