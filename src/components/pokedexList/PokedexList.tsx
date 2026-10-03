@@ -3,7 +3,10 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
+import {
+  ALL_POKEMON_TYPES_KO,
+  TYPE_COLOR,
+} from '@/constants/pokemonTypeColor';
 import {
   fetchPokemonList,
   filterPokemonByTagSelections,
@@ -292,6 +295,8 @@ type PokedexListProps = {
   statSorts?: PokedexStatSortRule[];
   typeSlotSort?: PokedexTypeSlotSort | null;
   typeSearchTokens?: string[] | null;
+  selectedTypes?: string[];
+  onAvailableTypesChange?: (types: string[]) => void;
 };
 
 export default function PokedexList({
@@ -300,6 +305,8 @@ export default function PokedexList({
   statSorts = [],
   typeSlotSort = null,
   typeSearchTokens = null,
+  selectedTypes = [],
+  onAvailableTypesChange,
 }: PokedexListProps) {
   const { replaceParams, parseIntParam } = useUrlQueryParams();
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
@@ -380,34 +387,62 @@ export default function PokedexList({
     .map((rule) => `${rule.key}:${rule.direction}`)
     .join(',');
 
-  const filteredPokemons = useMemo(() => {
-    const filtered = applyPokemonListFilters(
-      filterPokemonByTagSelections(
-        filterPokemonList(sourcePokemons, keyword),
-        tagSelections,
-        favoriteIdSet ? { favoriteIds: favoriteIdSet } : undefined,
+  const baseFilteredPokemons = useMemo(
+    () =>
+      applyPokemonListFilters(
+        filterPokemonByTagSelections(
+          filterPokemonList(sourcePokemons, keyword),
+          tagSelections,
+          favoriteIdSet ? { favoriteIds: favoriteIdSet } : undefined,
+        ),
+        { excludeMega, excludeGmax, finalEvolutionOnly },
       ),
-      { excludeMega, excludeGmax, finalEvolutionOnly },
-    );
+    [
+      sourcePokemons,
+      keyword,
+      tagSelections,
+      favoriteIdSet,
+      excludeMega,
+      excludeGmax,
+      finalEvolutionOnly,
+    ],
+  );
 
-    return sortPokemonsComposite(filtered, {
+  const availableTypes = useMemo(() => {
+    const present = new Set<string>();
+    for (const pokemon of baseFilteredPokemons) {
+      for (const type of pokemon.types) {
+        if (type in TYPE_COLOR) present.add(type);
+      }
+    }
+    return ALL_POKEMON_TYPES_KO.filter((type) => present.has(type));
+  }, [baseFilteredPokemons]);
+
+  useEffect(() => {
+    onAvailableTypesChange?.(availableTypes);
+  }, [availableTypes, onAvailableTypesChange]);
+
+  const filteredPokemons = useMemo(() => {
+    const typeFiltered =
+      selectedTypes.length === 0
+        ? baseFilteredPokemons
+        : baseFilteredPokemons.filter((pokemon) =>
+            selectedTypes.some((type) => pokemon.types.includes(type)),
+          );
+
+    return sortPokemonsComposite(typeFiltered, {
       typeSlotSort,
       typeSearchTokens,
       statSorts,
     });
     // sortKeySig로 규칙 변경(3개 이상·방향 토글 포함)을 확실히 구독
   }, [
-    sourcePokemons,
-    keyword,
-    tagSelections,
-    favoriteIdSet,
+    baseFilteredPokemons,
+    selectedTypes,
     sortKeySig,
     statSorts,
     typeSlotSort,
     typeSearchTokens,
-    excludeMega,
-    excludeGmax,
-    finalEvolutionOnly,
   ]);
 
   const visiblePokemons = filteredPokemons.slice(0, visibleCount);
@@ -419,7 +454,8 @@ export default function PokedexList({
     .join(',');
   // 즐겨찾기 탭이 켜진 경우에만 favoriteIds를 넣어 목록 리셋
   const favoriteFilterKey = usesFavoriteTag ? favoriteIds.join(',') : '';
-  const filterKey = `${keyword}\u0000${tagKey}\u0000${pochampsActive}\u0000${sortKeySig}\u0000${typeSlotSort ?? ''}\u0000${excludeMega}\u0000${excludeGmax}\u0000${finalEvolutionOnly}\u0000${favoriteFilterKey}`;
+  const selectedTypeKey = selectedTypes.join(',');
+  const filterKey = `${keyword}\u0000${tagKey}\u0000${pochampsActive}\u0000${sortKeySig}\u0000${typeSlotSort ?? ''}\u0000${excludeMega}\u0000${excludeGmax}\u0000${finalEvolutionOnly}\u0000${favoriteFilterKey}\u0000${selectedTypeKey}`;
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);

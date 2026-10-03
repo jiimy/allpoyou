@@ -14,7 +14,7 @@ import {
 
 import s from './noticeModal.module.scss';
 
-const CURRENT_UPDATE_VERSION = '2026-09-28';
+const CURRENT_UPDATE_VERSION = '2026-10-03';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -74,19 +74,15 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
 
         <div className={s.currentSection}>
-          26.09.28
+          26.10.03
           <ul className={s.list}>
             <li className={s.item}>
-              사이드 메뉴에 검색 기록 추가
+              도감 페이지에 기능 추가
               <span className={s.subText}>
-                - 검색 기록 누르면 다시 실행
+                - 여러 세대 검색 가능 ( 1세대 + 3세대 )
+                <br/>
+                - 검색된 리스트에서 타입별로 필터링 추가
               </span>
-            </li>
-            <li className={s.item}>
-              도감 페이지에서 포켓몬 즐겨찾기 추가
-            </li>
-            <li className={s.item}>
-              특성 페이지에서 숨특 표시.
             </li>
           </ul>
         </div>
@@ -94,6 +90,21 @@ const NoticeModal = () => {
         <details className={s.pastDetails}>
           <summary className={s.pastSummary}>지난 업데이트 내역</summary>
           <div className={s.pastBody}>
+            26.09.28
+            <ul className={s.list}>
+              <li className={s.item}>
+                사이드 메뉴에 검색 기록 추가
+                <span className={s.subText}>
+                  - 검색 기록 누르면 다시 실행
+                </span>
+              </li>
+              <li className={s.item}>
+                도감 페이지에서 포켓몬 즐겨찾기 추가
+              </li>
+              <li className={s.item}>
+                특성 페이지에서 숨특 표시.
+              </li>
+            </ul>
             26.09.23
             <ul className={s.list}>
               <li className={s.item}>

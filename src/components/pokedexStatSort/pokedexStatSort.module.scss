@@ -196,3 +196,24 @@
     background: #fff;
   }
 }
+
+.typeFilterBtn {
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.typeFilterBtnActive {
+  &:hover {
+    opacity: 0.92;
+  }
+}

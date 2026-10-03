@@ -1,5 +1,7 @@
 'use client';
 
+import { TYPE_COLOR } from '@/constants/pokemonTypeColor';
+
 import s from './pokedexStatSort.module.scss';
 
 export type PokedexStatSortKey = 'H' | 'A' | 'B' | 'C' | 'D' | 'S' | 'total';
@@ -30,6 +32,10 @@ type PokedexStatSortProps = {
   onTypeSlotSortChange: (slot: PokedexTypeSlotSort) => void;
   onTypeSlotReset: () => void;
   typeSlotEnabled?: boolean;
+  availableTypes?: string[];
+  selectedTypes?: string[];
+  onTypeToggle?: (type: string) => void;
+  onTypeFilterReset?: () => void;
 };
 
 export default function PokedexStatSort({
@@ -41,6 +47,10 @@ export default function PokedexStatSort({
   onTypeSlotSortChange,
   onTypeSlotReset,
   typeSlotEnabled = true,
+  availableTypes = [],
+  selectedTypes = [],
+  onTypeToggle,
+  onTypeFilterReset,
 }: PokedexStatSortProps) {
   return (
     <details className={s.details}>
@@ -126,6 +136,48 @@ export default function PokedexStatSort({
             리셋
           </button>
         </div>
+
+        {availableTypes.length > 0 && onTypeToggle ? (
+          <div className={s.wrap} role="group" aria-label="리스트 타입 필터">
+            {availableTypes.map((type) => {
+              const active = selectedTypes.includes(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className={`${s.typeFilterBtn} ${active ? s.typeFilterBtnActive : ''}`}
+                  style={
+                    active
+                      ? {
+                          background: TYPE_COLOR[type] ?? '#999',
+                          borderColor: 'transparent',
+                          color: '#fff',
+                        }
+                      : {
+                          borderColor: TYPE_COLOR[type] ?? '#ddd',
+                          color: TYPE_COLOR[type] ?? '#444',
+                        }
+                  }
+                  aria-pressed={active}
+                  aria-label={
+                    active ? `${type} 타입 필터 해제` : `${type} 타입만 보기`
+                  }
+                  onClick={() => onTypeToggle(type)}
+                >
+                  {type}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className={s.resetBtn}
+              disabled={selectedTypes.length === 0}
+              onClick={onTypeFilterReset}
+            >
+              리셋
+            </button>
+          </div>
+        ) : null}
       </div>
     </details>
   );

@@ -183,10 +183,15 @@ export function pokemonMatchesPokedexTag(
   return false;
 }
 
+function isGenerationTag(tag: string): boolean {
+  return /^\d+세대$/.test(tag);
+}
+
 /**
- * 태그 선택(포함/제외, 복수 AND)으로 필터링합니다.
- * - include: 해당 태그에 반드시 속해야 함
- * - exclude: 해당 태그에 속하면 제외
+ * 태그 선택(포함/제외)으로 필터링합니다.
+ * - 1~9세대 include끼리: OR (예: 1세대+3세대 → 둘 중 하나)
+ * - 그 외 태그(및 세대 exclude)와 세대 OR 그룹: AND
+ * - include: 해당 태그에 속해야 함 / exclude: 해당 태그에 속하면 제외
  */
 export function filterPokemonByTagSelections(
   list: Pokemon[],
@@ -195,8 +200,26 @@ export function filterPokemonByTagSelections(
 ): Pokemon[] {
   if (selections.length === 0) return list;
 
+  const genIncludes: PokedexTagSelection[] = [];
+  const otherSelections: PokedexTagSelection[] = [];
+
+  for (const selection of selections) {
+    if (selection.mode === 'include' && isGenerationTag(selection.tag)) {
+      genIncludes.push(selection);
+    } else {
+      otherSelections.push(selection);
+    }
+  }
+
   return list.filter((pokemon) => {
-    for (const { tag, mode } of selections) {
+    if (genIncludes.length > 0) {
+      const matchesAnyGen = genIncludes.some(({ tag }) =>
+        pokemonMatchesPokedexTag(pokemon, tag, context),
+      );
+      if (!matchesAnyGen) return false;
+    }
+
+    for (const { tag, mode } of otherSelections) {
       const matched = pokemonMatchesPokedexTag(pokemon, tag, context);
       if (mode === 'include' && !matched) return false;
       if (mode === 'exclude' && matched) return false;

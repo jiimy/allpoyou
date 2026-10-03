@@ -44,6 +44,8 @@ function PokedexPageContent() {
   const [typeSlotSort, setTypeSlotSort] = useState<PokedexTypeSlotSort | null>(
     null,
   );
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
 
   const typeSearchTokens = useMemo(
     () => getTypeSearchTokens(keyword),
@@ -56,6 +58,25 @@ function PokedexPageContent() {
       setTypeSlotSort(null);
     }
   }, [typeSlotEnabled, typeSlotSort]);
+
+  useEffect(() => {
+    setSelectedTypes((prev) => {
+      const next = prev.filter((type) => availableTypes.includes(type));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [availableTypes]);
+
+  const handleAvailableTypesChange = useCallback((types: string[]) => {
+    setAvailableTypes((prev) => {
+      if (
+        prev.length === types.length &&
+        prev.every((type, index) => type === types[index])
+      ) {
+        return prev;
+      }
+      return types;
+    });
+  }, []);
 
   const handleKeywordChange = (value: string) => {
     replaceParams({
@@ -121,6 +142,18 @@ function PokedexPageContent() {
     setTypeSlotSort(null);
   }, []);
 
+  const handleTypeToggle = useCallback((type: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((entry) => entry !== type)
+        : [...prev, type],
+    );
+  }, []);
+
+  const handleTypeFilterReset = useCallback(() => {
+    setSelectedTypes([]);
+  }, []);
+
   return (
     <div className={s.page}>
       <StickySearchBar
@@ -143,6 +176,10 @@ function PokedexPageContent() {
         onTypeSlotSortChange={handleTypeSlotSortChange}
         onTypeSlotReset={handleTypeSlotReset}
         typeSlotEnabled={typeSlotEnabled}
+        availableTypes={availableTypes}
+        selectedTypes={selectedTypes}
+        onTypeToggle={handleTypeToggle}
+        onTypeFilterReset={handleTypeFilterReset}
       />
       <div className={s.listArea}>
         {isSearchDebouncing ? (
@@ -154,6 +191,8 @@ function PokedexPageContent() {
             statSorts={statSorts}
             typeSlotSort={typeSlotSort}
             typeSearchTokens={typeSearchTokens}
+            selectedTypes={selectedTypes}
+            onAvailableTypesChange={handleAvailableTypesChange}
           />
         )}
       </div>

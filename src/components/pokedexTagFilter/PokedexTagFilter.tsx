@@ -37,6 +37,7 @@ export default function PokedexTagFilter({
         const mode = modeByTag.get(tag);
         const include = mode === 'include';
         const exclude = mode === 'exclude';
+        const isGen = /^\d+세대$/.test(tag);
         return (
           <button
             key={tag}
@@ -45,10 +46,14 @@ export default function PokedexTagFilter({
             aria-pressed={mode != null}
             aria-label={
               include
-                ? `${tag}만 보기 (다시 누르면 제외)`
+                ? isGen
+                  ? `${tag} 포함 (다시 누르면 제외)`
+                  : `${tag}만 보기 (다시 누르면 제외)`
                 : exclude
                   ? `${tag} 제외 (다시 누르면 해제)`
-                  : `${tag} 필터`
+                  : isGen
+                    ? `${tag} 필터 (다른 세대와 함께 선택 가능)`
+                    : `${tag} 필터`
             }
             onClick={() => onCycleTag(tag)}
           >
