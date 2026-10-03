@@ -3738,7 +3738,7 @@
   "bounce": {
     "id": 340,
     "englishName": "bounce",
-    "koreanName": "뛰어오르다",
+    "koreanName": "뛰어오르기",
     "description": "하늘 높이 뛰어올라 2턴째에 상대를 공격한다. 마비 상태로 만들 때가 있다.",
     "type": "flying",
     "damage_class": "physical",
