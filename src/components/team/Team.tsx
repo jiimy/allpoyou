@@ -98,8 +98,6 @@ export type TeamProps = {
   itemSuggestions: ItemKr[];
   itemHighlightedIndex: number;
   activeIndex: number | null;
-  /** 마지막으로 선택한 슬롯 (모달/make-team 공통) */
-  focusedSlotIndex: number;
   isClient: boolean;
   searchLoading: boolean;
   suggestions: Pokemon[];
@@ -220,7 +218,6 @@ const Team: React.FC<TeamProps> = ({
   itemSuggestions,
   itemHighlightedIndex,
   activeIndex,
-  focusedSlotIndex,
   isClient,
   searchLoading,
   suggestions,
@@ -333,21 +330,6 @@ const Team: React.FC<TeamProps> = ({
   const abilityDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const natureDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
   const moveDropdownRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const didRestoreFocusRef = useRef(false);
-
-  useEffect(() => {
-    if (!isClient || didRestoreFocusRef.current) return;
-
-    const timer = window.setTimeout(() => {
-      const el = pokemonInputRefs.current[focusedSlotIndex];
-      if (!el) return;
-      didRestoreFocusRef.current = true;
-      // el.focus({ preventScroll: true });
-      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [focusedSlotIndex, isClient]);
 
   useEffect(() => {
     if (!editorReady || isHydratingFromStore) return;

@@ -365,9 +365,7 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   >({});
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState(0);
-  const [activeIndex, setActiveIndex] = useState<number | null>(() =>
-    useTeamSlotFocusStore.getState().focusedSlotIndex,
-  );
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const isClient = useIsClient();
   const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
@@ -375,9 +373,6 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
   const [pokemonListError, setPokemonListError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const [isHydratingFromStore, setIsHydratingFromStore] = useState(true);
-  const focusedSlotIndex = useTeamSlotFocusStore(
-    (state) => state.focusedSlotIndex,
-  );
   const setFocusedSlotIndex = useTeamSlotFocusStore(
     (state) => state.setFocusedSlotIndex,
   );
@@ -1833,7 +1828,6 @@ export function useTeamEditor(options?: { teamsSourceReady?: boolean }) {
     itemSuggestions,
     itemHighlightedIndex,
     activeIndex,
-    focusedSlotIndex,
     isClient,
     searchLoading,
     suggestions,
