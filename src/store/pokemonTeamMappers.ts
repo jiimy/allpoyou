@@ -83,6 +83,7 @@ export function buildTeamPokemonSlot(
     nameEn: pokemon.name,
     types: ensureStringArray(pokemon.types),
     form: sameAsExisting ? existing?.form : undefined,
+    nickname: sameAsExisting ? (existing?.nickname ?? null) : null,
     abilityId,
     itemId,
     nature: resolvedNature,

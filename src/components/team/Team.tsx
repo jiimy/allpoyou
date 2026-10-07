@@ -14,6 +14,7 @@ import {
   EV_STAT_KEYS,
   EV_STAT_MAX,
   EV_TOTAL_MAX,
+  TEAM_SLOT_COUNT,
   usePokemonTeamStore,
   type EvStatKey,
   type TeamPokemonEvs,
@@ -294,8 +295,29 @@ const Team: React.FC<TeamProps> = ({
   const syncActiveTeamPokemons = usePokemonTeamStore(
     (state) => state.syncActiveTeamPokemons,
   );
+  const updateActiveSlot = usePokemonTeamStore(
+    (state) => state.updateActiveSlot,
+  );
+  const activeTeamPokemons = usePokemonTeamStore(
+    (state) =>
+      state.teams.find((entry) => entry.teamId === state.activeTeamId)
+        ?.pokemons,
+  );
+  const nicknames = useMemo(
+    () =>
+      Array.from({ length: TEAM_SLOT_COUNT }, (_, index) => {
+        const nickname = activeTeamPokemons?.[index]?.nickname;
+        return typeof nickname === 'string' ? nickname : '';
+      }),
+    [activeTeamPokemons],
+  );
 
   const [statModalIndex, setStatModalIndex] = useState<number | null>(null);
+  const [editingNicknameIndex, setEditingNicknameIndex] = useState<number | null>(
+    null,
+  );
+  const [nicknameDraft, setNicknameDraft] = useState('');
+  const nicknameInputRef = useRef<HTMLInputElement | null>(null);
 
   const isTeamFull = useMemo(
     () =>
@@ -316,6 +338,38 @@ const Team: React.FC<TeamProps> = ({
 
     return slots;
   }, [originalBaseStatsBySlot, selectedPokemons]);
+
+  const startNicknameEdit = useCallback(
+    (index: number) => {
+      setEditingNicknameIndex(index);
+      setNicknameDraft(nicknames[index] ?? '');
+    },
+    [nicknames],
+  );
+
+  const commitNicknameEdit = useCallback(() => {
+    if (editingNicknameIndex == null) return;
+    const trimmed = nicknameDraft.trim();
+    updateActiveSlot(editingNicknameIndex, {
+      nickname: trimmed.length > 0 ? trimmed : null,
+    });
+    setEditingNicknameIndex(null);
+    setNicknameDraft('');
+  }, [editingNicknameIndex, nicknameDraft, updateActiveSlot]);
+
+  useEffect(() => {
+    if (editingNicknameIndex == null) return;
+    nicknameInputRef.current?.focus();
+    nicknameInputRef.current?.select();
+  }, [editingNicknameIndex]);
+
+  useEffect(() => {
+    if (editingNicknameIndex == null) return;
+    if (selectedPokemons[editingNicknameIndex] == null) {
+      setEditingNicknameIndex(null);
+      setNicknameDraft('');
+    }
+  }, [editingNicknameIndex, selectedPokemons]);
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const activeFieldDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -561,63 +615,116 @@ const Team: React.FC<TeamProps> = ({
                 </span>
               ) : null}
             </div>
-            <span className={s.types}>
-              <div
-                ref={(el) => {
-                  typePickerWrapRefs.current[index] = el;
-                }}
-              >
-                {selected ? (
-                  <PokemonTypePicker
-                    source="team"
-                    pokemonIndex={index}
-                    types={ensureStringArray(selected.types)}
-                    originalTypes={originalTypesBySlot[index]}
-                    activeTypeSlot={activeTypeSlot}
-                    isClient={isClient}
-                    onTypeSlotActivate={onTypeSlotActivate}
-                    onSelectType={onSelectType}
-                    onRemoveType={onRemoveType}
-                    onStartAddType={onStartAddType}
-                    onAddType={onAddType}
-                    onCancelTypes={onCancelTypes}
-                    onActiveTypeSlotChange={onActiveTypeSlotChange}
-                  />
-                ) : null}
-              </div>
-              <div
-                className={cn(s.statLabelWrap, {
-                  [s.statLabelClickable]: selected != null,
-                })}
-                onClick={() => {
-                  if (selected) setStatModalIndex(index);
-                }}
-                role={selected ? 'button' : undefined}
-                tabIndex={selected ? 0 : undefined}
-                onKeyDown={(e) => {
-                  if (!selected) return;
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setStatModalIndex(index);
-                  }
-                }}
-                aria-label={selected ? '종족값 조정' : undefined}
-              >
-                {selected
-                  ? [...maxStatKeys].map((key, i, arr) => (
-                    <span
-                      key={key}
-                      className={cn({
-                        [s.statLabelHighlight]: maxStatChanged,
+            <div className={s.typesMetaRow}>
+              <span className={s.types}>
+                <div
+                  ref={(el) => {
+                    typePickerWrapRefs.current[index] = el;
+                  }}
+                >
+                  {selected ? (
+                    <PokemonTypePicker
+                      source="team"
+                      pokemonIndex={index}
+                      types={ensureStringArray(selected.types)}
+                      originalTypes={originalTypesBySlot[index]}
+                      activeTypeSlot={activeTypeSlot}
+                      isClient={isClient}
+                      onTypeSlotActivate={onTypeSlotActivate}
+                      onSelectType={onSelectType}
+                      onRemoveType={onRemoveType}
+                      onStartAddType={onStartAddType}
+                      onAddType={onAddType}
+                      onCancelTypes={onCancelTypes}
+                      onActiveTypeSlotChange={onActiveTypeSlotChange}
+                    />
+                  ) : null}
+                </div>
+                <div
+                  className={cn(s.statLabelWrap, {
+                    [s.statLabelClickable]: selected != null,
+                  })}
+                  onClick={() => {
+                    if (selected) setStatModalIndex(index);
+                  }}
+                  role={selected ? 'button' : undefined}
+                  tabIndex={selected ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (!selected) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setStatModalIndex(index);
+                    }
+                  }}
+                  aria-label={selected ? '종족값 조정' : undefined}
+                >
+                  {selected
+                    ? [...maxStatKeys].map((key, i, arr) => (
+                      <span
+                        key={key}
+                        className={cn({
+                          [s.statLabelHighlight]: maxStatChanged,
+                        })}
+                      >
+                        {STAT_LABEL_BY_KEY[key]}
+                        {i < arr.length - 1 ? ' / ' : ''}
+                      </span>
+                    ))
+                    : null}
+                </div>
+              </span>
+              {selected ? (
+                <div className={s.nicknameWrap}>
+                  {editingNicknameIndex === index ? (
+                    <input
+                      ref={nicknameInputRef}
+                      type="text"
+                      className={s.nicknameInput}
+                      value={nicknameDraft}
+                      placeholder="별명추가"
+                      maxLength={12}
+                      aria-label="포켓몬 별명"
+                      onChange={(e) => setNicknameDraft(e.target.value)}
+                      onBlur={commitNicknameEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          setEditingNicknameIndex(null);
+                          setNicknameDraft('');
+                        }
+                      }}
+                      autoComplete="off"
+                      data-1p-ignore
+                      data-lpignore="true"
+                      data-form-type="other"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className={cn(s.nicknameBtn, {
+                        [s.nicknameBtnEmpty]: !(nicknames[index] ?? '').trim(),
                       })}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        startNicknameEdit(index);
+                      }}
+                      aria-label={
+                        (nicknames[index] ?? '').trim()
+                          ? `별명 수정: ${nicknames[index]}`
+                          : '별명추가'
+                      }
                     >
-                      {STAT_LABEL_BY_KEY[key]}
-                      {i < arr.length - 1 ? ' / ' : ''}
-                    </span>
-                  ))
-                  : null}
-              </div>
-            </span>
+                      {(nicknames[index] ?? '').trim() || '별명추가'}
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </div>
             <div className={s.buildArea}>
               <div className={s.inputWrap}>
                 <input

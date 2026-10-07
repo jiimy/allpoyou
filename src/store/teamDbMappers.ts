@@ -23,6 +23,7 @@ export type TeamPokemonSlot = {
   nameEn: string;
   types: string[];
   form?: string;
+  nickname?: string | null;
   abilityId: number | null;
   itemId: number | null;
   nature: string | null;
@@ -86,6 +87,10 @@ function normalizePokemonSlot(slot: unknown): TeamPokemonSlot | null {
     nameEn: typeof raw.nameEn === 'string' ? raw.nameEn : '',
     types: ensureStringArray(raw.types),
     form: typeof raw.form === 'string' ? raw.form : undefined,
+    nickname:
+      typeof raw.nickname === 'string' && raw.nickname.trim()
+        ? raw.nickname.trim()
+        : null,
     abilityId: parseNumericId(raw.abilityId ?? raw.ability_id),
     itemId: parseNumericId(raw.itemId ?? raw.item_id),
     nature: typeof raw.nature === 'string' ? raw.nature : null,

@@ -34,6 +34,8 @@ export type TeamPokemonSlot = {
   nameEn: string;
   types: string[];
   form?: string;
+  /** 팀 슬롯 별명 (비어 있으면 미설정) */
+  nickname?: string | null;
   abilityId: number | null;
   itemId: number | null;
   nature: string | null;
@@ -164,6 +166,10 @@ function normalizeTeams(teams: SavedTeam[] | undefined): SavedTeam[] {
         nameEn: slot.nameEn ?? '',
         types: ensureStringArray(slot.types),
         form: slot.form,
+        nickname:
+          typeof slot.nickname === 'string' && slot.nickname.trim()
+            ? slot.nickname.trim()
+            : null,
         abilityId: slot.abilityId ?? null,
         itemId: slot.itemId ?? null,
         nature: slot.nature ?? null,
