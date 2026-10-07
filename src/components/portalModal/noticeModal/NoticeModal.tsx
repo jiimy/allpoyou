@@ -14,7 +14,7 @@ import {
 
 import s from './noticeModal.module.scss';
 
-const CURRENT_UPDATE_VERSION = '2026-10-03';
+const CURRENT_UPDATE_VERSION = '2026-10-07';
 
 const NoticeModal = () => {
   const pathname = usePathname() ?? '';
@@ -74,14 +74,14 @@ const NoticeModal = () => {
         <h2 className={s.title}>업데이트 안내</h2>
 
         <div className={s.currentSection}>
-          26.10.03
+          26.10.07
           <ul className={s.list}>
             <li className={s.item}>
-              도감 페이지에 기능 추가
+              팀만들기 페이지
               <span className={s.subText}>
-                - 여러 세대 검색 가능 ( 1세대 + 3세대 )
-                <br/>
-                - 검색된 리스트에서 타입별로 필터링 추가
+                - 팀에 속한 포켓몬에 별명 추가 가능
+                <br />
+                - 파티 전체 약점 보완 (파티 전체에서 2배 피해를 보완), 파티 반감 보완 (파티 전체에서 0/0.5배로 받게 하기)
               </span>
             </li>
           </ul>
@@ -90,6 +90,17 @@ const NoticeModal = () => {
         <details className={s.pastDetails}>
           <summary className={s.pastSummary}>지난 업데이트 내역</summary>
           <div className={s.pastBody}>
+            26.10.03
+            <ul className={s.list}>
+              <li className={s.item}>
+                도감 페이지에 기능 추가
+                <span className={s.subText}>
+                  - 여러 세대 검색 가능 ( 1세대 + 3세대 )
+                  <br />
+                  - 검색된 리스트에서 타입별로 필터링 추가
+                </span>
+              </li>
+            </ul>
             26.09.28
             <ul className={s.list}>
               <li className={s.item}>

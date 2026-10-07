@@ -11,7 +11,9 @@ import {
   formatCounterProduct,
   formatResistHoleLabel,
   getPartyResistHoleDetails,
+  getPartyWeaknessCounterDetails,
   getRecommendedCounterDetails,
+  mergeRecommendedCounterResults,
 } from '@/hooks/useType';
 import type { Pokemon } from '@/store/PokemonStore';
 import { PokemonSpriteImage } from '@/components/PokemonSpriteImage';
@@ -384,8 +386,12 @@ const MakeTeam = () => {
   );
 
   const [excludeSameTypes, setExcludeSameTypes] = useState(true);
-  /** 슬롯별 OFF: 해당 포켓몬 기준 / ON: 그때까지 파티 약점 기준 보완 */
+  /** 슬롯별: 파티 멤버들의 2배 약점을 모아 카운터 추천 */
   const [partyWideComplement, setPartyWideComplement] = useState<boolean[]>(
+    () => Array.from({ length: TEAM_SIZE }, () => false),
+  );
+  /** 슬롯별: 0/0.5로 못 막는 구멍 약점을 반감 타입으로 보완 */
+  const [partyResistComplement, setPartyResistComplement] = useState<boolean[]>(
     () => Array.from({ length: TEAM_SIZE }, () => false),
   );
   const [requireTwoRecTypes, setRequireTwoRecTypes] = useState<boolean[]>(() =>
@@ -523,14 +529,28 @@ const MakeTeam = () => {
           if (nextEmptyIndex === -1 && idx === lastSelectedIndex) return null;
 
           const usePartyWide = partyWideComplement[idx] === true;
+          const usePartyResist = partyResistComplement[idx] === true;
           const partyTypesList = selectedPokemons
             .slice(0, idx + 1)
             .filter((p): p is Pokemon => p != null)
             .map((p) => ensureStringArray(p.types));
 
-          const counterResult = usePartyWide
-            ? getPartyResistHoleDetails(partyTypesList)
-            : getRecommendedCounterDetails(ensureStringArray(pokemon.types));
+          const counterResults = [];
+          if (usePartyWide) {
+            counterResults.push(getPartyWeaknessCounterDetails(partyTypesList));
+          }
+          if (usePartyResist) {
+            counterResults.push(getPartyResistHoleDetails(partyTypesList));
+          }
+          if (counterResults.length === 0) {
+            counterResults.push(
+              getRecommendedCounterDetails(ensureStringArray(pokemon.types)),
+            );
+          }
+          const counterResult =
+            counterResults.length === 1
+              ? counterResults[0]
+              : mergeRecommendedCounterResults(counterResults);
           const { weaknesses, counters } = counterResult;
           const targetSlotIndex = idx + 1;
           const isTargetSlotFilled =
@@ -645,7 +665,7 @@ const MakeTeam = () => {
                         fontWeight: 600,
                       }}
                       title={
-                        usePartyWide
+                        usePartyResist && !usePartyWide
                           ? formatResistHoleLabel(c)
                           : formatCounterProduct(c)
                       }
@@ -661,8 +681,8 @@ const MakeTeam = () => {
                   className={s.partyWideToggle}
                   title={
                     usePartyWide
-                      ? '이 슬롯: 파티가 2배 이상 받으면서 아직 0/0.5로 못 막는 약점 공격을, 0.5배 이하로 받는 타입으로 보완'
-                      : '이 슬롯: 현재 포켓몬 약점 기준으로 보완'
+                      ? '이 슬롯: 여기까지의 파티가 2배 이상 받는 약점들을 공격 상성으로 보완'
+                      : '이 슬롯: 팀 내 전체 포켓몬 약점 기준으로 보완'
                   }
                 >
                   <span
@@ -679,6 +699,37 @@ const MakeTeam = () => {
                     aria-labelledby={`party-wide-complement-${idx}`}
                     onClick={() =>
                       setPartyWideComplement((prev) => {
+                        const next = [...prev];
+                        next[idx] = !prev[idx];
+                        return next;
+                      })
+                    }
+                  >
+                    <span className={s.partyWideThumb} aria-hidden />
+                  </button>
+                </div>
+                <div
+                  className={s.partyWideToggle}
+                  title={
+                    usePartyResist
+                      ? '이 슬롯: 파티가 2배 이상 받으면서 아직 0/0.5로 못 막는 약점 공격을, 0.5배 이하로 받는 타입으로 보완'
+                      : '이 슬롯: 파티 전체에서 0/0.5로 받지 못하는 타입을 보완'
+                  }
+                >
+                  <span
+                    className={s.partyWideToggleLabel}
+                    id={`party-resist-complement-${idx}`}
+                  >
+                    파티 반감 보완
+                  </span>
+                  <button
+                    type="button"
+                    className={`${s.partyWideTrack} ${usePartyResist ? s.partyWideTrackOn : ''}`}
+                    role="switch"
+                    aria-checked={usePartyResist}
+                    aria-labelledby={`party-resist-complement-${idx}`}
+                    onClick={() =>
+                      setPartyResistComplement((prev) => {
                         const next = [...prev];
                         next[idx] = !prev[idx];
                         return next;

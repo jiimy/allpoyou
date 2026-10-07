@@ -133,6 +133,34 @@ export function getRecommendedCounterDetails(
   return buildCounterResultFromWeaknesses(getWeaknessTypes(englishTypes));
 }
 
+/**
+ * 파티 전체 약점 보완:
+ * 파티 멤버 중 누구라도 2배 이상 받는 공격 타입을 모은 뒤,
+ * 단일 포켓몬 추천과 같은 방식(약점 상성 곱 ≥ 2)으로 카운터 타입을 추천.
+ * 멤버 1명이면 getRecommendedCounterDetails 와 동일.
+ */
+export function getPartyWeaknessCounterDetails(
+  partyKoreanTypes: string[][],
+): RecommendedCounterResult {
+  const weaknessSet = new Set<Type>();
+
+  for (const koreanTypes of partyKoreanTypes) {
+    const englishTypes = koreanTypes
+      .map((t) => KOREAN_TO_ENGLISH[t])
+      .filter((t): t is Type => Boolean(t && t in typeChart));
+    if (englishTypes.length === 0) continue;
+    for (const weak of getWeaknessTypes(englishTypes)) {
+      weaknessSet.add(weak);
+    }
+  }
+
+  if (weaknessSet.size === 0) {
+    return { weaknesses: [], counters: [] };
+  }
+
+  return buildCounterResultFromWeaknesses([...weaknessSet]);
+}
+
 function getDefenseMultiplierAgainst(
   defenderTypes: Type[],
   attackType: Type,
@@ -145,7 +173,7 @@ function getDefenseMultiplierAgainst(
 }
 
 /**
- * 파티 전체 약점 보완(ON):
+ * 파티 반감 보완:
  * 1) 파티 누군가가 2배 이상 받으면서, 누구도 0/0.5로 받지 못하는 공격 타입(미커버 약점)
  * 2) 그 공격을 ≤0.5배로 받는 방어 타입을 후보로 모음
  * 3) 이미 파티에 있는 타입은 제외
@@ -268,11 +296,57 @@ export function getPartyResistHoleDetails(
   return { weaknesses, counters };
 }
 
-/** @deprecated 파티 보완은 getPartyResistHoleDetails 를 사용 */
+/** @deprecated 파티 약점 보완은 getPartyWeaknessCounterDetails 를 사용 */
 export function getPartyRecommendedCounterDetails(
   partyKoreanTypes: string[][],
 ): RecommendedCounterResult {
-  return getPartyResistHoleDetails(partyKoreanTypes);
+  return getPartyWeaknessCounterDetails(partyKoreanTypes);
+}
+
+export function mergeRecommendedCounterResults(
+  results: RecommendedCounterResult[],
+): RecommendedCounterResult {
+  const weaknessByKey = new Map<string, WeaknessMatchupGroup>();
+  const counterByType = new Map<string, CounterDetail>();
+
+  for (const result of results) {
+    for (const group of result.weaknesses) {
+      const existing = weaknessByKey.get(group.weakness);
+      if (!existing) {
+        weaknessByKey.set(group.weakness, {
+          weakness: group.weakness,
+          superEffective: [...group.superEffective],
+          notVeryEffective: [...group.notVeryEffective],
+          noEffect: [...group.noEffect],
+        });
+        continue;
+      }
+
+      existing.superEffective = [
+        ...new Set([...existing.superEffective, ...group.superEffective]),
+      ];
+      existing.notVeryEffective = [
+        ...new Set([...existing.notVeryEffective, ...group.notVeryEffective]),
+      ];
+      existing.noEffect = [
+        ...new Set([...existing.noEffect, ...group.noEffect]),
+      ];
+    }
+
+    for (const counter of result.counters) {
+      const existing = counterByType.get(counter.type);
+      if (!existing || counter.product > existing.product) {
+        counterByType.set(counter.type, counter);
+      }
+    }
+  }
+
+  return {
+    weaknesses: [...weaknessByKey.values()],
+    counters: [...counterByType.values()].sort(
+      (a, b) => b.product - a.product,
+    ),
+  };
 }
 
 /**
