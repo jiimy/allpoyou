@@ -74,6 +74,14 @@ type PositionRankings = {
   singles: PositionEntry[];
 };
 
+type RankingsProgressStep = {
+  id: string;
+  message: string;
+  current?: number;
+  total?: number;
+  at: number;
+};
+
 type PochamsDataProps = {
   keyword: string;
   onKeywordChange?: (value: string) => void;
@@ -278,6 +286,10 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
   const [rankings, setRankings] = useState<PositionRankings | null>(null);
   const [rankingsLoading, setRankingsLoading] = useState(false);
   const [rankingsError, setRankingsError] = useState<string | null>(null);
+  const [rankingsSteps, setRankingsSteps] = useState<RankingsProgressStep[]>(
+    [],
+  );
+  const [rankingsElapsedSec, setRankingsElapsedSec] = useState(0);
 
   const enabled = usePochampsStore((state) => state.enabled);
   const battleFormat = usePochampsStore((state) => state.format);
@@ -305,29 +317,120 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
     if (!shouldShowRankings) return;
 
     let cancelled = false;
+    const startedAt = Date.now();
 
     const run = async () => {
       setRankingsLoading(true);
       setRankingsError(null);
+      setRankingsSteps([
+        {
+          id: 'start',
+          message: '포챔스 랭킹 불러오기 시작…',
+          at: Date.now(),
+        },
+      ]);
+      setRankingsElapsedSec(0);
 
       try {
-        const res = await fetch('/api/pokemon-meta/rankings?limit=15', {
-          cache: 'no-store',
-        });
-        const data = (await res.json()) as PositionRankings & { error?: string };
+        const res = await fetch(
+          '/api/pokemon-meta/rankings?limit=15&stream=1',
+          { cache: 'no-store' },
+        );
         if (cancelled) return;
 
-        if (!res.ok) {
+        if (!res.ok || !res.body) {
+          let message = `랭킹 조회 실패 (${res.status})`;
+          try {
+            const data = (await res.json()) as { error?: string };
+            if (data.error) message = data.error;
+          } catch {
+            // ignore
+          }
           setRankings(null);
-          setRankingsError(data.error ?? `랭킹 조회 실패 (${res.status})`);
+          setRankingsError(message);
           return;
         }
 
-        setRankings({
-          date: data.date,
-          doubles: data.doubles ?? [],
-          singles: data.singles ?? [],
-        });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let gotResult = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (cancelled) {
+            await reader.cancel().catch(() => undefined);
+            return;
+          }
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            let event: {
+              type: string;
+              stage?: string;
+              message?: string;
+              current?: number;
+              total?: number;
+              data?: PositionRankings;
+            };
+            try {
+              event = JSON.parse(trimmed) as typeof event;
+            } catch {
+              continue;
+            }
+
+            if (event.type === 'progress' && event.message) {
+              const step: RankingsProgressStep = {
+                id: `${event.stage ?? 'step'}-${Date.now()}`,
+                message: event.message,
+                current: event.current,
+                total: event.total,
+                at: Date.now(),
+              };
+              setRankingsSteps((prev) => {
+                const last = prev[prev.length - 1];
+                if (
+                  last &&
+                  last.message === step.message &&
+                  last.current === step.current
+                ) {
+                  return prev;
+                }
+                return [...prev.slice(-12), step];
+              });
+              continue;
+            }
+
+            if (event.type === 'result' && event.data) {
+              gotResult = true;
+              setRankings({
+                date: event.data.date,
+                doubles: event.data.doubles ?? [],
+                singles: event.data.singles ?? [],
+              });
+              continue;
+            }
+
+            if (event.type === 'error') {
+              setRankings(null);
+              setRankingsError(
+                event.message ?? '랭킹을 가져오지 못했습니다.',
+              );
+            }
+          }
+        }
+
+        if (!gotResult && !cancelled) {
+          setRankings(null);
+          setRankingsError('랭킹 응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.');
+        }
       } catch (err) {
         if (cancelled) return;
         setRankings(null);
@@ -335,14 +438,26 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
           err instanceof Error ? err.message : '랭킹을 가져오지 못했습니다.',
         );
       } finally {
-        if (!cancelled) setRankingsLoading(false);
+        if (!cancelled) {
+          setRankingsElapsedSec(
+            Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
+          );
+          setRankingsLoading(false);
+        }
       }
     };
+
+    const timer = window.setInterval(() => {
+      setRankingsElapsedSec(
+        Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
+      );
+    }, 500);
 
     void run();
 
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [shouldShowRankings]);
 
@@ -495,10 +610,60 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
   if (!enabled) return null;
 
   if (shouldShowRankings) {
+    const activeStep = rankingsSteps[rankingsSteps.length - 1] ?? null;
+    const progressRatio =
+      activeStep?.current != null &&
+      activeStep.total != null &&
+      activeStep.total > 0
+        ? Math.min(1, activeStep.current / activeStep.total)
+        : null;
+
     return (
       <div className={s.panel}>
         {rankingsLoading ? (
-          <p className={s.hint}>랭킹 순위(1–15) 불러오는 중…</p>
+          <div className={s.progressPanel} aria-live="polite">
+            <div className={s.progressHeader}>
+              <p className={s.progressTitle}>랭킹 순위(1–15) 불러오는 중</p>
+              <span className={s.progressElapsed}>{rankingsElapsedSec}초</span>
+            </div>
+            <p className={s.progressNote}>
+              처음 불러올 때는 시간이 걸릴 수 있어요. 새로고침하지 말고 잠시만
+              기다려 주세요.
+            </p>
+            {progressRatio != null ? (
+              <div className={s.progressBarTrack} aria-hidden>
+                <div
+                  className={s.progressBarFill}
+                  style={{ width: `${Math.round(progressRatio * 100)}%` }}
+                />
+              </div>
+            ) : (
+              <div className={`${s.progressBarTrack} ${s.progressBarIndeterminate}`} aria-hidden>
+                <div className={s.progressBarFill} />
+              </div>
+            )}
+            <ol className={s.progressSteps}>
+              {rankingsSteps.map((step, index) => {
+                const isLatest = index === rankingsSteps.length - 1;
+                return (
+                  <li
+                    key={step.id}
+                    className={`${s.progressStep} ${isLatest ? s.progressStepActive : ''}`}
+                  >
+                    <span className={s.progressStepMark} aria-hidden>
+                      {isLatest ? '…' : '✓'}
+                    </span>
+                    <span>
+                      {step.message}
+                      {step.current != null && step.total != null
+                        ? ` · ${Math.round((step.current / step.total) * 100)}%`
+                        : ''}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
         ) : rankingsError ? (
           <p className={`${s.hint} ${s.hintError}`}>{rankingsError}</p>
         ) : rankings ? (

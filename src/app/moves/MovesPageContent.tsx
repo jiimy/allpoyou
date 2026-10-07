@@ -16,6 +16,12 @@ import {
   toChampionsMoveLookupKey,
   toPokemonMetaSlug,
 } from '@/utils/pochampsMoves';
+import {
+  getLearnableMovesFromLocalFiles,
+  getLocalLearnsetOverlay,
+  getNoPochamsLearnerNameKos,
+  mergePochampsLearnset,
+} from '@/utils/localPokemonMoves';
 import { fetchPokemonList, getCachedPokemonList } from '@/store/PokemonStore';
 import { useMovePickStore } from '@/store/MovePickStore';
 import { usePochampsStore } from '@/store/PochampsStore';
@@ -458,63 +464,18 @@ export default function MovesPageContent() {
 
   useEffect(() => {
     if (moveIdsByNameMatch.length === 0) return;
-    if (learnableCache[moveIdsKey]) return;
+    const cacheKey = `${moveIdsKey}|${pochampsActive ? 'pochams' : 'standard'}`;
+    if (learnableCache[cacheKey]) return;
 
     let cancelled = false;
     const timer = setTimeout(() => {
-      setLearnableLoadingKey(moveIdsKey);
+      setLearnableLoadingKey(cacheKey);
 
       const run = async () => {
         try {
-          if (pochampsActive) {
-            const keys = moveIdsByNameMatch
-              .map((id) => movesById.get(id))
-              .filter((move): move is MoveDbEntry => move != null)
-              .flatMap((move) => [
-                toChampionsMoveLookupKey(move.englishName),
-                toChampionsMoveLookupKey(move.koreanName),
-              ])
-              .filter(Boolean);
-
-            const res = await fetch(
-              `/api/pokemon-meta/moves/learners?keys=${encodeURIComponent(keys.join(','))}`,
-              { cache: 'no-store' },
-            );
-            const body = (await res.json()) as {
-              learners?: Array<{ pokemonName: string; pokemonSlug: string }>;
-              error?: string;
-            };
-            if (!res.ok) {
-              throw new Error(body.error ?? `조회 실패 (${res.status})`);
-            }
-
-            const list = await fetchPokemonList();
-            const pokemon: PokemonLearner[] = [];
-            const seen = new Set<number>();
-            for (const learner of body.learners ?? []) {
-              const matched = resolvePokemonFromPochampsLearner(learner, list);
-              if (!matched || seen.has(matched.id)) continue;
-              seen.add(matched.id);
-              pokemon.push({
-                id: matched.id,
-                number: matched.number,
-                nameKo: matched.nameKo,
-                metaSlug: learner.pokemonSlug,
-              });
-            }
-            pokemon.sort((a, b) => a.nameKo.localeCompare(b.nameKo, 'ko'));
-
-            if (cancelled) return;
-            setLearnableCache((prev) => ({
-              ...prev,
-              [moveIdsKey]: { pokemon, error: null },
-            }));
-            setLearnableLoadingKey((key) => (key === moveIdsKey ? null : key));
-            return;
-          }
-
+          const learnsetMode = pochampsActive ? 'pochams' : 'standard';
           const res = await fetch(
-            `/api/moves?moveIds=${encodeURIComponent(moveIdsKey)}`,
+            `/api/moves?moveIds=${encodeURIComponent(moveIdsKey)}&learnsetMode=${learnsetMode}`,
             { cache: 'no-store' },
           );
           const body = (await res.json()) as {
@@ -524,15 +485,71 @@ export default function MovesPageContent() {
           if (!res.ok) {
             throw new Error(body.error ?? `조회 실패 (${res.status})`);
           }
+
+          let pokemon = body.pokemon ?? [];
+
+          // ON: Storage learners와 합치고, no-pochams 태그는 제외
+          if (pochampsActive) {
+            const moveKeys = moveIdsByNameMatch
+              .map((id) => movesById.get(id))
+              .filter((move): move is MoveDbEntry => move != null)
+              .flatMap((move) => [
+                toChampionsMoveLookupKey(move.englishName),
+                toChampionsMoveLookupKey(move.koreanName),
+              ])
+              .filter(Boolean);
+            const uniqueKeys = [...new Set(moveKeys)];
+
+            if (uniqueKeys.length > 0) {
+              const storageRes = await fetch(
+                `/api/pokemon-meta/moves/learners?keys=${encodeURIComponent(uniqueKeys.join(','))}`,
+                { cache: 'no-store' },
+              );
+              const storageBody = (await storageRes.json()) as {
+                learners?: Array<{ pokemonName: string; pokemonSlug: string }>;
+                error?: string;
+              };
+              if (storageRes.ok) {
+                const list = await fetchPokemonList();
+                const byNameKo = new Map<string, PokemonLearner>();
+                for (const row of pokemon) {
+                  byNameKo.set(row.nameKo, row);
+                }
+                for (const learner of storageBody.learners ?? []) {
+                  const matched = resolvePokemonFromPochampsLearner(
+                    learner,
+                    list,
+                  );
+                  if (!matched) continue;
+                  if (byNameKo.has(matched.nameKo)) continue;
+                  byNameKo.set(matched.nameKo, {
+                    id: matched.number,
+                    number: matched.number,
+                    nameKo: matched.nameKo,
+                    metaSlug: learner.pokemonSlug,
+                  });
+                }
+                pokemon = [...byNameKo.values()].sort((a, b) =>
+                  a.nameKo.localeCompare(b.nameKo, 'ko'),
+                );
+              }
+            }
+
+            const blocked = await getNoPochamsLearnerNameKos(moveIdsByNameMatch);
+            if (blocked.size > 0) {
+              pokemon = pokemon.filter((row) => !blocked.has(row.nameKo));
+            }
+          }
+
           if (cancelled) return;
           setLearnableCache((prev) => ({
             ...prev,
-            [moveIdsKey]: {
-              pokemon: body.pokemon ?? [],
+            [cacheKey]: {
+              pokemon,
               error: null,
             },
           }));
-          setLearnableLoadingKey((key) => (key === moveIdsKey ? null : key));
+          setLearnableLoadingKey((key) => (key === cacheKey ? null : key));
         } catch (err: unknown) {
           if (cancelled) return;
           const message =
@@ -541,9 +558,9 @@ export default function MovesPageContent() {
               : '배울 수 있는 포켓몬 조회에 실패했습니다.';
           setLearnableCache((prev) => ({
             ...prev,
-            [moveIdsKey]: { pokemon: [], error: message },
+            [cacheKey]: { pokemon: [], error: message },
           }));
-          setLearnableLoadingKey((key) => (key === moveIdsKey ? null : key));
+          setLearnableLoadingKey((key) => (key === cacheKey ? null : key));
         }
       };
 
@@ -570,19 +587,33 @@ export default function MovesPageContent() {
 
     const run = async () => {
       try {
+        const learnsetMode = pochampsActive ? 'pochams' : 'standard';
+        const list = await fetchPokemonList();
+        const pokemon =
+          list.find((p) => p.id === pokemonId) ??
+          list.find((p) => p.nameKo === selectedPokemon.nameKo) ??
+          list.find((p) => p.number === selectedPokemon.number);
+        const nameKo = pokemon?.nameKo ?? selectedPokemon.nameKo;
+        const pokemonKey = {
+          id: pokemonId,
+          number: pokemon?.number ?? selectedPokemon.number,
+          nameKo,
+        };
+
         if (pochampsActive) {
-          const list = await fetchPokemonList();
-          const pokemon = list.find((p) => p.id === pokemonId);
           const slug =
             selectedPokemon.metaSlug ||
             (pokemon
               ? resolvePochampsStorageSlug(pokemon.name)
-              : resolvePochampsStorageSlug(selectedPokemon.nameKo));
+              : resolvePochampsStorageSlug(nameKo));
 
-          const res = await fetch(
-            `/api/pokemon-meta/pokemon-moves?slug=${encodeURIComponent(slug)}`,
-            { cache: 'no-store' },
-          );
+          const [overlay, res] = await Promise.all([
+            getLocalLearnsetOverlay(pokemonKey),
+            fetch(
+              `/api/pokemon-meta/pokemon-moves?slug=${encodeURIComponent(slug)}`,
+              { cache: 'no-store' },
+            ),
+          ]);
           const body = (await res.json()) as {
             names?: string[];
             error?: string;
@@ -591,10 +622,14 @@ export default function MovesPageContent() {
             throw new Error(body.error ?? `조회 실패 (${res.status})`);
           }
           if (cancelled) return;
+          const storageMoves = filterMovesByPochampsNames(
+            allMoves,
+            body.names ?? [],
+          );
           setPokemonMovesCache((prev) => ({
             ...prev,
             [pokemonId]: {
-              moves: filterMovesByPochampsNames(allMoves, body.names ?? []),
+              moves: mergePochampsLearnset(storageMoves, overlay),
               error: null,
             },
           }));
@@ -602,9 +637,24 @@ export default function MovesPageContent() {
           return;
         }
 
-        const res = await fetch(`/api/moves?pokemonId=${pokemonId}`, {
-          cache: 'no-store',
+        const localMoves = await getLearnableMovesFromLocalFiles(pokemonKey, {
+          pochampsActive: false,
         });
+
+        if (localMoves.length > 0) {
+          if (cancelled) return;
+          setPokemonMovesCache((prev) => ({
+            ...prev,
+            [pokemonId]: { moves: localMoves, error: null },
+          }));
+          setPokemonMovesLoadingId((id) => (id === pokemonId ? null : id));
+          return;
+        }
+
+        const res = await fetch(
+          `/api/moves?pokemonId=${pokemonId}&nameKo=${encodeURIComponent(nameKo)}&learnsetMode=${learnsetMode}`,
+          { cache: 'no-store' },
+        );
         const body = (await res.json()) as {
           moveIds?: number[];
           error?: string;
@@ -709,7 +759,8 @@ export default function MovesPageContent() {
         pokemonSearch.loading)) ||
     (pochampsActive && pochampsMovesLoading);
 
-  const learnableCacheEntry = learnableCache[moveIdsKey];
+  const learnableCacheKey = `${moveIdsKey}|${pochampsActive ? 'pochams' : 'standard'}`;
+  const learnableCacheEntry = learnableCache[learnableCacheKey];
   const selectedPokemonMoves = selectedPokemon
     ? pokemonMovesCache[selectedPokemon.id]
     : undefined;
@@ -765,7 +816,7 @@ export default function MovesPageContent() {
   const learnablePokemonLoading =
     canShowLearnablePanel &&
     !learnableCacheEntry &&
-    learnableLoadingKey === moveIdsKey;
+    learnableLoadingKey === learnableCacheKey;
   const learnablePokemonError = canShowLearnablePanel
     ? (learnableCacheEntry?.error ?? null)
     : null;

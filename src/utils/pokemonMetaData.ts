@@ -102,6 +102,26 @@ export type PokemonPositionRankings = {
   singles: PokemonPositionEntry[];
 };
 
+export type RankingsProgressEvent = {
+  stage:
+    | 'start'
+    | 'cache_today'
+    | 'cache_yesterday'
+    | 'cache_latest'
+    | 'rebuild_scan'
+    | 'rebuild_api'
+    | 'localize'
+    | 'save'
+    | 'done'
+    | 'error';
+  message: string;
+  current?: number;
+  total?: number;
+};
+
+type RankingsProgressCallback = (event: RankingsProgressEvent) => void | Promise<void>;
+
+
 export type PokemonMetaResult = {
   cached: boolean;
   date: string;
@@ -586,13 +606,26 @@ function sortAndSlicePositions(
 async function collectPositionsFromPokemonCsvs(
   date: string,
   limit: number,
+  onProgress?: RankingsProgressCallback,
 ): Promise<{ doubles: PokemonPositionEntry[]; singles: PokemonPositionEntry[] }> {
   const doubles = new Map<number, PokemonPositionEntry>();
   const singles = new Map<number, PokemonPositionEntry>();
+  const total = POCHAMS_POKEMON_DATA.length;
 
-  for (const displayName of POCHAMS_POKEMON_DATA) {
+  for (let index = 0; index < POCHAMS_POKEMON_DATA.length; index += 1) {
+    const displayName = POCHAMS_POKEMON_DATA[index];
     const slug = normalizePokemonSlug(displayName);
     const csv = await downloadTodayCsv(buildPokemonMetaStoragePath(slug, date));
+
+    if (index === 0 || (index + 1) % 20 === 0 || index + 1 === total) {
+      await onProgress?.({
+        stage: 'rebuild_scan',
+        message: `저장된 포켓몬 데이터에서 순위 수집 중… (${index + 1}/${total})`,
+        current: index + 1,
+        total,
+      });
+    }
+
     if (!csv) continue;
 
     const { rows } = csvToRows(csv);
@@ -650,24 +683,49 @@ async function localizeRankings(
  */
 export async function getDailyPositionRankings(
   limit = 15,
+  onProgress?: RankingsProgressCallback,
 ): Promise<PokemonPositionRankings> {
   const date = getSeoulDateString();
 
+  await onProgress?.({
+    stage: 'cache_today',
+    message: `오늘(${date}) 캐시된 랭킹 확인 중…`,
+  });
   const todayCsv = await downloadTodayCsv(buildPokemonRankingsStoragePath(date));
   if (todayCsv) {
     const parsed = parseRankingsCsv(todayCsv, date, limit);
-    if (parsed) return localizeRankings(parsed);
+    if (parsed) {
+      await onProgress?.({
+        stage: 'localize',
+        message: '캐시 랭킹 한글 이름 정리 중…',
+      });
+      return localizeRankings(parsed);
+    }
   }
 
   const yesterday = getSeoulDateDaysAgo(1);
+  await onProgress?.({
+    stage: 'cache_yesterday',
+    message: `어제(${yesterday}) 캐시 확인 중…`,
+  });
   const yesterdayCsv = await downloadTodayCsv(
     buildPokemonRankingsStoragePath(yesterday),
   );
   if (yesterdayCsv) {
     const parsed = parseRankingsCsv(yesterdayCsv, yesterday, limit);
-    if (parsed) return localizeRankings(parsed);
+    if (parsed) {
+      await onProgress?.({
+        stage: 'localize',
+        message: '어제 랭킹 한글 이름 정리 중…',
+      });
+      return localizeRankings(parsed);
+    }
   }
 
+  await onProgress?.({
+    stage: 'cache_latest',
+    message: '저장된 최근 랭킹 파일 찾는 중…',
+  });
   const latest = await findLatestRankingsCsv(limit);
   if (latest) return localizeRankings(latest);
 
@@ -708,12 +766,24 @@ export async function saveDailyPositionRankings(
 export async function rebuildDailyPositionRankingsFromApi(options?: {
   limit?: number;
   concurrency?: number;
+  onProgress?: RankingsProgressCallback;
 }): Promise<PokemonPositionRankings> {
   const limit = options?.limit ?? 15;
   const concurrency = Math.max(1, options?.concurrency ?? 8);
+  const onProgress = options?.onProgress;
   const date = getSeoulDateString();
 
-  const fromStorage = await collectPositionsFromPokemonCsvs(date, limit);
+  await onProgress?.({
+    stage: 'rebuild_scan',
+    message: '저장된 포켓몬 CSV에서 순위 수집 시작…',
+    current: 0,
+    total: POCHAMS_POKEMON_DATA.length,
+  });
+  const fromStorage = await collectPositionsFromPokemonCsvs(
+    date,
+    limit,
+    onProgress,
+  );
   const doubles = new Map(
     fromStorage.doubles.map((entry) => [entry.position, entry] as const),
   );
@@ -742,6 +812,14 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
       ) {
         break;
       }
+
+      const done = Math.min(start + concurrency, names.length);
+      await onProgress?.({
+        stage: 'rebuild_api',
+        message: `포챔스 API로 부족한 순위 보강 중… (${done}/${names.length})`,
+        current: done,
+        total: names.length,
+      });
 
       const chunk = names.slice(start, start + concurrency);
       const settled = await Promise.allSettled(
@@ -788,15 +866,73 @@ export async function rebuildDailyPositionRankingsFromApi(options?: {
     }
   }
 
+  await onProgress?.({
+    stage: 'localize',
+    message: '랭킹 한글 이름 정리 중…',
+  });
   const localized = await localizeRankings({
     date,
     cached: false,
     doubles: sortAndSlicePositions(doubles, limit),
     singles: sortAndSlicePositions(singles, limit),
   });
+  await onProgress?.({
+    stage: 'save',
+    message: '오늘자 랭킹 캐시 저장 중…',
+  });
   await deleteStorageFiles([buildPokemonRankingsStoragePath(date)]);
   await saveDailyPositionRankings(localized);
   return localized;
+}
+
+/**
+ * 클라이언트 랭킹 로드용: 캐시 조회 후 오늘자 없으면 재생성.
+ * onProgress 로 단계별 메시지를 전달합니다.
+ */
+export async function loadDailyPositionRankingsWithProgress(
+  limit = 15,
+  onProgress?: RankingsProgressCallback,
+): Promise<PokemonPositionRankings> {
+  const today = getSeoulDateString();
+
+  await onProgress?.({
+    stage: 'start',
+    message: '포챔스 랭킹 불러오기 시작…',
+  });
+
+  let data = await getDailyPositionRankings(limit, onProgress);
+
+  if (
+    data.date !== today ||
+    (data.doubles.length === 0 && data.singles.length === 0)
+  ) {
+    await onProgress?.({
+      stage: 'rebuild_scan',
+      message: '오늘자 랭킹이 없어 재생성합니다…',
+    });
+    try {
+      data = await rebuildDailyPositionRankingsFromApi({
+        limit,
+        concurrency: 8,
+        onProgress,
+      });
+    } catch (error) {
+      await onProgress?.({
+        stage: 'error',
+        message:
+          error instanceof Error
+            ? `재생성 실패: ${error.message} (이전 데이터로 표시)`
+            : '재생성 실패 (이전 데이터로 표시)',
+      });
+    }
+  }
+
+  await onProgress?.({
+    stage: 'done',
+    message: `랭킹 준비 완료 · ${data.date}`,
+  });
+
+  return data;
 }
 
 const MOVES_INDEX_CSV_COLUMNS = ['name', 'slug'] as const;

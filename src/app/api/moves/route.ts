@@ -5,6 +5,10 @@ import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
 import type { PokemonMoveLearnset } from '@/utils/pokemonMovesapi';
+import {
+  matchesLearnsetMode,
+  type LearnsetMode,
+} from '@/utils/learnsetVersionGroup';
 import { createClient } from '@/utils/supabase/server';
 
 const POKEMON_MOVES_JSON_PATH = path.join(
@@ -90,42 +94,48 @@ function parseMoveIdsParam(
   return [...new Set(ids)];
 }
 
-async function fetchAllPokemonMovesRows(
-  supabase: ReturnType<typeof createClient>,
-): Promise<{ data: DbPokemonMovesRow[] | null; error: { message: string } | null }> {
-  const pageSize = 1000;
-  const all: DbPokemonMovesRow[] = [];
-  let from = 0;
+function parseLearnsetMode(
+  searchParams: URLSearchParams,
+): LearnsetMode {
+  const raw =
+    searchParams.get('learnsetMode')?.trim().toLowerCase() ||
+    searchParams.get('versionGroup')?.trim().toLowerCase() ||
+    '';
 
-  while (true) {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('id, number, nameKo, moves')
-      .order('number', { ascending: true })
-      .order('nameKo', { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) return { data: null, error };
-
-    const page = (data ?? []) as DbPokemonMovesRow[];
-    all.push(...page);
-
-    if (page.length < pageSize) break;
-    from += pageSize;
+  if (raw === 'pochams' || raw === 'pochamps' || raw === 'on') {
+    return 'pochams';
+  }
+  if (raw === 'standard' || raw === 'off' || raw === 'non-pochams') {
+    return 'standard';
   }
 
-  return { data: all, error: null };
+  // ?pochamps=1 / ?pochamps=0
+  const flag = searchParams.get('pochamps')?.trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'on') return 'pochams';
+  if (flag === '0' || flag === 'false' || flag === 'off') return 'standard';
+
+  return 'standard';
 }
 
 function pokemonRowsWithMoveIds(
-  rows: DbPokemonMovesRow[],
+  rows: Array<{
+    id: number;
+    number: number;
+    nameKo: string;
+    moves: PokemonMoveLearnset[] | null | undefined;
+  }>,
   targetMoveIds: Set<number>,
+  mode: LearnsetMode,
 ) {
   const pokemon: { id: number; number: number; nameKo: string }[] = [];
 
   for (const row of rows) {
     const moves = (row.moves ?? []) as PokemonMoveLearnset[];
-    const hasMove = moves.some((entry) => targetMoveIds.has(entry.move_id));
+    const hasMove = moves.some(
+      (entry) =>
+        targetMoveIds.has(entry.move_id) &&
+        matchesLearnsetMode(entry.version_group, mode),
+    );
     if (!hasMove) continue;
 
     pokemon.push({
@@ -138,10 +148,14 @@ function pokemonRowsWithMoveIds(
   return pokemon;
 }
 
-function extractMoveIds(moves: PokemonMoveLearnset[] | null | undefined): number[] {
+function extractMoveIds(
+  moves: PokemonMoveLearnset[] | null | undefined,
+  mode: LearnsetMode = 'standard',
+): number[] {
   return [
     ...new Set(
       (moves ?? [])
+        .filter((entry) => matchesLearnsetMode(entry.version_group, mode))
         .map((entry) => entry.move_id)
         .filter((id): id is number => typeof id === 'number'),
     ),
@@ -150,8 +164,10 @@ function extractMoveIds(moves: PokemonMoveLearnset[] | null | undefined): number
 
 let cachedLocalPokemonMoves: PokemonMovesJsonRow[] | null = null;
 
-async function loadLocalPokemonMovesCache(): Promise<PokemonMovesJsonRow[]> {
-  if (cachedLocalPokemonMoves) return cachedLocalPokemonMoves;
+async function loadLocalPokemonMovesCache(
+  forceReload = false,
+): Promise<PokemonMovesJsonRow[]> {
+  if (!forceReload && cachedLocalPokemonMoves) return cachedLocalPokemonMoves;
   cachedLocalPokemonMoves = await loadPokemonMovesJson();
   return cachedLocalPokemonMoves;
 }
@@ -171,62 +187,16 @@ function findLocalPokemonMoves(
 }
 
 async function resolvePokemonMoveIds(
-  supabase: ReturnType<typeof createClient>,
+  _supabase: ReturnType<typeof createClient>,
   pokemonId: number,
   nameKo?: string | null,
+  mode: LearnsetMode = 'standard',
 ): Promise<{
   pokemon: { id: number; number: number; nameKo: string };
   moveIds: number[];
 } | null> {
-  try {
-    const { data: byId, error: byIdError } = await supabase
-      .from(TABLE_NAME)
-      .select('id, number, nameKo, moves')
-      .eq('id', pokemonId)
-      .maybeSingle();
-
-    if (byIdError) {
-      throw new Error(byIdError.message);
-    }
-
-    if (byId) {
-      return {
-        pokemon: {
-          id: byId.id as number,
-          number: byId.number as number,
-          nameKo: byId.nameKo as string,
-        },
-        moveIds: extractMoveIds(byId.moves as PokemonMoveLearnset[]),
-      };
-    }
-
-    if (nameKo) {
-      const { data: byName, error: byNameError } = await supabase
-        .from(TABLE_NAME)
-        .select('id, number, nameKo, moves')
-        .eq('nameKo', nameKo)
-        .maybeSingle();
-
-      if (byNameError) {
-        throw new Error(byNameError.message);
-      }
-
-      if (byName) {
-        return {
-          pokemon: {
-            id: byName.id as number,
-            number: byName.number as number,
-            nameKo: byName.nameKo as string,
-          },
-          moveIds: extractMoveIds(byName.moves as PokemonMoveLearnset[]),
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('[GET /api/moves] Supabase lookup failed, using local JSON:', err);
-  }
-
-  const localRows = await loadLocalPokemonMovesCache();
+  // version_group 규칙은 로컬 pokemon-with-moves.json 기준
+  const localRows = await loadLocalPokemonMovesCache(true);
   const local = findLocalPokemonMoves(localRows, pokemonId, nameKo);
   if (!local) return null;
 
@@ -236,7 +206,7 @@ async function resolvePokemonMoveIds(
       number: local.number,
       nameKo: local.name,
     },
-    moveIds: extractMoveIds(local.moves),
+    moveIds: extractMoveIds(local.moves, mode),
   };
 }
 
@@ -257,6 +227,7 @@ export async function GET(request: NextRequest) {
       searchParams.get('moveId'),
       searchParams.get('moveIds'),
     );
+    const learnsetMode = parseLearnsetMode(searchParams);
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
@@ -271,6 +242,7 @@ export async function GET(request: NextRequest) {
         supabase,
         pokemonId,
         nameKoParam,
+        learnsetMode,
       );
 
       if (!resolved) {
@@ -280,6 +252,7 @@ export async function GET(request: NextRequest) {
       return Response.json({
         pokemon: resolved.pokemon,
         moveIds: resolved.moveIds,
+        learnsetMode,
       });
     }
 
@@ -301,7 +274,10 @@ export async function GET(request: NextRequest) {
         if (nameKo) pokemonNames.push(nameKo);
         const moves = (row.moves ?? []) as PokemonMoveLearnset[];
         for (const entry of moves) {
-          if (typeof entry.move_id === 'number') {
+          if (
+            typeof entry.move_id === 'number' &&
+            matchesLearnsetMode(entry.version_group, learnsetMode)
+          ) {
             moveIdSet.add(entry.move_id);
           }
         }
@@ -310,21 +286,29 @@ export async function GET(request: NextRequest) {
       return Response.json({
         pokemonNames,
         moveIds: [...moveIdSet].sort((a, b) => a - b),
+        learnsetMode,
       });
     }
 
     if (moveIds.length > 0) {
-      const { data, error } = await fetchAllPokemonMovesRows(supabase);
-
-      if (error) {
-        return Response.json({ error: error.message }, { status: 500 });
-      }
-
       const targetMoveIds = new Set(moveIds);
-      const pokemon = pokemonRowsWithMoveIds(data ?? [], targetMoveIds);
+
+      // version_group 규칙은 local pokemon-with-moves.json 기준
+      const localRows = await loadLocalPokemonMovesCache(true);
+      const pokemon = pokemonRowsWithMoveIds(
+        localRows.map((row) => ({
+          id: row.id,
+          number: row.number,
+          nameKo: row.name,
+          moves: row.moves,
+        })),
+        targetMoveIds,
+        learnsetMode,
+      );
 
       return Response.json({
         moveIds,
+        learnsetMode,
         pokemon,
         count: pokemon.length,
       });

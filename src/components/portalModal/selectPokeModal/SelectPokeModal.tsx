@@ -13,7 +13,11 @@ import {
 } from '@/store/PokemonStore';
 import type { MoveDbEntry } from '@/types/move';
 import { getAbilitySummary } from '@/utils/abilitySearch';
-import { getLearnableMovesFromLocalFiles } from '@/utils/localPokemonMoves';
+import {
+  getLearnableMovesFromLocalFiles,
+  getLocalLearnsetOverlay,
+  mergePochampsLearnset,
+} from '@/utils/localPokemonMoves';
 import {
   getMoveStatsTitle,
   getMoveTypeKo,
@@ -289,12 +293,22 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
     let cancelled = false;
 
     const loadMoves = async () => {
+      const pokemonKey = {
+        id: activePokemon.id,
+        number: activePokemon.number,
+        nameKo: activePokemon.nameKo,
+      };
+
       if (pochampsActive) {
+        // ON: Storage learnset ∪ 로컬 pochams − 로컬 no-pochams
         const slug = resolvePochampsStorageSlug(activePokemon.name);
-        const res = await fetch(
-          `/api/pokemon-meta/pokemon-moves?slug=${encodeURIComponent(slug)}`,
-          { cache: 'no-store' },
-        );
+        const [overlay, res] = await Promise.all([
+          getLocalLearnsetOverlay(pokemonKey),
+          fetch(
+            `/api/pokemon-meta/pokemon-moves?slug=${encodeURIComponent(slug)}`,
+            { cache: 'no-store' },
+          ),
+        ]);
         const body = (await res.json()) as {
           names?: string[];
           error?: string;
@@ -303,15 +317,17 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
           throw new Error(body.error ?? `조회 실패 (${res.status})`);
         }
         if (cancelled) return;
-        setMoves(filterMovesByPochampsNames(ALL_MOVES, body.names ?? []));
+        const storageMoves = filterMovesByPochampsNames(
+          ALL_MOVES,
+          body.names ?? [],
+        );
+        setMoves(mergePochampsLearnset(storageMoves, overlay));
         return;
       }
 
-      // OFF: 로컬 JSON 우선 (pokemon-with-moves + moves-db), 없으면 PokeAPI
-      const localMoves = await getLearnableMovesFromLocalFiles({
-        id: activePokemon.id,
-        number: activePokemon.number,
-        nameKo: activePokemon.nameKo,
+      // OFF: 로컬 JSON (pochams 제외, no-pochams 포함)
+      const localMoves = await getLearnableMovesFromLocalFiles(pokemonKey, {
+        pochampsActive: false,
       });
       if (cancelled) return;
 
