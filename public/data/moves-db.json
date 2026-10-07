@@ -2284,7 +2284,7 @@
     "id": 208,
     "englishName": "milk-drink",
     "koreanName": "우유마시기",
-    "description": "자신의 최대 HP 절반을 회복한다.",
+    "description": "자신의 최대 HP 절반을 회복한다. (포챔스)아군의 HP를 회복한다.",
     "type": "normal",
     "damage_class": "status",
     "power": null,
