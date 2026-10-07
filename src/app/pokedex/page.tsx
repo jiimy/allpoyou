@@ -47,11 +47,11 @@ function PokedexPageContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
 
-  const typeSearchTokens = useMemo(
-    () => getTypeSearchTokens(keyword),
-    [keyword],
-  );
-  const typeSlotEnabled = typeSearchTokens != null;
+  const typeSearchTokens = useMemo(() => {
+    if (selectedTypes.length === 1) return selectedTypes;
+    return getTypeSearchTokens(keyword);
+  }, [selectedTypes, keyword]);
+  const typeSlotEnabled = selectedTypes.length === 1;
 
   useEffect(() => {
     if (!typeSlotEnabled && typeSlotSort != null) {
