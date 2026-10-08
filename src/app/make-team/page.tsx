@@ -2,7 +2,6 @@
 
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -566,7 +565,17 @@ const MakeTeam = () => {
             : counters;
 
           const recSet = new Set(visibleCounters.map((c) => c.type));
-          const minRecTypeCount = requireTwoRecTypes[idx] ? 2 : 1;
+          // 추천 타입이 1개뿐이면 "2가지 이상만 보기"를 해제 (체크 유지 시 추천 0건)
+          if (visibleCounters.length < 2 && requireTwoRecTypes[idx]) {
+            setRequireTwoRecTypes((prev) => {
+              if (!prev[idx]) return prev;
+              const next = [...prev];
+              next[idx] = false;
+              return next;
+            });
+          }
+          const minRecTypeCount =
+            requireTwoRecTypes[idx] && visibleCounters.length >= 2 ? 2 : 1;
           const matchingPokemons = applyPokemonListFilters(
             allPokemons.filter((p) => {
               if (selectedPokemonIds.has(p.id)) return false;
@@ -875,7 +884,7 @@ const MakeTeam = () => {
                   }}
                 >
                   <span style={{ fontSize: 12, color: '#666' }}>
-                    {`추천 타입을 ${requireTwoRecTypes[idx] ? '두 가지 이상' : '한 가지 이상'} 가진 포켓몬 (${matchingPokemons.length})`}
+                    {`추천 타입을 ${minRecTypeCount >= 2 ? '두 가지 이상' : '한 가지 이상'} 가진 포켓몬 (${matchingPokemons.length})`}
                   </span>
                   <label
                     style={{
@@ -890,7 +899,8 @@ const MakeTeam = () => {
                   >
                     <input
                       type="checkbox"
-                      checked={requireTwoRecTypes[idx]}
+                      checked={minRecTypeCount >= 2 && requireTwoRecTypes[idx]}
+                      disabled={visibleCounters.length < 2}
                       onChange={(e) => {
                         const checked = e.target.checked;
                         setRequireTwoRecTypes((prev) => {
