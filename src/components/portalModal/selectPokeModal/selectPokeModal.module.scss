@@ -314,7 +314,7 @@
       font-weight: 400;
     }
 
-    button {
+    .btn {
       border: 1px solid #b77d00;
       color: #b77d00;
       cursor: pointer;
@@ -324,11 +324,19 @@
       }
     }
 
-    a {
+    .a {
       border: 1px solid #00a69c;
       color: #00a69c;
       &:hover {
         background: #00a69c;
+        color: white;
+      }
+    }
+    .a2 {
+      border: 1px solid #0070bb;
+      color: #0070bb;
+      &:hover {
+        background: #0070bb;
         color: white;
       }
     }

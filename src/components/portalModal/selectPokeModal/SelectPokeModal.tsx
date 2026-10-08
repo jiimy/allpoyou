@@ -407,15 +407,24 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               </div>
               <span className={s.typeCalc}>
                 <span>
-                  <button type="button" onClick={handleAddToTeam}>
+                  <button type="button" onClick={handleAddToTeam} className={s.btn}>
                     팀에 추가
                   </button>
                   <a
                     href={`https://namu.wiki/w/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className={s.a}
                   >
                     나무위키
+                  </a>
+                  <a
+                    href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={s.a2}
+                  >
+                    팬덤위키
                   </a>
                 </span>
                 <button
