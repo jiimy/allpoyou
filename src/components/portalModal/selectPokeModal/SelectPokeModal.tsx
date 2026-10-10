@@ -570,6 +570,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               배울 수 있는 기술
               {pochampsActive ? ' · 포챔스' : ''}{' '}
               <p>항목 클릭시 기술 페이지로 이동합니다.</p>
+
               <div className={s.moveSortRow} role="group" aria-label="기술 정렬">
                 {MOVE_SORT_LABELS.map(({ key, label }, index) => {
                   const dir = moveSortDirs[key];
@@ -597,6 +598,9 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                 })}
               </div>
             </h3>
+            <div className={s.sectionTitle}>
+              <p>데이터가 정확하지 않습니다. 상단의 팬덤위키에서 정확한 데이터를 볼 수 있습니다.</p>
+            </div>
             {movesLoading ? (
               <p className={s.statusText}>기술 목록 불러오는 중…</p>
             ) : movesError ? (

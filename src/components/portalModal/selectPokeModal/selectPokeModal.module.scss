@@ -268,7 +268,8 @@
 
 .abilityList {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   gap: 10px;
   margin: 0;
   padding: 0;
@@ -276,6 +277,8 @@
 }
 
 .abilityItem {
+  flex: 1 1 0;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid #eee;
   border-radius: 8px;
@@ -406,6 +409,8 @@
   font-size: 13px;
   line-height: 1.5;
   color: #555;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .abilityHidden .abilityName::before {

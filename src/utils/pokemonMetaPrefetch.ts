@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
+import { POKEMON_META_PREFETCH_DELAY_MS } from '@/constants/pochampsPrefetch';
 import {
   getSeoulDateString,
   normalizePokemonSlug,
@@ -8,8 +9,7 @@ import {
 import { cleanupOldPokemonMetaCsvs } from '@/utils/championsStorageCleanup';
 import { getDailyPokemonMetaData } from '@/utils/pokemonMetaData';
 
-/** 요청 간 대기 (ms) */
-export const POKEMON_META_PREFETCH_DELAY_MS = 3800;
+export { POKEMON_META_PREFETCH_DELAY_MS };
 
 /** 서버리스 배치당 작업 예산 (Hobby maxDuration 300s 대비 여유) */
 export const POKEMON_META_PREFETCH_BATCH_BUDGET_MS = 250_000;
@@ -47,7 +47,7 @@ export function toPokemonMetaSlug(displayName: string): string {
 }
 
 /**
- * POCHAMS_POKEMON_DATA 를 3800ms 간격으로 순회하며
+ * POCHAMS_POKEMON_DATA 를 POKEMON_META_PREFETCH_DELAY_MS 간격으로 순회하며
  * championsbattledata `/api/pokemon/:slug` → CSV Storage 저장을 수행합니다.
  * 일일 cron은 항상 forceRefresh 로 기존 당일 CSV를 지우고 다시 받습니다.
  * 갱신 후 Pokemon/{slug}/ 에서 3일 전(및 이전) CSV는 삭제합니다.

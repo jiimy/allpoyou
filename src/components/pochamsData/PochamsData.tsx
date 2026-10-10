@@ -17,8 +17,14 @@ import {
   resolveMoveFromBattleItem,
   resolveNatureFromBattleItem,
 } from '@/utils/pochamsTeamBuild';
+import { getPokemonMetaPrefetchMaxMinutes } from '@/constants/pochampsPrefetch';
+import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
 
 import s from './pochamsData.module.scss';
+
+const POKEMON_META_PREFETCH_MAX_MINUTES = getPokemonMetaPrefetchMaxMinutes(
+  POCHAMS_POKEMON_DATA.length,
+);
 
 type BattleCategoryItem = {
   rank: number;
@@ -627,8 +633,8 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
               <span className={s.progressElapsed}>{rankingsElapsedSec}초</span>
             </div>
             <p className={s.progressNote}>
-              처음 불러올 때는 시간이 걸릴 수 있어요. 새로고침하지 말고 잠시만
-              기다려 주세요.
+              처음 불러올 때는 최대 약 {POKEMON_META_PREFETCH_MAX_MINUTES}
+              분 걸릴 수 있어요. 새로고침하지 말고 잠시만 기다려 주세요.
             </p>
             {progressRatio != null ? (
               <div className={s.progressBarTrack} aria-hidden>
