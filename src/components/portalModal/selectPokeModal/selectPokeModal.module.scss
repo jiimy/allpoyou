@@ -89,6 +89,17 @@
     display: inline-flex;
     font-weight: 400;
     font-size: 12px;
+    a {
+      color: #0070bb;
+      border: 1px solid #0070bb;
+      padding: 0px 4px;
+      border-radius: 10vw;
+      margin-left: 6px;
+      &:hover {
+        background: #0070bb;
+        color: white;
+      }
+    }
   }
 }
 

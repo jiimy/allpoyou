@@ -599,7 +599,16 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               </div>
             </h3>
             <div className={s.sectionTitle}>
-              <p>데이터가 정확하지 않습니다. 상단의 팬덤위키에서 정확한 데이터를 볼 수 있습니다.</p>
+              <p>데이터가 정확하지 않습니다. 자세한 데이터는
+                <a
+                  href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}_(포켓몬)#배우는_기술`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={s.a2}
+                >
+                  팬덤위키 기술
+                </a>
+              </p>
             </div>
             {movesLoading ? (
               <p className={s.statusText}>기술 목록 불러오는 중…</p>
