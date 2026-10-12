@@ -82,6 +82,7 @@ type PositionRankings = {
 
 type RankingsProgressStep = {
   id: string;
+  stage?: string;
   message: string;
   current?: number;
   total?: number;
@@ -361,6 +362,7 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
         const decoder = new TextDecoder();
         let buffer = '';
         let gotResult = false;
+        let stepSeq = 0;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -393,23 +395,50 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
             }
 
             if (event.type === 'progress' && event.message) {
-              const step: RankingsProgressStep = {
-                id: `${event.stage ?? 'step'}-${Date.now()}`,
-                message: event.message,
-                current: event.current,
-                total: event.total,
-                at: Date.now(),
-              };
+              const stage = event.stage ?? 'step';
+              const message = event.message;
+              const current = event.current;
+              const total = event.total;
+              const at = Date.now();
+              stepSeq += 1;
+              const id = `${stage}-${stepSeq}`;
+
               setRankingsSteps((prev) => {
                 const last = prev[prev.length - 1];
-                if (
-                  last &&
-                  last.message === step.message &&
-                  last.current === step.current
-                ) {
-                  return prev;
+                // 같은 stage 진행률은 마지막 항목만 갱신 (키 중복·목록 폭주 방지)
+                if (last?.stage === stage) {
+                  if (
+                    last.message === message &&
+                    last.current === current &&
+                    last.total === total
+                  ) {
+                    return prev;
+                  }
+                  return [
+                    ...prev.slice(0, -1),
+                    {
+                      ...last,
+                      message,
+                      current,
+                      total,
+                      at,
+                    },
+                  ];
                 }
-                return [...prev.slice(-12), step];
+
+                if (prev.some((step) => step.id === id)) return prev;
+
+                return [
+                  ...prev.slice(-12),
+                  {
+                    id,
+                    stage,
+                    message,
+                    current,
+                    total,
+                    at,
+                  },
+                ];
               });
               continue;
             }
