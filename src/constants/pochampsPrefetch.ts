@@ -1,5 +1,8 @@
-/** 포켓몬 메타 prefetch 요청 간 대기 (ms) */
-export const POKEMON_META_PREFETCH_DELAY_MS = 1800;
+/**
+ * 포켓몬 메타 prefetch 요청 간 대기 (ms).
+ * (포켓몬 수 - 1) × delay ≈ 최대 약 3분이 되도록 맞춤.
+ */
+export const POKEMON_META_PREFETCH_DELAY_MS = 711;
 
 /**
  * 대기 시간만 기준한 최대 소요(분).

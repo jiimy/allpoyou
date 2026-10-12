@@ -63,9 +63,17 @@
   color: #6b7280;
 }
 
+.progressBarBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .progressBarTrack {
   position: relative;
-  height: 6px;
+  flex: 1;
+  min-width: 0;
+  height: 8px;
   overflow: hidden;
   border-radius: 999px;
   background: #e5e7eb;
@@ -76,6 +84,16 @@
   border-radius: 999px;
   background: #2563eb;
   transition: width 0.25s ease;
+}
+
+.progressBarPercent {
+  flex-shrink: 0;
+  min-width: 4.5em;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .progressBarIndeterminate .progressBarFill {

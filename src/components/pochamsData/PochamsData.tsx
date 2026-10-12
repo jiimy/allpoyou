@@ -637,15 +637,35 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
               분 걸릴 수 있어요. 새로고침하지 말고 잠시만 기다려 주세요.
             </p>
             {progressRatio != null ? (
-              <div className={s.progressBarTrack} aria-hidden>
+              <div className={s.progressBarBlock}>
                 <div
-                  className={s.progressBarFill}
-                  style={{ width: `${Math.round(progressRatio * 100)}%` }}
-                />
+                  className={s.progressBarTrack}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(progressRatio * 100)}
+                >
+                  <div
+                    className={s.progressBarFill}
+                    style={{ width: `${Math.round(progressRatio * 100)}%` }}
+                  />
+                </div>
+                <span className={s.progressBarPercent}>
+                  {Math.round(progressRatio * 100)}%
+                  {activeStep?.current != null && activeStep.total != null
+                    ? ` (${activeStep.current}/${activeStep.total})`
+                    : ''}
+                </span>
               </div>
             ) : (
-              <div className={`${s.progressBarTrack} ${s.progressBarIndeterminate}`} aria-hidden>
-                <div className={s.progressBarFill} />
+              <div className={s.progressBarBlock}>
+                <div
+                  className={`${s.progressBarTrack} ${s.progressBarIndeterminate}`}
+                  aria-hidden
+                >
+                  <div className={s.progressBarFill} />
+                </div>
+                <span className={s.progressBarPercent}>…</span>
               </div>
             )}
             <ol className={s.progressSteps}>
