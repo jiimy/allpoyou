@@ -68,6 +68,7 @@ export function getRowMaxStatKeys(
 export function getHighestStatLabel(p: Pick<Pokemon, BaseStatKey>): string | null {
   const keys = getRowMaxStatKeys(p);
   if (keys.size === 0) return null;
+  if (keys.size === BASE_STAT_KEYS.length) return '모든 값 동일';
   return [...keys].map((key) => BASE_STAT_LABEL[key]).join(' / ');
 }
 

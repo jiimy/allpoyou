@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SearchBar from '@/components/searchBar/SearchBar';
 import { teamMatchesPokemonQuery } from '@/utils/publicTeamDisplay';
 import { usePochampsStore } from '@/store/PochampsStore';
+import { useUrlQueryParams } from '@/hooks/useUrlQueryParams';
 import type { PublicTeam } from '@/app/public-teams/actions';
 import CanclePublicTeam from '@/components/portalModal/cancelPublicTeamModal/CanclePublicTeam';
 import PublicTeamItem from './PublicTeamItem';
@@ -28,7 +29,7 @@ function getLikeTargetId(team: PublicTeam): string {
   return team.likeTargetId ?? team.id;
 }
 
-export default function PublicTeamFeed({
+function PublicTeamFeedInner({
   teams: initialTeams,
   likedTeamIds,
   currentUserDbId,
@@ -39,7 +40,8 @@ export default function PublicTeamFeed({
   enableTeamClone = false,
   enableUnpublish = false,
 }: PublicTeamFeedProps) {
-  const [keyword, setKeyword] = useState('');
+  const { searchParams, pushParams, replaceParams } = useUrlQueryParams();
+  const keyword = searchParams.get('q') ?? '';
   const [teams, setTeams] = useState(initialTeams);
   const [cloneTarget, setCloneTarget] = useState<PublicTeam | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<PublicTeam | null>(
@@ -55,6 +57,22 @@ export default function PublicTeamFeed({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pochampsEnabled = usePochampsStore((state) => state.enabled);
+
+  /** 랭킹(빈 검색) → 상세검색 진입은 push, 그 외는 replace — 뒤로가기로 랭킹 복귀 */
+  const handleKeywordChange = useCallback(
+    (value: string) => {
+      const next = value.trim();
+      const current = keyword.trim();
+      const updates = { q: next || null };
+
+      if (!current && next) {
+        pushParams(updates);
+        return;
+      }
+      replaceParams(updates);
+    },
+    [keyword, pushParams, replaceParams],
+  );
 
   const filteredTeams = useMemo(() => {
     // 포챔스데이터 ON이면 공유 팀 검색은 하지 않고 전체 목록 유지
@@ -135,7 +153,7 @@ export default function PublicTeamFeed({
         {showSearch ? (
           <SearchBar
             keyword={keyword}
-            onKeywordChange={setKeyword}
+            onKeywordChange={handleKeywordChange}
             placeholderType="main"
           />
         ) : null}
@@ -201,5 +219,13 @@ export default function PublicTeamFeed({
         />
       ) : null}
     </div>
+  );
+}
+
+export default function PublicTeamFeed(props: PublicTeamFeedProps) {
+  return (
+    <Suspense fallback={null}>
+      <PublicTeamFeedInner {...props} />
+    </Suspense>
   );
 }

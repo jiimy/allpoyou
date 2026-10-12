@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   fetchPokemonList,
   getPokemonByNameKo,
@@ -11,16 +13,27 @@ import { usePochamsPickStore } from '@/store/PochamsPickStore';
 import { usePokemonPickStore } from '@/store/PokemonPickStore';
 import { useTeamModalStore } from '@/store/TeamModalStore';
 import { getBaseEnglishNameForDex } from '@/utils/pokemonName';
+import { getAbilitySummary } from '@/utils/abilitySearch';
 import {
   resolveEvsFromBattleItem,
   resolveItemFromBattleItem,
   resolveMoveFromBattleItem,
   resolveNatureFromBattleItem,
 } from '@/utils/pochamsTeamBuild';
+import { resolvePokemonFromPochampsLearner } from '@/utils/pochampsMoves';
+import {
+  getNatureEffectLabel,
+  getNatureEntry,
+} from '@/utils/natureList';
 import { getPokemonMetaPrefetchMaxMinutes } from '@/constants/pochampsPrefetch';
 import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
 
 import s from './pochamsData.module.scss';
+
+const SelectPokeModal = dynamic(
+  () => import('@/components/portalModal/selectPokeModal/SelectPokeModal'),
+  { ssr: false },
+);
 
 const POKEMON_META_PREFETCH_MAX_MINUTES = getPokemonMetaPrefetchMaxMinutes(
   POCHAMS_POKEMON_DATA.length,
@@ -143,6 +156,35 @@ function resolvePokemonForBattle(keyword: string, list: Pokemon[]): Pokemon | nu
     list.find((p) => p.nameKo.includes(q)) ??
     null
   );
+}
+
+/** 상세검색 목록 호버용 설명 (기술/도구/특성/성격) */
+function getBattleItemDescriptionTitle(
+  category: BattleCategoryKey,
+  item: BattleCategoryItem,
+): string | undefined {
+  if (category === 'move') {
+    const move = resolveMoveFromBattleItem(item);
+    return move?.description?.trim() || undefined;
+  }
+
+  if (category === 'held_item') {
+    const held = resolveItemFromBattleItem(item);
+    return held?.description?.trim() || undefined;
+  }
+
+  if (category === 'ability') {
+    return getAbilitySummary(item.name)?.trim() || undefined;
+  }
+
+  if (category === 'stat_alignment') {
+    const natureName = resolveNatureFromBattleItem(item) ?? item.name.trim();
+    const entry = getNatureEntry(natureName);
+    if (!entry) return undefined;
+    return `${entry.name}: ${getNatureEffectLabel(entry)}`;
+  }
+
+  return undefined;
 }
 
 function itemKey(item: BattleCategoryItem) {
@@ -297,7 +339,11 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
     [],
   );
   const [rankingsElapsedSec, setRankingsElapsedSec] = useState(0);
+  const [infoModalPokemon, setInfoModalPokemon] = useState<Pokemon | null>(
+    null,
+  );
 
+  const router = useRouter();
   const enabled = usePochampsStore((state) => state.enabled);
   const battleFormat = usePochampsStore((state) => state.format);
   const setFormat = usePochampsStore((state) => state.setFormat);
@@ -574,6 +620,36 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
     onKeywordChange?.(entry.nameKo || entry.name);
   };
 
+  const handleMoveInfoSearch = useCallback(
+    (item: BattleCategoryItem) => {
+      const move = resolveMoveFromBattleItem(item);
+      if (!move) {
+        const q = encodeURIComponent(item.name.trim());
+        if (!q) return;
+        router.push(`/moves?q=${q}&learnable=1`);
+        return;
+      }
+      router.push(
+        `/moves?q=${encodeURIComponent(move.koreanName)}&moveId=${move.id}&learnable=1`,
+      );
+    },
+    [router],
+  );
+
+  const handleViewInfo = useCallback(async (entry: PositionEntry) => {
+    const list = await fetchPokemonList();
+    const pokemon =
+      resolvePokemonFromPochampsLearner(
+        { pokemonName: entry.name, pokemonSlug: entry.slug },
+        list,
+      ) ??
+      resolvePokemonForBattle(entry.nameKo || entry.name, list) ??
+      resolvePokemonForBattle(entry.name, list);
+
+    if (!pokemon) return;
+    setInfoModalPokemon(pokemon);
+  }, []);
+
   const renderRankingList = (title: string, items: PositionEntry[]) => (
     <section className={s.category}>
       <h3 className={s.categoryTitle}>
@@ -585,17 +661,31 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
           const position = i + 1;
           const entry = items.find((item) => item.position === position);
           return (
-            <li key={`${title}-${position}`}>
+            <li
+              key={`${title}-${position}`}
+              className={entry ? s.rankItem : undefined}
+            >
               {entry ? (
-                <button
-                  type="button"
-                  className={s.itemBtn}
-                  onClick={() => handleSelectRanking(entry)}
-                  title="클릭하면 상세 검색"
-                >
+                <>
                   <span className={s.rank}>{position}</span>
                   <span className={s.name}>{entry.nameKo || entry.name}</span>
-                </button>
+                  <span className={s.rankHoverActions}>
+                    <button
+                      type="button"
+                      className={s.rankActionBtn}
+                      onClick={() => void handleViewInfo(entry)}
+                    >
+                      정보보기
+                    </button>
+                    <button
+                      type="button"
+                      className={s.rankActionBtn}
+                      onClick={() => handleSelectRanking(entry)}
+                    >
+                      상세정보
+                    </button>
+                  </span>
+                </>
               ) : (
                 <>
                   <span className={s.rank}>{position}</span>
@@ -728,6 +818,14 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
               {renderRankingList('Singles', rankings.singles)}
               {renderRankingList('Doubles', rankings.doubles)}
             </div>
+            {infoModalPokemon ? (
+              <SelectPokeModal
+                pokemon={infoModalPokemon}
+                setOnModal={(open) => {
+                  if (!open) setInfoModalPokemon(null);
+                }}
+              />
+            ) : null}
           </>
         ) : (
           <p className={s.hint}>순위 데이터가 없습니다. 잠시 후 다시 시도해 주세요.</p>
@@ -817,7 +915,7 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
             </div>
           ) : (
             <div className={s.selectionEmptyRow}>
-              <p className={s.selectionEmpty}>항목을 클릭해 선택 후 팀에 추가할 수 있습니다.</p>
+              <p className={s.selectionEmpty}>항목을 선택하여 팀에 추가할 수 있습니다.(각 정보에 마우스 호버를 유지하면 상세설명이 나옵니다.)</p>
               <button
                 type="button"
                 className={s.selectionAdd}
@@ -853,53 +951,93 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
                         group.category === 'move' &&
                         !selected &&
                         moveCount >= MAX_MOVES;
+                      const descriptionTitle = getBattleItemDescriptionTitle(
+                        group.category,
+                        item,
+                      );
+                      const actionHint = moveFull
+                        ? `기술은 최대 ${MAX_MOVES}개까지 선택 가능`
+                        : selected
+                          ? '클릭하면 선택 해제'
+                          : selectable
+                            ? '클릭하면 선택'
+                            : undefined;
+                      const title = [descriptionTitle, actionHint]
+                        .filter(Boolean)
+                        .join('\n');
+
+                      const isMove = group.category === 'move';
 
                       return (
                         <li
                           key={`${group.category}-${item.rank}-${item.nameEn || item.name}`}
+                          className={isMove ? s.moveItem : undefined}
                         >
                           {selectable ? (
-                            <button
-                              type="button"
-                              className={`${s.itemBtn} ${selected ? s.itemSelected : ''} ${moveFull ? s.itemDisabled : ''}`}
-                              onClick={() =>
-                                setSelection((prev) =>
-                                  toggleSelection(group.category, item, prev),
-                                )
-                              }
-                              disabled={moveFull}
-                              title={
-                                moveFull
-                                  ? `기술은 최대 ${MAX_MOVES}개까지 선택 가능`
-                                  : selected
-                                    ? '클릭하면 선택 해제'
-                                    : '클릭하면 선택'
-                              }
+                            isMove ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`${s.moveSelectHit} ${selected ? s.itemSelected : ''} ${moveFull ? s.itemDisabled : ''}`}
+                                  onClick={() =>
+                                    setSelection((prev) =>
+                                      toggleSelection(group.category, item, prev),
+                                    )
+                                  }
+                                  disabled={moveFull}
+                                  title={title || undefined}
+                                >
+                                  <span className={s.rank}>{item.rank}</span>
+                                  <span className={s.name}>{item.name}</span>
+                                </button>
+                                <span className={s.moveTrailing}>
+                                  <button
+                                    type="button"
+                                    className={s.moveInfoBtn}
+                                    title="클릭시 기술페이지에서 검색됩니다"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      handleMoveInfoSearch(item);
+                                    }}
+                                  >
+                                    정보보기
+                                  </button>
+                                  {item.percentage ? (
+                                    <span className={s.pct}>{item.percentage}</span>
+                                  ) : null}
+                                </span>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className={`${s.itemBtn} ${selected ? s.itemSelected : ''} ${moveFull ? s.itemDisabled : ''}`}
+                                onClick={() =>
+                                  setSelection((prev) =>
+                                    toggleSelection(group.category, item, prev),
+                                  )
+                                }
+                                disabled={moveFull}
+                                title={title || undefined}
+                              >
+                                <span className={s.rank}>{item.rank}</span>
+                                <span className={s.name}>{item.name}</span>
+                                {item.percentage ? (
+                                  <span className={s.pct}>{item.percentage}</span>
+                                ) : null}
+                              </button>
+                            )
+                          ) : (
+                            <span
+                              className={s.itemReadonly}
+                              title={descriptionTitle || item.nameEn || undefined}
                             >
                               <span className={s.rank}>{item.rank}</span>
-                              <span
-                                className={s.name}
-                                title={item.nameEn || undefined}
-                              >
-                                {item.name}
-                              </span>
+                              <span className={s.name}>{item.name}</span>
                               {item.percentage ? (
                                 <span className={s.pct}>{item.percentage}</span>
                               ) : null}
-                            </button>
-                          ) : (
-                            <>
-                              <span className={s.rank}>{item.rank}</span>
-                              <span
-                                className={s.name}
-                                title={item.nameEn || undefined}
-                              >
-                                {item.name}
-                              </span>
-                              {item.percentage ? (
-                                <span className={s.pct}>{item.percentage}</span>
-                              ) : null}
-                            </>
+                            </span>
                           )}
                         </li>
                       );

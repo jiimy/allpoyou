@@ -36,6 +36,7 @@ import StatCountModal, {
   type TeamStatSlot,
 } from '@/components/team/statCountModal/StatCountModal';
 import {
+  BASE_STAT_KEYS,
   BASE_STAT_LABEL,
   getRowMaxStatKeys,
   hasMaxStatChanged,
@@ -658,19 +659,29 @@ const Team: React.FC<TeamProps> = ({
                   }}
                   aria-label={selected ? '종족값 조정' : undefined}
                 >
-                  {selected
-                    ? [...maxStatKeys].map((key, i, arr) => (
+                  {selected ? (
+                    maxStatKeys.size === BASE_STAT_KEYS.length ? (
                       <span
-                        key={key}
                         className={cn({
                           [s.statLabelHighlight]: maxStatChanged,
                         })}
                       >
-                        {STAT_LABEL_BY_KEY[key]}
-                        {i < arr.length - 1 ? ' / ' : ''}
+                        모든 값 동일
                       </span>
-                    ))
-                    : null}
+                    ) : (
+                      [...maxStatKeys].map((key, i, arr) => (
+                        <span
+                          key={key}
+                          className={cn({
+                            [s.statLabelHighlight]: maxStatChanged,
+                          })}
+                        >
+                          {STAT_LABEL_BY_KEY[key]}
+                          {i < arr.length - 1 ? ' / ' : ''}
+                        </span>
+                      ))
+                    )
+                  ) : null}
                 </div>
               </span>
               {selected ? (
