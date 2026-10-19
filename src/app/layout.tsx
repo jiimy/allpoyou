@@ -5,6 +5,7 @@ import Nav from "@/components/nav/Nav";
 import { LastVisitedPageBootstrap } from "@/components/nav/LastVisitedPageBootstrap";
 import FloatingBtn from "@/components/floatingBtn/FloatingBtn";
 import { TeamSessionBootstrap } from "@/components/team/TeamSessionBootstrap";
+import { AccessLogBootstrap } from "@/components/AccessLogBootstrap";
 import s from './main.module.scss'
 import Footer from "@/components/footer/Footer";
 import { Analytics } from "@vercel/analytics/react";
@@ -85,6 +86,7 @@ export default function RootLayout({
     >
       <body className="" suppressHydrationWarning>
         <AuthContext>
+          <AccessLogBootstrap />
           <TeamSessionBootstrap />
           <LastVisitedPageBootstrap />
           <Switch />
