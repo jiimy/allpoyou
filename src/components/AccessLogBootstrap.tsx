@@ -2,8 +2,6 @@
 
 import { useEffect } from 'react';
 
-import { useLoggedInUserId } from '@/hooks/useLoggedInUserId';
-
 const STORAGE_KEY = 'allpoyou:access-log';
 
 function todayKey(): string {
@@ -18,16 +16,12 @@ function todayKey(): string {
 
 /**
  * 앱 로드 시 접속 로그 API를 호출합니다.
- * 브라우저당 KST 날짜 + 로그인 상태가 같으면 재호출하지 않습니다.
- * (서버에서도 IP·user_id 기준 30분 쓰로틀이 있습니다.)
+ * 세션은 서버에서 쿠키로 판별하므로 로그인 훅을 기다리지 않습니다.
+ * 브라우저당 KST 날짜 1회 호출 (서버 30분 쓰로틀과 별개).
  */
 export function AccessLogBootstrap() {
-  const { userId, authReady } = useLoggedInUserId();
-
   useEffect(() => {
-    if (!authReady) return;
-
-    const stamp = `${todayKey()}:${userId ?? 'guest'}`;
+    const stamp = todayKey();
     try {
       if (window.localStorage.getItem(STORAGE_KEY) === stamp) return;
     } catch {
@@ -38,19 +32,32 @@ export function AccessLogBootstrap() {
       method: 'POST',
       cache: 'no-store',
       keepalive: true,
+      credentials: 'same-origin',
     })
       .then(async (res) => {
-        if (!res.ok) return;
+        let body: { recorded?: boolean; skipped?: boolean; error?: string } = {};
+        try {
+          body = (await res.json()) as typeof body;
+        } catch {
+          // ignore
+        }
+
+        if (!res.ok) {
+          console.warn('[AccessLogBootstrap] failed', res.status, body.error);
+          return;
+        }
+
+        // recorded / skipped 모두 성공으로 보고 당일 재호출 방지
         try {
           window.localStorage.setItem(STORAGE_KEY, stamp);
         } catch {
           // ignore
         }
       })
-      .catch(() => {
-        // 접속 로그 실패는 UX에 영향 없음
+      .catch((err: unknown) => {
+        console.warn('[AccessLogBootstrap] request error', err);
       });
-  }, [authReady, userId]);
+  }, []);
 
   return null;
 }
