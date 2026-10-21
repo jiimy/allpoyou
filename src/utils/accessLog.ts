@@ -87,11 +87,15 @@ export async function recordAccessLog(headers: Headers): Promise<{
 
   if (error) {
     console.error('[accessLog] insert failed', error.message, error.code);
+    const hint =
+      error.code === '23502' && userId == null
+        ? ' access_logs.user_id 가 NOT NULL 입니다. supabase/access_logs.sql 의 ALTER 를 실행하세요.'
+        : '';
     return {
       recorded: false,
       ip: ipAddress,
       userId,
-      error: error.message,
+      error: `${error.message}${hint}`,
     };
   }
 
