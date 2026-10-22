@@ -604,7 +604,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                   href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}_(포켓몬)#배우는_기술`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={s.a2}
+                  className="skillBtn"
                 >
                   팬덤위키 기술
                 </a>

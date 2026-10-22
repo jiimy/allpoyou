@@ -28,6 +28,7 @@ import {
 import s from './moves.module.scss';
 import PokemonTooltip from '@/components/pokemonTooltip/PokemonTooltip';
 import { FilterButton } from '@/components/button/Button';
+import { getNamuWikiNameKo } from '@/utils/pokemonName';
 
 const PAGE_SIZE = 30;
 
@@ -39,13 +40,13 @@ const LEARNABLE_STAT_SORT_OPTIONS: {
   key: LearnableStatSortKey;
   label: string;
 }[] = [
-  { key: 'H', label: 'HP' },
-  { key: 'A', label: '공격' },
-  { key: 'C', label: '특공' },
-  { key: 'B', label: '방어' },
-  { key: 'D', label: '특방' },
-  { key: 'S', label: '스피드' },
-];
+    { key: 'H', label: 'HP' },
+    { key: 'A', label: '공격' },
+    { key: 'C', label: '특공' },
+    { key: 'B', label: '방어' },
+    { key: 'D', label: '특방' },
+    { key: 'S', label: '스피드' },
+  ];
 
 const FALLBACK_TYPE_BORDER = '#e0e0e0';
 
@@ -223,7 +224,7 @@ export default function MoveList({
       .then((list) => {
         if (!cancelled) setPokemonCatalog(list);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -594,6 +595,14 @@ export default function MoveList({
           <h3 className={s.pokemonMovesTitle}>
             {selectedPokemon.nameKo} · 배울 수 있는 기술
             {pochampsOnly ? ' · 포챔스' : ''}
+            <a
+              href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(selectedPokemon.nameKo))}_(포켓몬)#배우는_기술`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="skillBtn"
+            >
+              팬덤위키 기술
+            </a>
           </h3>
           {pokemonMovesLoading ? (
             <p className={s.empty}>기술 목록을 불러오는 중…</p>
