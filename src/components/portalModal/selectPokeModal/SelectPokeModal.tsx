@@ -422,7 +422,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                     href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={s.a2}
+                    className="skillBtn"
                   >
                     팬덤위키
                   </a>
@@ -447,6 +447,27 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                 </button>
               </span>
             </div>
+          </div>
+          <div className={s.mHeader}>
+            <button type="button" onClick={handleAddToTeam} className={s.btn}>
+              팀에 추가
+            </button>
+            <a
+              href={`https://namu.wiki/w/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={s.a}
+            >
+              나무위키
+            </a>
+            <a
+              href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="skillBtn"
+            >
+              팬덤위키
+            </a>
           </div>
 
           <section>
@@ -599,7 +620,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               </div>
             </h3>
             <div className={s.sectionTitle}>
-              <p>데이터가 정확하지 않습니다. 자세한 데이터는
+              <p>데이터가 정확하지 않습니다. 자세한 데이터는 &nbsp;
                 <a
                   href={`https://pokemon.fandom.com/ko/wiki/${encodeURIComponent(getNamuWikiNameKo(activePokemon.nameKo))}_(포켓몬)#배우는_기술`}
                   target="_blank"

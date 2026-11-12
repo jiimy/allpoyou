@@ -43,13 +43,15 @@ summary {
 }
 
 .skillBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #0070bb;
   color: #0070bb;
   padding: 1px 6px;
   border-radius: 10vw;
   font-size: 12px;
   font-weight: 400;
-  margin-left: 6px;
 }
 .skillBtn:hover {
   background: #0070bb;

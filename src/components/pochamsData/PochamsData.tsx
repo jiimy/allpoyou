@@ -753,7 +753,8 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
             </div>
             <p className={s.progressNote}>
               처음 불러올 때는 최대 약 {POKEMON_META_PREFETCH_MAX_MINUTES}
-              분 걸릴 수 있어요. 새로고침하지 말고 잠시만 기다려 주세요.
+              분 걸릴 수 있어요. 다른 페이지로 나갔다
+              오면 이미 준비된 경우 바로 표시될 수 있어요.
             </p>
             {progressRatio != null ? (
               <div className={s.progressBarBlock}>

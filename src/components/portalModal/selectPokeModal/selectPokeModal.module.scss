@@ -90,6 +90,10 @@
     font-weight: 400;
     font-size: 12px;
     align-items: center;
+    @include media-mo {
+      flex-direction: column;
+      align-items: baseline;
+    }
   }
 }
 
@@ -298,11 +302,21 @@
   }
 }
 
+%button, %a {
+  padding: 4px 8px;
+  border-radius: 10vw;
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .typeCalc {
   position: relative;
   display: flex;
   gap: 6px;
   margin-top: 6px;
+  @include media-mo {
+    flex-wrap: wrap-reverse;
+  }
 
   span {
     position: absolute;
@@ -310,32 +324,42 @@
     bottom: 0;
     display: flex;
     gap: 6px;
-
-    button, a {
-      padding: 4px 8px;
-      border-radius: 10vw;
-      font-size: 12px;
-      font-weight: 400;
+    @include media-mo {
+      display: none;
     }
+  }
+}
 
-    .btn {
-      border: 1px solid #b77d00;
-      color: #b77d00;
-      cursor: pointer;
-      &:hover {
-        background: #b77d00;
-        color: #fffdf0;
-      }
-    }
+.btn {
+  @extend %button;
+  @extend %a;
+  border: 1px solid #b77d00;
+  color: #b77d00;
+  cursor: pointer;
 
-    .a {
-      border: 1px solid #00a69c;
-      color: #00a69c;
-      &:hover {
-        background: #00a69c;
-        color: white;
-      }
-    }
+  &:hover {
+    background: #b77d00;
+    color: #fffdf0;
+  }
+}
+
+.a {
+  @extend %button;
+  @extend %a;
+  border: 1px solid #00a69c;
+  color: #00a69c;
+
+  &:hover {
+    background: #00a69c;
+    color: white;
+  }
+}
+
+.mHeader {
+  display: none;
+  @include media-mo {
+    display: flex;
+    gap: 6px;
   }
 }
 
