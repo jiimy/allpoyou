@@ -28,9 +28,18 @@ export type TypeTablePokemon = {
 /** defense = 맞을 때, attack = 공격할 때 */
 export type TypeTableMode = 'defense' | 'attack';
 
+export type DefenseWeaknessEntry = {
+  typeEn: Type;
+  typeKo: string;
+  multiplier: number;
+  label: string;
+};
+
 type TypeTableProps = {
   pokemons: (TypeTablePokemon | null)[];
   mode?: TypeTableMode;
+  /** 맞을 때 · 약점 요약 줄 클릭 */
+  onWeaknessClick?: () => void;
 };
 
 type AttackHit = {
@@ -114,7 +123,42 @@ function attackHitClass(multiplier: number): string {
   return s.hitNeutral;
 }
 
-const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
+/** 팀 맞을 때 기준 약점(≥2배) 타입 목록 */
+export function getTeamDefenseWeaknesses(
+  pokemons: (TypeTablePokemon | null)[],
+): DefenseWeaknessEntry[] {
+  const slots = [...pokemons];
+  while (slots.length < TEAM_SIZE) slots.push(null);
+  const normalized = slots.slice(0, TEAM_SIZE);
+
+  const entries: DefenseWeaknessEntry[] = [];
+  for (const rowType of ALL_TYPES) {
+    const multipliers: number[] = [];
+    for (const pokemon of normalized) {
+      if (!pokemon) continue;
+      const pokemonTypes = toEnglishTypes(pokemon.types);
+      if (pokemonTypes.length === 0) continue;
+      multipliers.push(getDefenseMultiplier(rowType, pokemonTypes));
+    }
+    if (multipliers.length === 0) continue;
+    const maxMultiplier = Math.max(...multipliers);
+    if (maxMultiplier < 2) continue;
+    const typeKo = typeTranslation[rowType];
+    entries.push({
+      typeEn: rowType,
+      typeKo,
+      multiplier: maxMultiplier,
+      label: `${formatSummaryMultiplier(maxMultiplier)} ${typeKo}`,
+    });
+  }
+  return entries;
+}
+
+const TypeTable = ({
+  pokemons,
+  mode = 'defense',
+  onWeaknessClick,
+}: TypeTableProps) => {
   const slots = useMemo(() => {
     const normalized = [...pokemons];
     while (normalized.length < TEAM_SIZE) normalized.push(null);
@@ -188,7 +232,7 @@ const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
       return { weaknesses: [] as string[], strengths: [] as string[] };
     }
 
-    const weaknesses: string[] = [];
+    const weaknesses = getTeamDefenseWeaknesses(slots).map((w) => w.label);
     const strengths: string[] = [];
 
     for (const row of matrix) {
@@ -199,14 +243,6 @@ const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
       if (activeCells.length === 0) continue;
 
       const multipliers = activeCells.map((cell) => cell.multiplier);
-      const maxMultiplier = Math.max(...multipliers);
-
-      if (maxMultiplier >= 2) {
-        weaknesses.push(
-          `${formatSummaryMultiplier(maxMultiplier)} ${row.rowLabel}`,
-        );
-      }
-
       const hasStrength = activeCells.some((cell) =>
         isTypeTableStrengthMultiplier(cell.multiplier),
       );
@@ -221,9 +257,11 @@ const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
     }
 
     return { weaknesses, strengths };
-  }, [matrix, mode]);
+  }, [matrix, mode, slots]);
 
   const hasPokemon = slots.some(Boolean);
+  const canOpenWeakness =
+    Boolean(onWeaknessClick) && defenseSummary.weaknesses.length > 0;
 
   const weaknessHead =
     mode === 'defense' ? '약점수' : '별로·없음';
@@ -327,11 +365,22 @@ const TypeTable = ({ pokemons, mode = 'defense' }: TypeTableProps) => {
 
       {mode === 'defense' && hasPokemon && (
         <>
-          <p className={classnames(s.summaryText, s.weakness)}>
-            {defenseSummary.weaknesses.length > 0
-              ? `약점 : ${defenseSummary.weaknesses.join(', ')}`
-              : '약점 : 없음'}
-          </p>
+          {canOpenWeakness ? (
+            <button
+              type="button"
+              className={classnames(s.summaryText, s.weakness, s.weaknessBtn)}
+              onClick={onWeaknessClick}
+            >
+              {`약점 : ${defenseSummary.weaknesses.join(', ')}`}
+              <span className={s.weaknessHint}>· 클릭 또는 E</span>
+            </button>
+          ) : (
+            <p className={classnames(s.summaryText, s.weakness)}>
+              {defenseSummary.weaknesses.length > 0
+                ? `약점 : ${defenseSummary.weaknesses.join(', ')}`
+                : '약점 : 없음'}
+            </p>
+          )}
           <p className={classnames(s.summaryText, s.strength)}>
             {defenseSummary.strengths.length > 0
               ? `강점 : ${defenseSummary.strengths.join(', ')}`

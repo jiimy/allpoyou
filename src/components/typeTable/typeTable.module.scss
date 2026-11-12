@@ -140,3 +140,25 @@
     color: #16c60c;
   }
 }
+
+.weaknessBtn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #fff1f2;
+  }
+}
+
+.weaknessHint {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #c45a66;
+}
