@@ -1,7 +1,7 @@
 .type_table_modal {
   width: 790px;
   height: auto;
-  padding-top: 60px;
+  padding-top: 20px;
   @include media-mo() {
     width: calc(100% - 60px);
     height: calc(100vh - 40px);
