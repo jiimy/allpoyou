@@ -141,6 +141,9 @@
   gap: 6px 8px;
   grid-template-columns: 40px 36px 1fr;
   align-items: center;
+  @include media-mo {
+    gap: 2px 8px;
+  }
 }
 
 .statLabel {
