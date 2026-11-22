@@ -187,11 +187,70 @@ function isGenerationTag(tag: string): boolean {
   return /^\d+세대$/.test(tag);
 }
 
+/** 전설 계열 OR 그룹 (세대 include와 동일하게 서로 OR) */
+function isLegendaryOrTag(tag: string): boolean {
+  return tag === '전설' || tag === '환상';
+}
+
+/** 전설 include 아래에서 제외 토글용 하위 태그 */
+function isLegendarySubTag(tag: string): boolean {
+  return tag === '초전설' || tag === '준전설';
+}
+
+function hasLegendaryInclude(selections: PokedexTagSelection[]): boolean {
+  return selections.some(
+    (entry) => entry.tag === '전설' && entry.mode === 'include',
+  );
+}
+
+/**
+ * 전설이 include일 때 초전설/준전설 include는
+ * 「전설 중 ○○ 제외」의미의 exclude로 정규화합니다.
+ * 초전설·준전설을 둘 다 제외하면 전설 그룹은 필터에서 빠진 것(미선택)으로 취급합니다.
+ */
+export function normalizePokedexTagSelections(
+  selections: PokedexTagSelection[],
+): PokedexTagSelection[] {
+  if (!hasLegendaryInclude(selections)) return selections;
+
+  const mapped = selections.map((entry) =>
+    isLegendarySubTag(entry.tag) && entry.mode === 'include'
+      ? { ...entry, mode: 'exclude' as const }
+      : entry,
+  );
+
+  const bothSubsExcluded =
+    mapped.some((entry) => entry.tag === '초전설' && entry.mode === 'exclude') &&
+    mapped.some((entry) => entry.tag === '준전설' && entry.mode === 'exclude');
+
+  if (!bothSubsExcluded) return mapped;
+
+  // UI상 전설 미선택과 동일: 세대 등 다른 필터만 남김
+  return mapped.filter(
+    (entry) =>
+      entry.tag !== '전설' &&
+      entry.tag !== '초전설' &&
+      entry.tag !== '준전설',
+  );
+}
+
+/** 전설 미선택 시 세대·초/준전설·환상 include를 하나의 OR로 묶음 */
+function isLooseOrIncludeTag(tag: string): boolean {
+  return (
+    isGenerationTag(tag) ||
+    tag === '초전설' ||
+    tag === '준전설' ||
+    tag === '환상'
+  );
+}
+
 /**
  * 태그 선택(포함/제외)으로 필터링합니다.
- * - 1~9세대 include끼리: OR (예: 1세대+3세대 → 둘 중 하나)
- * - 그 외 태그(및 세대 exclude)와 세대 OR 그룹: AND
- * - include: 해당 태그에 속해야 함 / exclude: 해당 태그에 속하면 제외
+ * - 1~9세대 include끼리: OR
+ * - 전설이 켜진 경우: 세대 그룹 AND (전설·환상 OR), 초/준전설은 전설 중 제외
+ * - 전설이 꺼진 경우: 세대·초전설·준전설·환상 include는 서로 OR
+ *   (예: 9세대+준전설+환상 → 9세대 또는 준전설 또는 환상)
+ * - 즐겨찾기 등 나머지·exclude: AND
  */
 export function filterPokemonByTagSelections(
   list: Pokemon[],
@@ -200,23 +259,68 @@ export function filterPokemonByTagSelections(
 ): Pokemon[] {
   if (selections.length === 0) return list;
 
-  const genIncludes: PokedexTagSelection[] = [];
+  const normalized = normalizePokedexTagSelections(selections);
+  const legendOn = hasLegendaryInclude(normalized);
+
+  if (legendOn) {
+    const genIncludes: PokedexTagSelection[] = [];
+    const legendOrIncludes: PokedexTagSelection[] = [];
+    const otherSelections: PokedexTagSelection[] = [];
+
+    for (const selection of normalized) {
+      if (selection.mode === 'include' && isGenerationTag(selection.tag)) {
+        genIncludes.push(selection);
+      } else if (
+        selection.mode === 'include' &&
+        isLegendaryOrTag(selection.tag)
+      ) {
+        legendOrIncludes.push(selection);
+      } else {
+        otherSelections.push(selection);
+      }
+    }
+
+    return list.filter((pokemon) => {
+      if (genIncludes.length > 0) {
+        const matchesAnyGen = genIncludes.some(({ tag }) =>
+          pokemonMatchesPokedexTag(pokemon, tag, context),
+        );
+        if (!matchesAnyGen) return false;
+      }
+
+      if (legendOrIncludes.length > 0) {
+        const matchesAnyLegend = legendOrIncludes.some(({ tag }) =>
+          pokemonMatchesPokedexTag(pokemon, tag, context),
+        );
+        if (!matchesAnyLegend) return false;
+      }
+
+      for (const { tag, mode } of otherSelections) {
+        const matched = pokemonMatchesPokedexTag(pokemon, tag, context);
+        if (mode === 'include' && !matched) return false;
+        if (mode === 'exclude' && matched) return false;
+      }
+      return true;
+    });
+  }
+
+  const looseOrIncludes: PokedexTagSelection[] = [];
   const otherSelections: PokedexTagSelection[] = [];
 
-  for (const selection of selections) {
-    if (selection.mode === 'include' && isGenerationTag(selection.tag)) {
-      genIncludes.push(selection);
+  for (const selection of normalized) {
+    if (selection.mode === 'include' && isLooseOrIncludeTag(selection.tag)) {
+      looseOrIncludes.push(selection);
     } else {
       otherSelections.push(selection);
     }
   }
 
   return list.filter((pokemon) => {
-    if (genIncludes.length > 0) {
-      const matchesAnyGen = genIncludes.some(({ tag }) =>
+    if (looseOrIncludes.length > 0) {
+      const matchesAny = looseOrIncludes.some(({ tag }) =>
         pokemonMatchesPokedexTag(pokemon, tag, context),
       );
-      if (!matchesAnyGen) return false;
+      if (!matchesAny) return false;
     }
 
     for (const { tag, mode } of otherSelections) {
@@ -231,7 +335,8 @@ export function filterPokemonByTagSelections(
 /**
  * 태그(세대/전설 계열)로 포켓몬 목록을 필터링합니다.
  * - `N세대`: generation === N
- * - `전설`: note에 '전설' 포함 (초전설·준전설 모두 포함, 환상 제외)
+ * - `전설`: note에 '전설' 포함 (초전설·준전설 포함)
+ * - `전설`+`환상` include: OR
  * - `초전설` / `준전설` / `환상`: 해당 note만
  */
 export function filterPokemonByTag(list: Pokemon[], tag: string | null): Pokemon[] {
@@ -274,11 +379,49 @@ export function parsePokedexTagSelections(
   return result;
 }
 
-/** off → include → exclude → off */
+function clearLegendarySubTags(
+  selections: PokedexTagSelection[],
+): PokedexTagSelection[] {
+  return selections.filter((entry) => !isLegendarySubTag(entry.tag));
+}
+
+/**
+ * 태그 클릭 사이클.
+ * - 기본: off → include → exclude → off
+ * - 전설이 include일 때 초전설/준전설: off → exclude → off (전설 중 제외)
+ * - 전설을 끄면 초전설/준전설 선택도 함께 해제
+ */
 export function cyclePokedexTagSelection(
   selections: PokedexTagSelection[],
   tag: string,
 ): PokedexTagSelection[] {
+  const legendOn = hasLegendaryInclude(selections);
+
+  if (isLegendarySubTag(tag) && legendOn) {
+    const index = selections.findIndex((entry) => entry.tag === tag);
+    if (index < 0) {
+      const next: PokedexTagSelection[] = [
+        ...selections,
+        { tag, mode: 'exclude' },
+      ];
+      const bothExcluded =
+        next.some(
+          (entry) => entry.tag === '초전설' && entry.mode === 'exclude',
+        ) &&
+        next.some(
+          (entry) => entry.tag === '준전설' && entry.mode === 'exclude',
+        );
+      // 초·준전설을 모두 제외하면 전설 그룹 필터를 해제 (세대 필터만 남김)
+      if (bothExcluded) {
+        return next.filter(
+          (entry) => entry.tag !== '전설' && !isLegendarySubTag(entry.tag),
+        );
+      }
+      return next;
+    }
+    return selections.filter((entry) => entry.tag !== tag);
+  }
+
   const index = selections.findIndex((entry) => entry.tag === tag);
   if (index < 0) {
     return [...selections, { tag, mode: 'include' }];
@@ -288,10 +431,19 @@ export function cyclePokedexTagSelection(
   if (current.mode === 'include') {
     const next = [...selections];
     next[index] = { tag, mode: 'exclude' };
+    // 전설 include 해제(→ exclude) 시 하위 제외 태그 정리
+    if (tag === '전설') {
+      return clearLegendarySubTags(next);
+    }
     return next;
   }
 
-  return selections.filter((entry) => entry.tag !== tag);
+  // exclude → off
+  const removed = selections.filter((entry) => entry.tag !== tag);
+  if (tag === '전설') {
+    return clearLegendarySubTags(removed);
+  }
+  return removed;
 }
 
 export function searchPokemonByName(

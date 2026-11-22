@@ -3,6 +3,21 @@
   flex-wrap: wrap;
   gap: 6px;
   width: 100%;
+  align-items: center;
+}
+
+.tagItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.divider {
+  color: #bbb;
+  font-size: 13px;
+  line-height: 1;
+  user-select: none;
+  padding: 0 2px;
 }
 
 .tagBtn {
