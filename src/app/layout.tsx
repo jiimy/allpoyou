@@ -6,6 +6,7 @@ import { LastVisitedPageBootstrap } from "@/components/nav/LastVisitedPageBootst
 import FloatingBtn from "@/components/floatingBtn/FloatingBtn";
 import { TeamSessionBootstrap } from "@/components/team/TeamSessionBootstrap";
 import { AccessLogBootstrap } from "@/components/AccessLogBootstrap";
+import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import s from './main.module.scss'
 import Footer from "@/components/footer/Footer";
 import { Analytics } from "@vercel/analytics/react";
@@ -86,6 +87,7 @@ export default function RootLayout({
     >
       <body className="" suppressHydrationWarning>
         <AuthContext>
+          <ChunkLoadRecovery />
           <AccessLogBootstrap />
           <TeamSessionBootstrap />
           <LastVisitedPageBootstrap />
