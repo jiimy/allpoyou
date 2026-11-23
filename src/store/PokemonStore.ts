@@ -203,17 +203,49 @@ function hasLegendaryInclude(selections: PokedexTagSelection[]): boolean {
   );
 }
 
+function hasSubInclude(selections: PokedexTagSelection[], tag: string): boolean {
+  return selections.some(
+    (entry) => entry.tag === tag && entry.mode === 'include',
+  );
+}
+
+/**
+ * 초전설·준전설을 둘 다 include하면 전설 그룹 전체 선택으로 승격합니다.
+ */
+function promoteBothSubsToLegendary(
+  selections: PokedexTagSelection[],
+): PokedexTagSelection[] {
+  if (
+    !hasSubInclude(selections, '초전설') ||
+    !hasSubInclude(selections, '준전설')
+  ) {
+    return selections;
+  }
+  if (hasLegendaryInclude(selections)) {
+    // 이미 전설이면 하위 include는 아래에서 exclude로 정규화
+    return selections;
+  }
+  return [
+    ...selections.filter(
+      (entry) => !isLegendarySubTag(entry.tag) && entry.tag !== '전설',
+    ),
+    { tag: '전설', mode: 'include' },
+  ];
+}
+
 /**
  * 전설이 include일 때 초전설/준전설 include는
  * 「전설 중 ○○ 제외」의미의 exclude로 정규화합니다.
  * 초전설·준전설을 둘 다 제외하면 전설 그룹은 필터에서 빠진 것(미선택)으로 취급합니다.
+ * 초전설·준전설을 둘 다 include하면 전설 include로 승격합니다.
  */
 export function normalizePokedexTagSelections(
   selections: PokedexTagSelection[],
 ): PokedexTagSelection[] {
-  if (!hasLegendaryInclude(selections)) return selections;
+  const promoted = promoteBothSubsToLegendary(selections);
+  if (!hasLegendaryInclude(promoted)) return promoted;
 
-  const mapped = selections.map((entry) =>
+  const mapped = promoted.map((entry) =>
     isLegendarySubTag(entry.tag) && entry.mode === 'include'
       ? { ...entry, mode: 'exclude' as const }
       : entry,
@@ -385,10 +417,24 @@ function clearLegendarySubTags(
   return selections.filter((entry) => !isLegendarySubTag(entry.tag));
 }
 
+function hasLegendaryExclude(selections: PokedexTagSelection[]): boolean {
+  return selections.some(
+    (entry) => entry.tag === '전설' && entry.mode === 'exclude',
+  );
+}
+
+function hasAnyLegendarySubSelection(
+  selections: PokedexTagSelection[],
+): boolean {
+  return selections.some((entry) => isLegendarySubTag(entry.tag));
+}
+
 /**
  * 태그 클릭 사이클.
  * - 기본: off → include → exclude → off
  * - 전설이 include일 때 초전설/준전설: off → exclude → off (전설 중 제외)
+ * - 전설제외만 있을 때 초전설/준전설 클릭: 전설제외 해제 + 해당 태그 include
+ * - 초전설·준전설을 둘 다 include하면 전설 include로 승격
  * - 전설을 끄면 초전설/준전설 선택도 함께 해제
  */
 export function cyclePokedexTagSelection(
@@ -396,6 +442,20 @@ export function cyclePokedexTagSelection(
   tag: string,
 ): PokedexTagSelection[] {
   const legendOn = hasLegendaryInclude(selections);
+
+  // 전설제외 상태 + 하위 미선택 → 초/준전설 클릭 시 전설 끄고 해당 태그만 선택
+  if (
+    isLegendarySubTag(tag) &&
+    hasLegendaryExclude(selections) &&
+    !hasAnyLegendarySubSelection(selections)
+  ) {
+    const withoutLegend = selections.filter((entry) => entry.tag !== '전설');
+    const index = withoutLegend.findIndex((entry) => entry.tag === tag);
+    if (index < 0) {
+      return [...withoutLegend, { tag, mode: 'include' }];
+    }
+    return withoutLegend;
+  }
 
   if (isLegendarySubTag(tag) && legendOn) {
     const index = selections.findIndex((entry) => entry.tag === tag);
@@ -424,7 +484,15 @@ export function cyclePokedexTagSelection(
 
   const index = selections.findIndex((entry) => entry.tag === tag);
   if (index < 0) {
-    return [...selections, { tag, mode: 'include' }];
+    const next: PokedexTagSelection[] = [
+      ...selections,
+      { tag, mode: 'include' },
+    ];
+    // 초전설+준전설 모두 선택 → 전설 그룹 전체 선택
+    if (isLegendarySubTag(tag)) {
+      return promoteBothSubsToLegendary(next);
+    }
+    return next;
   }
 
   const current = selections[index];

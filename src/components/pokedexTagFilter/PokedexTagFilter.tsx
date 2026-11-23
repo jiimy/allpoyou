@@ -31,10 +31,16 @@ export default function PokedexTagFilter({
   );
   const noneActive = selections.length === 0;
   const legendInclude = modeByTag.get('전설') === 'include';
+  const ultraIncluded = modeByTag.get('초전설') === 'include';
+  const quasiIncluded = modeByTag.get('준전설') === 'include';
   const ultraExcluded = modeByTag.get('초전설') === 'exclude';
   const quasiExcluded = modeByTag.get('준전설') === 'exclude';
+  // 초전설·준전설을 둘 다 include하면 전설 그룹 전체 선택으로 취급
+  const bothSubsIncluded = ultraIncluded && quasiIncluded;
   // 초전설·준전설을 둘 다 제외하면 전설 그룹 전체 선택 UI는 끔
   const bothSubsExcluded = legendInclude && ultraExcluded && quasiExcluded;
+  const legendGroupSelected =
+    (legendInclude && !bothSubsExcluded) || bothSubsIncluded;
 
   return (
     <div className={s.wrap} role="group" aria-label="도감 태그 필터">
@@ -52,13 +58,10 @@ export default function PokedexTagFilter({
         const exclude = mode === 'exclude';
         const isGen = isGenerationTag(tag);
         const isSub = isLegendarySubTag(tag);
-        // 전설 선택 시 아직 제외하지 않은 초전설/준전설은 선택 UI
-        const subActiveLook =
-          isSub && legendInclude && !mode && !bothSubsExcluded;
+        // 전설 그룹 선택 시 아직 제외하지 않은 초전설/준전설은 선택 UI
+        const subActiveLook = isSub && legendGroupSelected && !mode;
         const showActive =
-          tag === '전설'
-            ? include && !bothSubsExcluded
-            : include || subActiveLook;
+          tag === '전설' ? legendGroupSelected : include || subActiveLook;
         // 둘 다 제외면 전설 그룹 필터 해제와 맞춰 기본 UI (하나만 제외일 때는 빨간 제외 UI)
         const showExclude = exclude && !(isSub && bothSubsExcluded);
         const subExcludeUnderLegend = isSub && legendInclude && exclude;
