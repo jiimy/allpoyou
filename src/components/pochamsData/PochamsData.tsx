@@ -25,7 +25,10 @@ import {
   getNatureEffectLabel,
   getNatureEntry,
 } from '@/utils/natureList';
-import { getPokemonMetaPrefetchMaxMinutes } from '@/constants/pochampsPrefetch';
+import {
+  formatApproxDuration,
+  getRankingsColdLoadMaxSeconds,
+} from '@/constants/pochampsPrefetch';
 import { POCHAMS_POKEMON_DATA } from '@/components/pochamsData/PochamsPokemonData';
 
 import s from './pochamsData.module.scss';
@@ -35,9 +38,10 @@ const SelectPokeModal = dynamic(
   { ssr: false },
 );
 
-const POKEMON_META_PREFETCH_MAX_MINUTES = getPokemonMetaPrefetchMaxMinutes(
+const RANKINGS_COLD_LOAD_MAX_SEC = getRankingsColdLoadMaxSeconds(
   POCHAMS_POKEMON_DATA.length,
 );
+const RANKINGS_COLD_LOAD_LABEL = formatApproxDuration(RANKINGS_COLD_LOAD_MAX_SEC);
 
 type BattleCategoryItem = {
   rank: number;
@@ -742,6 +746,15 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
       activeStep.total > 0
         ? Math.min(1, activeStep.current / activeStep.total)
         : null;
+    const remainingSec =
+      progressRatio != null &&
+      progressRatio >= 0.03 &&
+      rankingsElapsedSec >= 2
+        ? Math.max(
+            0,
+            Math.round(rankingsElapsedSec / progressRatio - rankingsElapsedSec),
+          )
+        : null;
 
     return (
       <div className={s.panel}>
@@ -752,9 +765,10 @@ const PochamsData = ({ keyword, onKeywordChange }: PochamsDataProps) => {
               <span className={s.progressElapsed}>{rankingsElapsedSec}초</span>
             </div>
             <p className={s.progressNote}>
-              처음 불러올 때는 최대 약 {POKEMON_META_PREFETCH_MAX_MINUTES}
-              분 걸릴 수 있어요. 다른 페이지로 나갔다
-              오면 이미 준비된 경우 바로 표시될 수 있어요.
+              {remainingSec != null
+                ? `남은 예상 ${formatApproxDuration(remainingSec)}. `
+                : `처음 불러올 때는 최대 ${RANKINGS_COLD_LOAD_LABEL} 걸릴 수 있어요. `}
+              다른 페이지로 나갔다 오면 이미 준비된 경우 바로 표시될 수 있어요.
             </p>
             {progressRatio != null ? (
               <div className={s.progressBarBlock}>
