@@ -104,6 +104,17 @@ function resolveEvolutionPokemon(nameKo: string, list: Pokemon[]): Pokemon | und
   return getPokemonByNameKo(nameKo) ?? list.find((entry) => entry.nameKo === nameKo);
 }
 
+/** note 기준 분류 라벨. 일반 포켓몬은 null → 세대만 표시 */
+function getPokemonClassificationLabel(note: string): string | null {
+  const value = note.trim();
+  if (!value) return null;
+  if (value.includes('초전설')) return '초전설';
+  if (value.includes('준전설')) return '준전설';
+  if (value.includes('환상')) return '환상';
+  if (value.includes('전설')) return '전설';
+  return null;
+}
+
 /** 로컬 JSON 누락 시에만 PokeAPI로 보강 */
 async function fetchLearnsetFromPokeApi(
   englishName: string,
@@ -286,6 +297,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
   const imageUrl = getPokemonStaticImage(activePokemon.images);
   const regularAbilities = ensureStringArray(activePokemon.ability);
   const hiddenAbilities = ensureStringArray(activePokemon.s_ability);
+  const classificationLabel = getPokemonClassificationLabel(activePokemon.note);
   const showEvolutionNav =
     prevEvolutionNames.length > 0 || nextEvolutionNames.length > 0;
 
@@ -395,6 +407,7 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
               <p className={s.number}>#{activePokemon.number}</p>
               <h2 className={s.name}>{activePokemon.nameKo}</h2>
               <div className={s.types}>
+                <span>
                 {ensureStringArray(activePokemon.types).map((type) => (
                   <span
                     key={type}
@@ -404,6 +417,24 @@ const SelectPokeModal = ({ pokemon, setOnModal }: SelectPokeModalProps) => {
                     {type}
                   </span>
                 ))}
+                </span>
+                <div className={s.metaTags} aria-label="포켓몬 분류">
+                  {activePokemon.generation > 0 ? (
+                    <span className={s.metaTag}>
+                      {activePokemon.generation}세대
+                    </span>
+                  ) : null}
+                  {classificationLabel ? (
+                    <span
+                      className={`${s.metaTag} ${classificationLabel === '환상'
+                          ? s.metaTagMythical
+                          : s.metaTagLegendary
+                        }`}
+                    >
+                      {classificationLabel}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <span className={s.typeCalc}>
                 <span>

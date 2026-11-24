@@ -62,6 +62,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  justify-content: space-between;
+  > span {
+    display: inline-flex;
+    gap: 6px;
+  }
 }
 
 .typeBadge {
@@ -70,6 +75,43 @@
   color: #fff;
   font-size: 12px;
   font-weight: 600;
+}
+
+.metaTags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  user-select: none;
+  color: #563e5d;
+  font-size: 14px;
+}
+
+.metaTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: default;
+
+  // & + &::before {
+  //   content: '·';
+  //   margin-right: 6px;
+  //   color: #ccc;
+  //   font-weight: 400;
+  // }
+}
+
+.metaTagLegendary {
+  // color: #a67c00;
+}
+
+.metaTagMythical {
+  color: #7a5ca8;
 }
 
 .sectionTitle {
